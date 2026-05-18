@@ -1,0 +1,130 @@
+@import "tailwindcss";
+
+/* ── Sub-tree Design Tokens ─────────────────────────────
+   All values declared here. Components consume via Tailwind
+   utilities or var() — never hardcoded hex in component files. */
+:root {
+  /* Backgrounds */
+  --bg-base: #ffffff;
+  --bg-surface: #f9fafb;
+  --bg-raised: #ffffff;
+
+  /* Text */
+  --text-primary: #111827;
+  --text-secondary: #4b5563;
+  --text-muted: #6b7280;
+  --text-placeholder: #9ca3af;
+
+  /* Accent (primary interactive = dark near-black) */
+  --accent-primary: #111827;
+  --accent-hover: #1f2937;
+
+  /* Borders */
+  --border-default: #e5e7eb;
+  --border-subtle: #f3f4f6;
+  --border-focus: #111827;
+
+  /* Semantic states */
+  --state-error: #dc2626;
+  --state-error-bg: #fee2e2;
+  --state-success: #16a34a;
+  --state-success-bg: #dcfce7;
+  --state-warning: #d97706;
+  --state-warning-bg: #fef3c7;
+  --state-info: #2563eb;
+
+  /* shadcn/ui compatibility bridge
+     Maps shadcn token names → our values so all shadcn
+     primitives inherit the brand without manual overrides. */
+  --background: var(--bg-base);
+  --foreground: var(--text-primary);
+  --card: var(--bg-raised);
+  --card-foreground: var(--text-primary);
+  --popover: var(--bg-raised);
+  --popover-foreground: var(--text-primary);
+  --primary: var(--accent-primary);
+  --primary-foreground: #ffffff;
+  --secondary: var(--bg-surface);
+  --secondary-foreground: var(--text-primary);
+  --muted: var(--bg-surface);
+  --muted-foreground: var(--text-muted);
+  --accent: var(--bg-surface);
+  --accent-foreground: var(--text-primary);
+  --destructive: var(--state-error);
+  --destructive-foreground: #ffffff;
+  --border: var(--border-default);
+  --input: var(--border-default);
+  --ring: var(--border-focus);
+  --radius: 0.5rem;
+  --sidebar: var(--bg-base);
+  --sidebar-foreground: var(--text-primary);
+  --sidebar-primary: var(--accent-primary);
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: var(--bg-surface);
+  --sidebar-accent-foreground: var(--text-primary);
+  --sidebar-border: var(--border-default);
+  --sidebar-ring: var(--border-focus);
+}
+
+/* ── Tailwind v4 theme → utility class mapping ───────── */
+@theme inline {
+  /* Fonts (CSS vars injected by next/font in layout.tsx) */
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+
+  /* Sub-tree semantic colors */
+  --color-base: var(--bg-base);
+  --color-surface: var(--bg-surface);
+  --color-placeholder: var(--text-placeholder);
+  --color-accent-dark: var(--accent-hover);
+  --color-border-default: var(--border-default);
+  --color-border-subtle: var(--border-subtle);
+  --color-border-focus: var(--border-focus);
+  --color-error: var(--state-error);
+  --color-error-bg: var(--state-error-bg);
+  --color-success: var(--state-success);
+  --color-success-bg: var(--state-success-bg);
+  --color-warning: var(--state-warning);
+  --color-warning-bg: var(--state-warning-bg);
+  --color-info: var(--state-info);
+
+  /* shadcn/ui token → Tailwind utility mapping
+     e.g. --color-primary creates bg-primary, text-primary, border-primary */
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: var(--radius);
+  --radius-lg: calc(var(--radius) + 4px);
+  --radius-xl: calc(var(--radius) + 8px);
+}
+
+/* ── Base styles ─────────────────────────────────────── */
+body {
+  background-color: var(--bg-base);
+  color: var(--text-primary);
+}
