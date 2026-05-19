@@ -49,11 +49,11 @@ When a new feature is proposed, it gets a number and a row in this table. When a
 | 05  | Quick Profile & First Link Onboarding | Proposed   | Phase 1  | 03               | `docs/features/05-onboarding-profile.md`          |
 | 06  | Login & Sessions                     | Superseded  | —        | by 03            | (merged into 03-clerk-auth.md)                   |
 | 07  | Password Reset                       | Superseded  | —        | by 03            | (handled by Clerk, no separate file)              |
-| 08  | Dashboard Shell & Navigation         | Proposed    | Phase 2  | 01, 06           | `docs/features/08-dashboard-shell.md`             |
+| 08  | Dashboard Shell & Navigation         | Proposed    | Phase 2  | 01, 03           | `docs/features/08-dashboard-shell.md`             |
 | 09  | Links Manager (CRUD + Reorder)       | Proposed    | Phase 2  | 02, 08           | `docs/features/09-links-manager.md`               |
 | 10  | Public Profile Page                  | Proposed    | Phase 2  | 02, 09           | `docs/features/10-public-profile.md`              |
 | 11  | Appearance & Theme Selection (Free Tier) | Proposed | Phase 2  | 08, 10           | `docs/features/11-appearance-free.md`             |
-| 12  | Reserved Username Admin Queue        | Proposed    | Phase 2  | 02, 06           | `docs/features/12-reserved-username-admin.md`     |
+| 12  | Reserved Username Admin Queue        | Proposed    | Phase 2  | 02, 03           | `docs/features/12-reserved-username-admin.md`     |
 | 13  | MTN MoMo Collections Integration     | Proposed    | Phase 3  | 02               | `docs/features/13-mtn-momo-integration.md`        |
 | 14  | Airtel Money Collections Integration | Proposed    | Phase 3  | 02               | `docs/features/14-airtel-money-integration.md`    |
 | 15  | Donation Page & STK Push Flow        | Proposed    | Phase 3  | 10, 13, 14       | `docs/features/15-donation-flow.md`               |
@@ -64,8 +64,8 @@ When a new feature is proposed, it gets a number and a row in this table. When a
 | 20  | Pro Tier Subscription & Billing      | Proposed    | Phase 4  | 13, 14, 19       | `docs/features/20-pro-tier.md`                    |
 | 21  | Rate Limiting & Fraud Rails          | Proposed    | Phase 4  | 03, 15           | `docs/features/21-fraud-rails.md`                 |
 | 22  | OG Image Generation for Profiles     | Proposed    | Phase 4  | 10               | `docs/features/22-og-images.md`                   |
-| 23  | Account Settings & Deletion          | Proposed    | Phase 4  | 06               | `docs/features/23-account-settings.md`            |
-| 24  | Business / NGO KYB Upgrade           | Deferred    | Phase 5  | 06, 12           | `docs/features/24-business-ngo-kyb.md`            |
+| 23  | Account Settings & Deletion          | Proposed    | Phase 4  | 03               | `docs/features/23-account-settings.md`            |
+| 24  | Business / NGO KYB Upgrade           | Deferred    | Phase 5  | 03, 12           | `docs/features/24-business-ngo-kyb.md`            |
 | 25  | Custom Domains for Pro               | Deferred    | Phase 5  | 10, 20           | `docs/features/25-custom-domains.md`              |
 | 26  | Kenya M-Pesa Integration             | Deferred    | Phase 5  | 13               | `docs/features/26-mpesa-integration.md`           |
 | 27  | USSD Donation Flow (Feature Phones)  | Deferred    | Phase 5  | 15, 16           | `docs/features/27-ussd-donations.md`              |

@@ -15,12 +15,11 @@ Sub-tree is a link-aggregator platform built for creators, small businesses, and
 1. Creator visits sub-tree.com and clicks "Create your page." Clerk's hosted signup component handles phone, email, password, and verification.
 2. After Clerk completes signup and verifies the phone via OTP, the user is redirected to a Sub-tree onboarding page where they claim a username and complete a quick profile.
 3. Creator lands in the dashboard, adds links, customizes appearance, and turns on donations by entering their payout mobile money number.
-4. Creator lands in the dashboard, adds remaining links, customizes appearance, and turns on donations by entering their payout mobile money number.
-5. Creator shares their sub-tree.com/username link with their audience.
-6. A visitor opens the public page, sees all the creator's links, and taps "Donate."
-7. Visitor enters their mobile money number and donation amount on the donation page.
-8. Visitor receives an STK push on their phone, enters their PIN, and the donation completes.
-9. Creator gets an SMS notification of the received donation and sees it in their dashboard.
+4. Creator shares their sub-tree.com/username link with their audience.
+5. A visitor opens the public page, sees all the creator's links, and taps "Donate."
+6. Visitor enters their mobile money number and donation amount on the donation page.
+7. Visitor receives an STK push on their phone, enters their PIN, and the donation completes.
+8. Creator gets an SMS notification of the received donation and sees it in their dashboard.
 
 ## Features
 

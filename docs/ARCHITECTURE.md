@@ -9,11 +9,11 @@
 | Fonts            | Geist Sans + Geist Mono via `next/font` | Optimized self-hosted fonts with zero layout shift                            |
 | Auth             | Clerk | Phone OTP, email verification, sessions, password reset, user management — handled end-to-end |
 | Database         | PostgreSQL 16 + Prisma ORM              | Source of truth for users, links, profiles, donations, financial records      |
-| Cache / Ephemeral | Redis (Upstash in prod, Docker local)  | OTP storage with TTL, rate-limit counters, idempotency keys, session cache    |
+| Cache / Ephemeral | Redis (Upstash in prod, Docker local)  | rate-limit counters, idempotency keys, session cache    |
 | SMS — Donation Notifications | Africa's Talking | "You received UGX X" alerts to creators after successful donations |
 | Email            | Clerk built-in | Transactional auth emails handled by Clerk; product emails deferred |
 | Mobile Money     | MTN MoMo Collections API + Airtel Money Collections API | Donation collection via STK push, webhook-based confirmation                 |
-| Email            | Resend (or Postmark)                    | Transactional email: verification, receipts, password reset                   |
+| Email            | Resend (or Postmark)                    | Transactional email (non-auth): donation receipts, product/notification emails, newsletters |
 | File Storage     | Cloudflare R2                           | User avatars, custom backgrounds, exported CSVs                               |
 | Validation       | Zod                                     | Runtime validation at every system boundary                                   |
 | Logging          | Pino                                    | Structured JSON logs                                                          |
