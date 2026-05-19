@@ -28,21 +28,17 @@ Implement feature 01 (Design System Setup): full token set in globals.css, Tailw
 
 ## In Progress
 
-- **Feature 01 — Design System Setup.** Token set in `app/globals.css`, Tailwind v4 `@theme inline` mapping, shadcn/ui primitives (button, input, label, checkbox, select, dialog, sonner, drawer), `components/brand/Logo.tsx`, `components/layouts/AuthLayout.tsx`, `components/layouts/DashboardLayout.tsx` shell, `app/dev/design-system` route.
+- Setting up Clerk integration (replaces the original custom auth plan).
 
 ## Next Up
 
-2. **Feature 01 — finish and verify.** Run `npm run build`, confirm `/dev/design-system` renders all tokens and primitives without errors, commit.
-3. **Feature 02 — Database Schema & Prisma Setup.** Docker Compose for local Postgres, Prisma init, initial schema (`users`, `reserved_usernames`, `profiles`, `links`), seed script.
-4. Set up Prisma + Postgres. Create `docker-compose.yml` for local Postgres. Generate initial schema: `users`, `reserved_usernames`, `profiles`, `links`.
-5. Port the signup page from the designed component into `app/(auth)/signup/page.tsx` (convert JSX → TSX, replace simulated logic with real API calls).
-6. Build `POST /api/auth/signup` — Zod validation, argon2 password hashing, reserved-name check, user insert, OTP generation (log to console until Redis is wired).
-7. Build `GET /api/auth/check-username` — live availability endpoint.
-8. Move OTP screen to `app/(auth)/signup/verify/page.tsx`. Build `POST /api/auth/verify-otp` endpoint.
-9. Wire Redis (via Upstash or local Docker) for OTP storage with TTL.
-10. Wire Africa's Talking SMS for real OTP delivery. Test end-to-end signup flow.
-11. Build quick-profile screen (display name + avatar) and "add first link" screen.
-12. Build dashboard shell with nav (sidebar on desktop, bottom tabs on mobile).
+1. Verify Clerk packages are installed and Liveblocks/Trigger.dev are removed.
+2. Confirm `.env.local` has Clerk keys.
+3. Update Prisma schema to use `clerk_user_id`, drop password fields.
+4. Build webhook handler at `/api/webhooks/clerk`.
+5. Add middleware and `/sign-up` + `/sign-in` pages.
+6. Test: sign up → user row created in DB → land at `/onboarding/username` placeholder.
+7. Build Feature 04 (Username claim) on top.
 
 ## Open Questions
 
@@ -54,14 +50,17 @@ Implement feature 01 (Design System Setup): full token set in globals.css, Tailw
 - **Hosting target.** Vercel for the Next.js app is the easy default, but consider a regional EA host or Cloudflare Pages for latency to East African users. Decide before Phase 2.
 - **Password reset & phone-recovery flows.** Designed conceptually but not yet specified screen-by-screen. Must be done before any production launch (SIM swap fraud is a real risk on a phone-first auth product).
 - **`toast` spec vs sonner.** Feature spec 01 lists `toast` as a shadcn primitive; shadcn deprecated `toast` in favour of `sonner`. Installed `sonner` instead. Feature spec should be updated when feature 01 is Shipped.
+- **Clerk SMS cost:** Clerk uses Twilio (~3x more expensive than Africa's Talking per Uganda SMS). Acceptable at MVP scale; re-evaluate at 1,000+ MAU.
+- **Clerk MAU billing:** Clerk is free to 10k MAU. Define what triggers an auth-cost review and what the migration path looks like.
 
 ## Architecture Decisions
 
 - **Next.js App Router over Pages Router.** Chosen because Server Components reduce client JS bundle size (matters on 3G), built-in API routes mean no separate backend at MVP, and the file-based routing maps cleanly to the `/[username]` and `/[username]/donate` public pages.
 - **Postgres via Prisma over raw SQL / Drizzle.** Prisma's schema-first model and migration tooling are friendlier for solo dev velocity. Drizzle is faster at runtime but adds complexity we don't need yet. Easy to migrate later if needed.
 - **Redis for OTP storage, not Postgres.** OTPs auto-expire via Redis TTL — no cleanup cron, no stale rows. Also faster for rate-limiting counters by IP and by phone.
-- **Argon2id over bcrypt for password hashing.** Argon2 is the modern recommendation (winner of the Password Hashing Competition), better resistance to GPU/ASIC attacks. The `argon2` Node package wraps the reference implementation.
+- **Clerk handles password storage and reset.** Password hashing, verification, and account recovery are managed by Clerk. Our app stores `clerk_user_id` and product state, not local password hashes.
 - **Africa's Talking over Twilio for SMS.** Cheaper in EA (~UGX 32/SMS vs Twilio's ~UGX 100+), better Uganda delivery rates, sender ID branding available through their UCC application process. Build a `SmsProvider` interface to keep Twilio as a future fallback for cross-border.
+- **Clerk over custom auth.** Decided 2026-05-18. Original plan was custom phone-OTP auth via Africa's Talking with argon2id passwords and server sessions. Switched to Clerk to save 2-3 weeks. Trade-offs accepted: vendor dependency, per-MAU cost above 10k users, Twilio (not Africa's Talking) under the hood for auth SMS. Africa's Talking remains for donation notification SMS only.
 - **Direct-to-creator MoMo settlement.** Funds land in creator's registered MoMo number; platform fee split off via API. Avoids holding customer funds (which triggers BoU payment aggregator licensing). Trade-off: requires creators to be KYC-verified by MTN/Airtel before they can receive — design assumes that.
 - **Mobile-first, responsive web only (no native apps at MVP).** Most users will visit via shared links on mobile browsers; building two native apps doubles cost for marginal early benefit. PWA install banner can come in Phase 2.
 - **Phone hard / email soft verification.** Phone is required to be verified before public page goes live or any sensitive action. Email is soft-required — gates donations and money-related actions only. Reduces signup friction without compromising security where it matters.

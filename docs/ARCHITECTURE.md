@@ -7,10 +7,11 @@
 | Framework        | Next.js 14 (App Router) + TypeScript    | Server-rendered React, file-based routing, API route handlers, server actions |
 | UI               | Tailwind CSS + shadcn/ui                | Utility-first styling and accessible component primitives                     |
 | Fonts            | Geist Sans + Geist Mono via `next/font` | Optimized self-hosted fonts with zero layout shift                            |
-| Auth             | Custom (httpOnly cookies + argon2id)    | Phone-OTP and email-soft-verified sessions; no third-party auth provider      |
+| Auth             | Clerk | Phone OTP, email verification, sessions, password reset, user management — handled end-to-end |
 | Database         | PostgreSQL 16 + Prisma ORM              | Source of truth for users, links, profiles, donations, financial records      |
 | Cache / Ephemeral | Redis (Upstash in prod, Docker local)  | OTP storage with TTL, rate-limit counters, idempotency keys, session cache    |
-| SMS              | Africa's Talking                        | OTP delivery, donation alerts to creators                                     |
+| SMS — Donation Notifications | Africa's Talking | "You received UGX X" alerts to creators after successful donations |
+| Email            | Clerk built-in | Transactional auth emails handled by Clerk; product emails deferred |
 | Mobile Money     | MTN MoMo Collections API + Airtel Money Collections API | Donation collection via STK push, webhook-based confirmation                 |
 | Email            | Resend (or Postmark)                    | Transactional email: verification, receipts, password reset                   |
 | File Storage     | Cloudflare R2                           | User avatars, custom backgrounds, exported CSVs                               |
@@ -56,25 +57,27 @@
 
 ## Auth and Access Model
 
-- **Authentication is phone-first.** Every user signs up with phone + email + password + username. Phone is hard-verified via 6-digit OTP from Africa's Talking before the account becomes usable for public-facing or money-related actions. Email is soft-verified — gates donation enablement and payout but not page creation.
+- **Authentication is handled by Clerk.** Every user signs up with phone + email + password + username via Clerk's components. Clerk handles phone OTP verification, email verification links, session cookies, password reset, and account recovery. We do not write or maintain any auth code beyond the Clerk integration.
 
-- **Sessions are server-managed.** On successful login, the server issues an opaque session token, stores the session record in Postgres (or Redis with Postgres fallback), and sets it as an httpOnly Secure SameSite=Lax cookie. The cookie name and contents never reveal user identity — only the session lookup ID.
+- **Phone OTP is the primary verification method.** Clerk's signup flow is configured to require phone verification before account activation. Email is collected at signup and verified asynchronously via Clerk's email link flow.
 
-- **Passwords are hashed with argon2id.** Never stored or transmitted in plaintext after the moment they leave the form. The hash includes per-user salt and tuned cost parameters reviewed periodically.
+- **Sessions are managed by Clerk.** Clerk issues httpOnly session cookies on signed-in users. The session token is opaque, scoped to our domain, and revocable from the Clerk dashboard. We never store or rotate passwords ourselves.
 
-- **Every resource has a single owner.** A profile has one user_id. A link belongs to one user. A donation has both a recipient_user_id (the creator) and a supporter identifier (phone, optionally anonymous). There is no concept of shared ownership or collaborators at MVP.
+- **Our database holds username, profile, and business data — Clerk holds identity.** The Clerk user ID (`clerk_user_id`) is the foreign key into our users table. Username, account type, links, donations, and all product state live in Postgres. Authentication state lives in Clerk.
 
-- **Authorization is checked at the service layer, not in the route handler alone.** The route handler verifies the session exists; the service function verifies the session's user_id matches the resource owner before any mutation. This double-check prevents a forgotten guard at the route level from leaking ownership boundaries.
+- **Every resource has a single owner.** A profile has one user_id (which maps to one clerk_user_id). A link belongs to one user. There is no concept of shared ownership at MVP.
 
-- **Public profile pages are unauthenticated** but read-only and rate-limited. Anyone can view `sub-tree.com/username`. Page views and link clicks are tracked anonymously (no PII captured beyond IP-based country derivation, which is then discarded after aggregation).
+- **Authorization is checked at the service layer.** Route handlers call auth() from Clerk's Next.js SDK to get the signed-in user. The service layer then verifies the user owns the resource being mutated.
 
-- **The donation flow is unauthenticated.** A donor doesn't need an account — they enter their phone and amount, approve the STK push, and they're done. The donor's phone is stored on the donation record for receipt purposes but is not converted into a Sub-tree account without explicit signup.
+- **Public profile pages are unauthenticated.** Anyone can view sub-tree.com/username. Clerk middleware is configured to skip auth requirements for public routes.
 
-- **Admin actions** (reviewing reserved username claims, approving business/NGO KYB, manually refunding donations) require an internal admin role flag on the user record and are gated by route-level middleware checking that flag. Admins are humans we trust, not customers — initially just Muhamad.
+- **The donation flow is unauthenticated.** A donor doesn't need a Clerk account.
 
-- **Rate limits are enforced per phone, per IP, and per session** as appropriate to the endpoint. Signup: 5/hour per IP, 3/day per phone. OTP verify: 5 attempts per phone per 15 minutes (then lock). Donation initiation: 10/minute per donor phone. Bypass requires being on an allowlist (internal testing only).
+- **Webhook endpoints authenticate via signature verification.** Clerk webhooks via Clerk's signing secret, MTN/Airtel webhooks via their respective secrets.
 
-- **Webhook endpoints are not session-authenticated.** They authenticate via signature verification against the provider's signing secret. An unsigned or invalid-signature webhook is dropped immediately, logged, and rate-limited per source IP.
+- **Admin role is a custom claim on the Clerk user.** Admin actions check `sessionClaims.metadata.role === "admin"` via Clerk's middleware. Admins are managed manually through Clerk's dashboard at MVP.
+
+- **Rate limits are enforced per phone, per IP, and per session** as appropriate to the endpoint. Signup: 5/hour per IP, 3/day per phone. Donation initiation: 10/minute per donor phone. Bypass requires being on an allowlist (internal testing only).
 
 ## Invariants
 
@@ -88,9 +91,11 @@
 
 5. **Authorization is checked before every mutation.** Reading public data (a profile page) requires no check. Mutating any user-owned resource requires the service to verify the session's user_id matches the resource's owner. There is no "trusted internal route" that skips this — even admin endpoints check the admin flag explicitly.
 
-6. **PII is masked in logs and never logged in full.** Phone numbers log as `256-7XX-XXX-NNN` with the last 3 digits redacted. Emails log as `m***@example.com`. OTPs, PINs, passwords, MoMo transaction tokens, and session cookies never appear in logs under any circumstances. A grep for `password` or `otp` across all logs must return zero results.
+6. **Most auth PII is owned by Clerk and never passes through our logs.** Phone numbers, emails, verification status, and session tokens are handled by Clerk; our logs only record non-sensitive, masked product identifiers. OTPs, passwords, and auth tokens never appear in app logs.
 
-7. **Direct settlement of donations means we never hold customer funds.** Donations route from the donor's MoMo wallet to the creator's registered MoMo number via the provider's API, with the platform fee split off at the API level. The Sub-tree corporate account does not pool donations and pay creators on a schedule — funds never sit in our control. This is a regulatory boundary, not a preference.
+7. **Clerk is the source of truth for identity.** User authentication state — passwords, phone verification status, email verification status, session validity — lives in Clerk. Our database stores product data linked to Clerk users via `clerk_user_id`. We do not duplicate identity state.
+
+8. **Direct settlement of donations means we never hold customer funds.** Donations route from the donor's MoMo wallet to the creator's registered MoMo number via the provider's API, with the platform fee split off at the API level. The Sub-tree corporate account does not pool donations and pay creators on a schedule — funds never sit in our control. This is a regulatory boundary, not a preference.
 
 8. **Schema changes go through Prisma migrate, always.** No raw `ALTER TABLE` on the live database, no schema drift between environments, no "I'll just add this column quickly." A migration is reviewed, committed, and applied via the migration tool. Database state is recoverable from `db/migrations/` plus the latest backup at any time.
 

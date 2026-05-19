@@ -43,6 +43,16 @@ If you find yourself writing more than one TODO comment in a single unit, the sc
 - If you encounter a contradiction between two context files, surface it explicitly. Don't pick one and proceed. The contradiction is the user's decision to make.
 - When in doubt about scope, ask. One clarifying question costs five minutes; an incorrect implementation costs an hour to undo plus the dignity hit.
 
+## On Adding New Dependencies
+
+Before installing a new npm package or signing up for a new SaaS service:
+
+1. Check `docs/pending-dependencies.md` — if it's already there, follow that doc's process.
+2. If not, ask: does the product actually need this right now, or is this anticipatory? If anticipatory, add an entry to `docs/pending-dependencies.md` instead of installing.
+3. If installing is genuinely needed, update `docs/ARCHITECTURE.md` stack table and `docs/PROGRESS.md` in the same commit.
+
+Anticipatory dependencies are the slow leak that kills codebases. The rule: install at the moment of need, not before.
+
 ## Protected Files
 
 Do not modify the following unless explicitly instructed:

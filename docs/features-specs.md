@@ -44,11 +44,11 @@ When a new feature is proposed, it gets a number and a row in this table. When a
 | --- | ------------------------------------ | ----------- | -------- | ---------------- | ------------------------------------------------- |
 | 01  | Design System Setup                  | Proposed    | Phase 0  | —                | `docs/features/01-design-system.md`               |
 | 02  | Database Schema & Prisma Setup       | Proposed    | Phase 0  | —                | `docs/features/02-database-schema.md`             |
-| 03  | Creator Signup & Phone OTP           | Proposed    | Phase 1  | 01, 02           | `docs/features/03-signup-otp.md`                  |
-| 04  | Email Verification (Soft)            | Proposed    | Phase 1  | 03               | `docs/features/04-email-verification.md`          |
+| 03  | Clerk Auth Integration               | Proposed    | Phase 1  | 01, 02           | `docs/features/03-clerk-auth.md`                 |
+| 04  | Username Claim & Onboarding          | Proposed    | Phase 1  | 03               | `docs/features/04-username-onboarding.md`         |
 | 05  | Quick Profile & First Link Onboarding | Proposed   | Phase 1  | 03               | `docs/features/05-onboarding-profile.md`          |
-| 06  | Login & Session Management           | Proposed    | Phase 1  | 03               | `docs/features/06-login-sessions.md`              |
-| 07  | Password Reset & Phone Recovery      | Proposed    | Phase 1  | 06               | `docs/features/07-password-recovery.md`           |
+| 06  | Login & Sessions                     | Superseded  | —        | by 03            | (merged into 03-clerk-auth.md)                   |
+| 07  | Password Reset                       | Superseded  | —        | by 03            | (handled by Clerk, no separate file)              |
 | 08  | Dashboard Shell & Navigation         | Proposed    | Phase 2  | 01, 06           | `docs/features/08-dashboard-shell.md`             |
 | 09  | Links Manager (CRUD + Reorder)       | Proposed    | Phase 2  | 02, 08           | `docs/features/09-links-manager.md`               |
 | 10  | Public Profile Page                  | Proposed    | Phase 2  | 02, 09           | `docs/features/10-public-profile.md`              |
@@ -88,13 +88,11 @@ Phase 0 is done when: `/dev/design-system` renders correctly, `npm run build` pa
 
 Goal: A new user can go from "first visit" to "signed in, profile created, first link added" in under two minutes.
 
-- **03 — Creator Signup & Phone OTP.** The signup page, phone verification via Africa's Talking, account creation with username reservation.
-- **04 — Email Verification (Soft).** Background email send via Resend, verification link, banner nag on dashboard until verified, donation toggle gated on verification.
-- **05 — Quick Profile & First Link Onboarding.** Post-OTP screens for display name, avatar, first link.
-- **06 — Login & Session Management.** Returning user login (phone + password), session cookie management, "remember me" handling.
-- **07 — Password Reset & Phone Recovery.** Forgot-password flow (phone OTP primary, email backup), phone number change flow with cooldown.
+**03 — Clerk Auth Integration.** Install and configure Clerk for Sub-tree. Configure signup to require phone + email, with phone OTP as primary verification. Set up middleware for protected routes. Map Clerk user IDs to local user records via webhook.
+**04 — Username Claim & Onboarding.** After Clerk signup completes, redirect to our onboarding flow. User claims a username (validated against reserved list), and we create the local users record linked to their Clerk ID.
+**05 — Quick Profile & First Link.** Post-username screens for display name, avatar, first link.
 
-Phase 1 is done when: a new user can sign up, verify their phone, create a profile, add a link, log out, log back in, and reset their password — all without bugs and all instrumented with logging.
+Phase 1 is done when: a new user can complete Clerk signup, claim a username, create a profile, add a link, log out, and log back in.
 
 ## Phase 2 — Creator Dashboard & Public Profile
 

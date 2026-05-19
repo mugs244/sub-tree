@@ -50,7 +50,10 @@
 ## API Routes
 
 - Validate and parse request input with Zod before any logic runs. If parsing fails, return `400` with a structured error: `{ error: "VALIDATION_ERROR", fields: { phone: "Invalid format" } }`. Never let unvalidated input touch business logic.
-- Enforce auth and ownership before any mutation. A creator can only edit their own links, view their own donations, change their own settings. Check `session.user_id === resource.user_id` explicitly — don't trust that the URL params imply ownership.
+- Enforce auth via Clerk's auth() helper at the top of every protected route handler. Pattern:
+	const { userId } = await auth();
+	if (!userId) return new Response("Unauthorized", { status: 401 });
+- After confirming auth, verify ownership of the resource being mutated by checking the resource's user_id matches the local user record linked to the Clerk userId.
 - Return consistent, predictable response shapes. Success: `{ data: ... }`. Error: `{ error: "ERROR_CODE", message: "Human-readable explanation" }`. HTTP status codes match: `200/201` for success, `400` for validation, `401` for unauth, `403` for forbidden, `404` for not found, `429` for rate limited, `500` for server error.
 - Rate limit every mutation endpoint. Signup: 5/hour per IP, 3/day per phone. OTP verify: 5 attempts per phone per 15min. Donations: 10/minute per donor phone. Use Redis-backed counters with sliding window.
 - Idempotency on payment-related routes. Donation creation accepts an `Idempotency-Key` header; replays with the same key return the original response, not a new charge. This is non-negotiable for MoMo flows.
@@ -66,12 +69,23 @@
 - Large or generated content belongs in file/blob storage (Cloudflare R2, S3, or similar). User avatars, custom backgrounds, exported CSVs of transactions. The database stores the URL, not the binary.
 - Do not store large content directly in the database. No base64 images in user rows, no JSON blobs over a few KB. Move it out before it becomes a problem.
 - Ephemeral state belongs in Redis (OTPs, rate-limit counters, session cache, idempotency keys). Use TTL — never store something in Redis without a TTL.
+- We do not store passwords. Clerk handles password storage, hashing, and reset. Our users table stores `clerk_user_id` as the foreign key to Clerk's user record.
 - Financial data is append-only. Donations, payouts, fees — never updated, never deleted. Status changes happen via new rows referencing the original (e.g. `donation_events` table linked to `donations`). The original record is the source of truth.
 - Timestamps everywhere. Every table has `created_at`, mutable tables have `updated_at`. Use `timestamptz` in Postgres, not naive `timestamp`. All timestamps stored UTC, displayed in user's local time on the frontend.
 - Soft delete where data loss would be expensive (user accounts, financial records). Hard delete where it would be safer (OTPs, session tokens, expired idempotency keys).
 - Foreign keys enforced at the DB level, not just at the ORM level. `ON DELETE CASCADE` for owned data (a user's links die with the user), `ON DELETE RESTRICT` for referenced data (can't delete a user who has donations — must anonymize instead).
 - Indexes are not optional. Index every foreign key, every column used in WHERE clauses, every column used in ORDER BY. Use Prisma's `@@index` and verify with `EXPLAIN ANALYZE` on real query patterns before launch.
 - PII handling: phone numbers, emails, payout MoMo numbers are PII. Encrypt at rest (Postgres column encryption or app-level for high-sensitivity fields). Never log full PII. Plan for a "delete my data" endpoint to comply with future regulations.
+
+## On Adding New Dependencies
+
+Before installing a new npm package or signing up for a new SaaS service:
+
+1. Check `docs/pending-dependencies.md` — if it's already there, follow that doc's process
+2. If not, ask: does the product actually need this right now, or is this anticipatory? If anticipatory, add an entry to `docs/pending-dependencies.md` instead of installing
+3. If installing is genuinely needed, update `docs/ARCHITECTURE.md` stack table and `docs/PROGRESS.md` in the same commit as the install
+
+Anticipatory dependencies are the slow leak that kills codebases. The rule: install at the moment of need, not before.
 
 ## File Organization
 

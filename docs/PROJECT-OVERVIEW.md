@@ -12,9 +12,9 @@ Sub-tree is a link-aggregator platform built for creators, small businesses, and
 
 ## Core User Flow
 
-1. Creator visits sub-tree.com and signs up with phone, email, password, and chosen username.
-2. Creator verifies their phone number via a 6-digit OTP sent by SMS.
-3. Creator completes a quick profile (display name, optional avatar) and adds their first link.
+1. Creator visits sub-tree.com and clicks "Create your page." Clerk's hosted signup component handles phone, email, password, and verification.
+2. After Clerk completes signup and verifies the phone via OTP, the user is redirected to a Sub-tree onboarding page where they claim a username and complete a quick profile.
+3. Creator lands in the dashboard, adds links, customizes appearance, and turns on donations by entering their payout mobile money number.
 4. Creator lands in the dashboard, adds remaining links, customizes appearance, and turns on donations by entering their payout mobile money number.
 5. Creator shares their sub-tree.com/username link with their audience.
 6. A visitor opens the public page, sees all the creator's links, and taps "Donate."
@@ -26,10 +26,12 @@ Sub-tree is a link-aggregator platform built for creators, small businesses, and
 
 ### Authentication & Account
 
-- Phone + email signup with hard phone verification (OTP via Africa's Talking) and soft email verification (background link).
-- Username system with reserved-word handling (system names, government bodies, major brands) and admin review queue for reserved-name claims.
-- Account types: individual (default), business, NGO — with KYB upgrade flow for business/NGO when needed.
-- Login, password reset (phone-OTP primary, email-link backup), and phone-number-change flow with cooldown protection.
+- Phone + email signup via Clerk's hosted signup component, with phone OTP as the primary verification method.
+- Email verification handled asynchronously by Clerk; our app gates donation enablement on email_verified status from Clerk.
+- Username system on our side: chosen at signup, checked against our reserved_usernames table and users table. Stored in our database, linked to Clerk user ID.
+- Account types: individual (default), business, NGO — KYB upgrade flow for business/NGO when needed.
+- Login, password reset, phone number change, and 2FA all handled by Clerk's components.
+- Admin role assigned via Clerk's user metadata; checked by middleware on admin routes.
 
 ### Creator Dashboard
 
@@ -98,3 +100,7 @@ Sub-tree is a link-aggregator platform built for creators, small businesses, and
 4. Username uniqueness, reserved-name enforcement, and rate limiting all hold under adversarial testing (no duplicate handles, no profanity, no signup spam from a single IP).
 5. The dashboard loads in under 2 seconds on a mid-range Android phone over 3G, and the public profile page loads in under 1 second on the same conditions.
 6. Donation failures (network drop, insufficient funds, wrong PIN) are handled gracefully — the visitor sees clear status, the creator never sees a phantom donation, and idempotency prevents duplicate charges.
+
+## Pending Dependencies
+
+Some services and packages have been evaluated for Sub-tree but are not currently in the codebase. See `docs/pending-dependencies.md` for the list, trigger conditions, and install instructions. Currently pending: Liveblocks (for Feature 31 — Team Accounts) and Trigger.dev (for async job processing at scale).
