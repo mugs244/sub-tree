@@ -1,0 +1,87 @@
+import { NextResponse } from "next/server"
+import { z } from "zod"
+import { prisma } from "@/lib/db"
+import { randomUUID } from "crypto"
+
+const initiateSchema = z.object({
+  username: z.string().min(1),
+  amount: z.number().int().min(500, "Minimum donation is UGX 500"),
+  phone: z.string().min(9, "Invalid phone number"),
+  donor_name: z.string().max(100).optional(),
+  note: z.string().max(120).optional(),
+})
+
+export async function POST(req: Request): Promise<NextResponse> {
+  let body: unknown
+  try {
+    body = await req.json()
+  } catch {
+    return NextResponse.json({ error: "VALIDATION_ERROR", message: "Invalid JSON body" }, { status: 400 })
+  }
+
+  const parsed = initiateSchema.safeParse(body)
+  if (!parsed.success) {
+    return NextResponse.json(
+      { error: "VALIDATION_ERROR", message: parsed.error.issues[0]?.message ?? "Invalid input" },
+      { status: 400 },
+    )
+  }
+
+  const { username, amount, phone, donor_name, note } = parsed.data
+
+  const user = await prisma.user.findUnique({
+    where: { username },
+    select: { id: true, deleted_at: true },
+  })
+  if (!user || user.deleted_at) {
+    return NextResponse.json({ error: "NOT_FOUND", message: "Creator not found" }, { status: 404 })
+  }
+
+  // Detect provider from phone prefix
+  const normalized = phone.replace(/\s+/g, "").replace(/^\+256/, "0").replace(/^256/, "0")
+  const mtnPrefixes = ["077", "078", "039", "031"]
+  const airtelPrefixes = ["070", "075", "074"]
+  const prefix = normalized.slice(0, 3)
+  const provider = mtnPrefixes.includes(prefix)
+    ? "MTN_MOMO"
+    : airtelPrefixes.includes(prefix)
+      ? "AIRTEL_MONEY"
+      : null
+
+  if (!provider) {
+    return NextResponse.json(
+      { error: "UNSUPPORTED_NETWORK", message: "Phone number must be on MTN or Airtel Uganda" },
+      { status: 422 },
+    )
+  }
+
+  const idempotencyKey = randomUUID()
+
+  try {
+    await prisma.donation.create({
+      data: {
+        user_id: user.id,
+        donor_phone: normalized,
+        donor_name: donor_name ?? null,
+        amount,
+        currency: "UGX",
+        status: "PENDING",
+        provider: provider as "MTN_MOMO" | "AIRTEL_MONEY",
+        idempotency_key: idempotencyKey,
+        note: note ?? null,
+      },
+    })
+  } catch (err) {
+    console.error("Failed to create donation", { idempotencyKey, userId: user.id, error: err })
+    return NextResponse.json(
+      { error: "DONATION_FAILED", message: "Failed to initiate donation. Please try again." },
+      { status: 500 },
+    )
+  }
+
+  // TODO: trigger MoMo STK push here once MTN/Airtel API credentials are configured
+  // const momoClient = provider === "MTN_MOMO" ? mtnClient : airtelClient
+  // await momoClient.requestToPay({ amount, phone: normalized, referenceId: idempotencyKey })
+
+  return NextResponse.json({ data: { idempotency_key: idempotencyKey } }, { status: 202 })
+}

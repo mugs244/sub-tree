@@ -22,20 +22,23 @@ model User {
   username_claims   UsernameClaim[]
   profile           Profile?
   links             Link[]
+  donations         Donation[]
 
   @@index([clerk_user_id])
 }
 
 model Profile {
-  id         Int     @id @default(autoincrement())
-  user_id    Int     @unique
-  display_name String
-  bio        String?
-  avatar_url String?
-  created_at DateTime @default(now())
-  updated_at DateTime @updatedAt
+  id            Int     @id @default(autoincrement())
+  user_id       Int     @unique
+  display_name  String
+  bio           String?
+  avatar_url    String?
+  theme_preset  String  @default("default")
+  button_style  String  @default("rounded")
+  created_at    DateTime @default(now())
+  updated_at    DateTime @updatedAt
 
-  user       User    @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  user          User    @relation(fields: [user_id], references: [id], onDelete: Cascade)
 
   @@index([user_id])
 }
@@ -47,6 +50,7 @@ model Link {
   label      String
   is_enabled Boolean @default(true)
   position   Int     @default(0)
+  clicks     Int     @default(0)
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
 
@@ -97,4 +101,52 @@ enum ClaimStatus {
   PENDING
   APPROVED
   REJECTED
+}
+
+model Donation {
+  id              Int            @id @default(autoincrement())
+  user_id         Int
+  donor_phone     String
+  donor_name      String?
+  amount          Int
+  currency        String         @default("UGX")
+  status          DonationStatus @default(PENDING)
+  provider        MomoProvider
+  provider_tx_id  String?        @unique
+  idempotency_key String         @unique
+  note            String?
+  created_at      DateTime       @default(now())
+  updated_at      DateTime       @updatedAt
+
+  user            User           @relation(fields: [user_id], references: [id], onDelete: Restrict)
+  events          DonationEvent[]
+
+  @@index([user_id])
+  @@index([status])
+  @@index([user_id, status])
+}
+
+model DonationEvent {
+  id          Int      @id @default(autoincrement())
+  donation_id Int
+  event_type  String
+  payload     Json
+  created_at  DateTime @default(now())
+
+  donation    Donation @relation(fields: [donation_id], references: [id], onDelete: Restrict)
+
+  @@index([donation_id])
+}
+
+enum DonationStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+  REVERSED
+}
+
+enum MomoProvider {
+  MTN_MOMO
+  AIRTEL_MONEY
 }

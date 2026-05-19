@@ -4,11 +4,7 @@ Update this file after every meaningful implementation change. Treat it as the r
 
 ## Current Phase
 
-Phase 1: Authentication & Onboarding — Features 03, 04, and 05 shipped. Starting Feature 08 (Dashboard Shell & Navigation).
-
-## Current Goal
-
-Implement feature 08 (Dashboard Shell & Navigation): fixed left sidebar on desktop, bottom tab bar on mobile, routes for Home, Links, Donations (placeholder), Appearance, Settings.
+Phase 2 complete. Phase 3 donation skeleton shipped. Next: Feature 12 (Reserved Username Admin Queue) and Phase 3 MoMo API integration (blocked on MTN/Airtel credentials).
 
 ## Completed
 
@@ -28,19 +24,22 @@ Implement feature 08 (Dashboard Shell & Navigation): fixed left sidebar on deskt
 - **Feature 03 — Clerk Auth Integration shipped:** ClerkProvider, sign-in/sign-up pages, webhook handler (`/api/webhooks/clerk`), Prisma User model with `clerk_user_id`, `middleware.ts` protecting `/dashboard` and `/onboarding` routes. `prisma.config.ts` added for Prisma v7 migration support.
 - **Feature 04 — Username Claim & Onboarding shipped:** `ReservedUsername` + `UsernameClaim` Prisma models, migration applied, 56 reserved usernames seeded. `lib/validators/username.ts` (Zod), `lib/services/username.ts` (availability check + atomic claim), `GET /api/onboarding/check-username`, `POST /api/onboarding/claim-username`, `app/onboarding/username/page.tsx` (server guard + client `UsernameForm` with live debounced check), `db/seed.ts`.
 - **Feature 05 — Quick Profile & First Link Onboarding shipped:** `Profile` and `Link` Prisma models migrated (`20260519194941_feature_05_profile_link`). `lib/validators/profile.ts` + `lib/validators/link.ts` (Zod), `lib/services/profile.ts` (upsert profile) + `lib/services/link.ts` (append link at next position), `POST /api/onboarding/save-profile`, `POST /api/onboarding/add-link`, `app/onboarding/profile/page.tsx` (server guard + `ProfileForm` — display name required, bio + avatar URL optional), `app/onboarding/links/page.tsx` (server guard + `FirstLinkForm` with skip). Username claim now redirects to `/onboarding/profile` instead of `/dashboard`.
+- **Feature 08 — Dashboard Shell & Navigation shipped:** Root layout stripped (no Clerk header stub). `components/layouts/DashboardLayout.tsx` rebuilt as `"use client"` — 5-item fixed sidebar (desktop), 4-item bottom tab bar (mobile), `UserButton` + `@username` in sidebar footer. `app/(dashboard)/dashboard/layout.tsx` — auth guard + onboarding guard (username → profile → dashboard). All 5 dashboard tab pages scaffolded: Home (stat cards: links, donations, profile views), Links, Donations, Appearance, Settings.
+- **Feature 09 — Links Manager shipped:** `lib/validators/link.ts` extended with `updateLinkSchema` + `reorderLinkSchema`. `lib/services/link.ts` full CRUD: `listLinks`, `addLink`, `updateLink`, `deleteLink` (transaction: delete + decrement positions), `reorderLink` (position swap), `recordLinkClick` (P2025-safe). API routes: `GET/POST /api/links`, `PATCH/DELETE /api/links/[id]`, `POST /api/links/[id]/reorder`, `POST /api/links/[id]/click`. `LinkCard` component: inline edit, toggle switch, up/down reorder, delete-with-confirm. `LinksManager` component: optimistic state updates for toggle/delete/reorder, re-fetches from API after add.
+- **Feature 10 — Public Profile Page shipped:** `app/[username]/page.tsx` — server component with `generateMetadata`, `TrackedLink` click tracking for links, plain `<a>` for donate CTA. `components/TrackedLink.tsx` — fire-and-forget click tracking. `app/[username]/donate/page.tsx` — donation entry point. `app/api/links/[id]/click/route.ts` — unauthenticated POST, returns 204.
+- **Feature 11 — Appearance shipped:** `components/AppearanceForm.tsx` — 5 theme presets with colour swatches, 3 button styles. `app/api/profile/appearance/route.ts` — POST, auth-guarded (added to `middleware.ts` protected routes). `app/(dashboard)/dashboard/appearance/page.tsx` — server component fetching profile theme/button state. Schema migration `20260519202414_feature_phase2_phase3_schema` adds `theme_preset` + `button_style` to `Profile`, `clicks` to `Link`, and full `Donation` + `DonationEvent` models with `DonationStatus` + `MomoProvider` enums.
+- **Phase 3 Donation Skeleton shipped:** `components/DonateForm.tsx` — amount presets + custom, phone, donor name, note, pending state after submit. `app/api/payments/initiate/route.ts` — validates input, detects MTN vs Airtel from Uganda phone prefixes (077/078/039/031 = MTN, 070/075/074 = Airtel), creates `Donation` DB record, returns 202 with `idempotency_key`. TODO comment in place for MoMo STK push once API credentials are configured.
 
 ## In Progress
 
-- Feature 08: Dashboard shell and navigation.
+Nothing — all Phase 2 and Phase 3 skeleton features are shipped.
 
 ## Next Up
 
-1. Build `app/(dashboard)/layout.tsx` — fixed sidebar on desktop, bottom tab bar on mobile.
-2. Build `app/(dashboard)/page.tsx` — Home tab placeholder.
-3. Build `app/(dashboard)/links/page.tsx` — Links tab placeholder.
-4. Build `app/(dashboard)/donations/page.tsx` — Donations tab placeholder.
-5. Build `app/(dashboard)/appearance/page.tsx` — Appearance tab placeholder.
-6. Build `app/(dashboard)/settings/page.tsx` — Settings tab placeholder.
+1. **Feature 12** — Reserved Username Admin Queue: admin page to review/approve/reject `UsernameClaim` records for reserved names.
+2. **Phase 3 MoMo API** — MTN MoMo Collections + Airtel Money Collections integration (blocked: merchant applications in progress; estimated 2–6 weeks for production access).
+3. **SMS notifications** — Africa's Talking: notify creator on each successful donation.
+4. **Webhook for MoMo callbacks** — `POST /api/webhooks/momo` to handle payment confirmation and update `Donation.status` + create `DonationEvent`.
 
 ## Open Questions
 
