@@ -30,7 +30,18 @@ export default function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
-        <ClerkProvider>
+        <ClerkProvider
+          appearance={{
+            variables: {
+              colorPrimary: "var(--accent-primary)",
+              colorBackground: "var(--bg-base)",
+              colorText: "var(--text-primary)",
+              colorInputBackground: "var(--bg-raised)",
+              borderRadius: "0.5rem",
+              fontFamily: "var(--font-geist-sans)",
+            },
+          }}
+        >
           <header>
             <Show when="signed-out">
               <SignInButton />
