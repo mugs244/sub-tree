@@ -4,11 +4,11 @@ Update this file after every meaningful implementation change. Treat it as the r
 
 ## Current Phase
 
-Phase 1: Authentication & Onboarding — Features 03 and 04 shipped. Starting Feature 05 (Quick Profile & First Link).
+Phase 1: Authentication & Onboarding — Features 03, 04, and 05 shipped. Starting Feature 08 (Dashboard Shell & Navigation).
 
 ## Current Goal
 
-Implement feature 05 (Quick Profile & First Link Onboarding): display name, avatar, bio screens after username claim; then prompt for first link. Redirect to `/dashboard` on completion. Requires adding `Profile` and `Link` models to schema.
+Implement feature 08 (Dashboard Shell & Navigation): fixed left sidebar on desktop, bottom tab bar on mobile, routes for Home, Links, Donations (placeholder), Appearance, Settings.
 
 ## Completed
 
@@ -27,18 +27,20 @@ Implement feature 05 (Quick Profile & First Link Onboarding): display name, avat
 - **Next.js 16 (App Router) + TypeScript + Tailwind CSS v4 project scaffolded.**
 - **Feature 03 — Clerk Auth Integration shipped:** ClerkProvider, sign-in/sign-up pages, webhook handler (`/api/webhooks/clerk`), Prisma User model with `clerk_user_id`, `middleware.ts` protecting `/dashboard` and `/onboarding` routes. `prisma.config.ts` added for Prisma v7 migration support.
 - **Feature 04 — Username Claim & Onboarding shipped:** `ReservedUsername` + `UsernameClaim` Prisma models, migration applied, 56 reserved usernames seeded. `lib/validators/username.ts` (Zod), `lib/services/username.ts` (availability check + atomic claim), `GET /api/onboarding/check-username`, `POST /api/onboarding/claim-username`, `app/onboarding/username/page.tsx` (server guard + client `UsernameForm` with live debounced check), `db/seed.ts`.
+- **Feature 05 — Quick Profile & First Link Onboarding shipped:** `Profile` and `Link` Prisma models migrated (`20260519194941_feature_05_profile_link`). `lib/validators/profile.ts` + `lib/validators/link.ts` (Zod), `lib/services/profile.ts` (upsert profile) + `lib/services/link.ts` (append link at next position), `POST /api/onboarding/save-profile`, `POST /api/onboarding/add-link`, `app/onboarding/profile/page.tsx` (server guard + `ProfileForm` — display name required, bio + avatar URL optional), `app/onboarding/links/page.tsx` (server guard + `FirstLinkForm` with skip). Username claim now redirects to `/onboarding/profile` instead of `/dashboard`.
 
 ## In Progress
 
-- Feature 05: Quick profile + first link onboarding screens.
+- Feature 08: Dashboard shell and navigation.
 
 ## Next Up
 
-1. Add `Profile` and `Link` models to Prisma schema.
-2. Run migration.
-3. Build `app/onboarding/profile/page.tsx` — display name, avatar (optional), bio (optional).
-4. Build `app/onboarding/links/page.tsx` — first link URL + label.
-5. Redirect to `/dashboard` on completion.
+1. Build `app/(dashboard)/layout.tsx` — fixed sidebar on desktop, bottom tab bar on mobile.
+2. Build `app/(dashboard)/page.tsx` — Home tab placeholder.
+3. Build `app/(dashboard)/links/page.tsx` — Links tab placeholder.
+4. Build `app/(dashboard)/donations/page.tsx` — Donations tab placeholder.
+5. Build `app/(dashboard)/appearance/page.tsx` — Appearance tab placeholder.
+6. Build `app/(dashboard)/settings/page.tsx` — Settings tab placeholder.
 
 ## Open Questions
 

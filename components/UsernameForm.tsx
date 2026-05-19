@@ -81,7 +81,7 @@ export function UsernameForm() {
         return
       }
 
-      router.push("/dashboard")
+      router.push("/onboarding/profile")
     } catch {
       setCheck({ state: "error" })
     } finally {
