@@ -44,8 +44,8 @@ When a new feature is proposed, it gets a number and a row in this table. When a
 | --- | ------------------------------------ | ----------- | -------- | ---------------- | ------------------------------------------------- |
 | 01  | Design System Setup                  | Proposed    | Phase 0  | —                | `docs/features/01-design-system.md`               |
 | 02  | Database Schema & Prisma Setup       | Proposed    | Phase 0  | —                | `docs/features/02-database-schema.md`             |
-| 03  | Clerk Auth Integration               | Proposed    | Phase 1  | 01, 02           | `docs/features/03-clerk-auth.md`                 |
-| 04  | Username Claim & Onboarding          | Proposed    | Phase 1  | 03               | `docs/features/04-username-onboarding.md`         |
+| 03  | Clerk Auth Integration               | Shipped     | Phase 1  | 01, 02           | `docs/features/03-clerk-auth.md`                 |
+| 04  | Username Claim & Onboarding          | Shipped     | Phase 1  | 03               | `docs/features/04-username-onboarding.md`         |
 | 05  | Quick Profile & First Link Onboarding | Proposed   | Phase 1  | 03               | `docs/features/05-onboarding-profile.md`          |
 | 06  | Login & Sessions                     | Superseded  | —        | by 03            | (merged into 03-clerk-auth.md)                   |
 | 07  | Password Reset                       | Superseded  | —        | by 03            | (handled by Clerk, no separate file)              |

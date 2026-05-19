@@ -2,13 +2,13 @@ import { NextResponse } from "next/server"
 import { Webhook } from "svix"
 import { handleClerkUserCreated, handleClerkUserDeleted, handleClerkUserUpdated } from "@/lib/services/clerk"
 
-export async function POST(req: Request) {
-  const webhookSecret = process.env.CLERK_WEBHOOK_SECRET
-  if (!webhookSecret) {
-    return new NextResponse("CLERK_WEBHOOK_SECRET must be set for Clerk webhook verification", { status: 500 })
-  }
+const WEBHOOK_SECRET = process.env.CLERK_WEBHOOK_SECRET
+if (!WEBHOOK_SECRET) {
+  throw new Error("CLERK_WEBHOOK_SECRET must be set for Clerk webhook verification")
+}
 
-  const webhook = new Webhook(webhookSecret)
+export async function POST(req: Request) {
+  const webhook = new Webhook(WEBHOOK_SECRET)
   const signature = req.headers.get("Clerk-Signature") ?? req.headers.get("clerk-signature")
   if (!signature) {
     return new NextResponse("Missing Clerk signature header", { status: 400 })

@@ -4,11 +4,11 @@ Update this file after every meaningful implementation change. Treat it as the r
 
 ## Current Phase
 
-Phase 0: Foundations — Design System Setup (feature 01) underway.
+Phase 1: Authentication & Onboarding — Features 03 and 04 shipped. Starting Feature 05 (Quick Profile & First Link).
 
 ## Current Goal
 
-Implement feature 01 (Design System Setup): full token set in globals.css, Tailwind v4 theme mapping, shadcn/ui initialized with project tokens, Logo component, AuthLayout and DashboardLayout shells, and /dev/design-system smoke-test route.
+Implement feature 05 (Quick Profile & First Link Onboarding): display name, avatar, bio screens after username claim; then prompt for first link. Redirect to `/dashboard` on completion. Requires adding `Profile` and `Link` models to schema.
 
 ## Completed
 
@@ -24,21 +24,21 @@ Implement feature 01 (Design System Setup): full token set in globals.css, Tailw
   - SMS provider: Africa's Talking.
   - Mobile money: MTN MoMo Collections + Airtel Money Collections, direct-to-creator settlement (platform fee split at API level).
   - Account types: individual (default), business/NGO (KYB upgrade later, not at signup).
-- **Next.js 16 (App Router) + TypeScript + Tailwind CSS v4 project scaffolded.** (Note: project was initialized as Next.js 16, not v14 as originally planned. App Router conventions are the same; Tailwind CSS v4 uses CSS-based config with no tailwind.config.ts — all theme extensions go in globals.css via @theme inline.)
+- **Next.js 16 (App Router) + TypeScript + Tailwind CSS v4 project scaffolded.**
+- **Feature 03 — Clerk Auth Integration shipped:** ClerkProvider, sign-in/sign-up pages, webhook handler (`/api/webhooks/clerk`), Prisma User model with `clerk_user_id`, `middleware.ts` protecting `/dashboard` and `/onboarding` routes. `prisma.config.ts` added for Prisma v7 migration support.
+- **Feature 04 — Username Claim & Onboarding shipped:** `ReservedUsername` + `UsernameClaim` Prisma models, migration applied, 56 reserved usernames seeded. `lib/validators/username.ts` (Zod), `lib/services/username.ts` (availability check + atomic claim), `GET /api/onboarding/check-username`, `POST /api/onboarding/claim-username`, `app/onboarding/username/page.tsx` (server guard + client `UsernameForm` with live debounced check), `db/seed.ts`.
 
 ## In Progress
 
-- Setting up Clerk integration (replaces the original custom auth plan).
+- Feature 05: Quick profile + first link onboarding screens.
 
 ## Next Up
 
-1. Verify Clerk packages are installed and Liveblocks/Trigger.dev are removed.
-2. Confirm `.env.local` has Clerk keys.
-3. Update Prisma schema to use `clerk_user_id`, drop password fields.
-4. Build webhook handler at `/api/webhooks/clerk`.
-5. Add middleware and `/sign-up` + `/sign-in` pages.
-6. Test: sign up → user row created in DB → land at `/onboarding/username` placeholder.
-7. Build Feature 04 (Username claim) on top.
+1. Add `Profile` and `Link` models to Prisma schema.
+2. Run migration.
+3. Build `app/onboarding/profile/page.tsx` — display name, avatar (optional), bio (optional).
+4. Build `app/onboarding/links/page.tsx` — first link URL + label.
+5. Redirect to `/dashboard` on completion.
 
 ## Open Questions
 

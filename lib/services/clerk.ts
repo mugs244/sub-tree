@@ -22,19 +22,20 @@ function getSinglePhone(payload: any): string | null {
 
 function getVerifiedAt(payload: any): Date | null {
   if (!payload) return null
-  if (payload.email_verified === true) {
-    return new Date()
+
+  if (payload.email_verified_at) {
+    return new Date(payload.email_verified_at)
   }
 
   const firstEmail = Array.isArray(payload.email_addresses) ? payload.email_addresses[0] : undefined
-  if (firstEmail?.verification?.status === "verified") {
-    return new Date()
+  if (firstEmail?.verification?.status === "verified" && firstEmail?.verification?.verified_at) {
+    return new Date(firstEmail.verification.verified_at)
   }
 
   return null
 }
 
-export async function handleClerkUserCreated(payload: any) {
+async function handleClerkUserUpsert(payload: any) {
   const clerkUserId = payload.id
   if (typeof clerkUserId !== "string") {
     throw new Error("Invalid Clerk user payload: missing id")
@@ -56,26 +57,12 @@ export async function handleClerkUserCreated(payload: any) {
   })
 }
 
-export async function handleClerkUserUpdated(payload: any) {
-  const clerkUserId = payload.id
-  if (typeof clerkUserId !== "string") {
-    throw new Error("Invalid Clerk user payload: missing id")
-  }
+export async function handleClerkUserCreated(payload: any) {
+  await handleClerkUserUpsert(payload)
+}
 
-  await prisma.user.upsert({
-    where: { clerk_user_id: clerkUserId },
-    create: {
-      clerk_user_id: clerkUserId,
-      phone: getSinglePhone(payload),
-      email: getSingleEmail(payload),
-      email_verified_at: getVerifiedAt(payload),
-    },
-    update: {
-      phone: getSinglePhone(payload),
-      email: getSingleEmail(payload),
-      email_verified_at: getVerifiedAt(payload),
-    },
-  })
+export async function handleClerkUserUpdated(payload: any) {
+  await handleClerkUserUpsert(payload)
 }
 
 export async function handleClerkUserDeleted(payload: any) {
