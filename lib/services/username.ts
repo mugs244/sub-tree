@@ -1,3 +1,4 @@
+import { Prisma } from "@prisma/client"
 import { prisma } from "@/lib/db"
 import { usernameSchema } from "@/lib/validators/username"
 
@@ -31,27 +32,39 @@ export async function claimUsername(clerkUserId: string, username: string): Prom
     throw new UsernameError("INVALID_USERNAME", parseResult.error.issues[0]?.message ?? "Invalid username")
   }
 
-  await prisma.$transaction(async (tx) => {
-    const user = await tx.user.findUnique({
-      where: { clerk_user_id: clerkUserId },
-      select: { id: true, username: true },
+  try {
+    await prisma.$transaction(async (tx) => {
+      const user = await tx.user.findUnique({
+        where: { clerk_user_id: clerkUserId },
+        select: { id: true, username: true },
+      })
+      if (!user) throw new UsernameError("USER_NOT_FOUND", "User record not found")
+      if (user.username) throw new UsernameError("ALREADY_HAS_USERNAME", "User already has a username")
+
+      const [taken, reserved] = await Promise.all([
+        tx.user.findUnique({ where: { username }, select: { id: true } }),
+        tx.reservedUsername.findUnique({ where: { username }, select: { id: true } }),
+      ])
+
+      if (taken) throw new UsernameError("USERNAME_TAKEN", `@${username} is already taken`)
+      if (reserved) throw new UsernameError("USERNAME_RESERVED", `@${username} is a reserved username`)
+
+      await tx.user.update({
+        where: { id: user.id },
+        data: { username },
+      })
     })
-    if (!user) throw new UsernameError("USER_NOT_FOUND", "User record not found")
-    if (user.username) throw new UsernameError("ALREADY_HAS_USERNAME", "User already has a username")
-
-    const [taken, reserved] = await Promise.all([
-      tx.user.findUnique({ where: { username }, select: { id: true } }),
-      tx.reservedUsername.findUnique({ where: { username }, select: { id: true } }),
-    ])
-
-    if (taken) throw new UsernameError("USERNAME_TAKEN", `@${username} is already taken`)
-    if (reserved) throw new UsernameError("USERNAME_RESERVED", `@${username} is a reserved username`)
-
-    await tx.user.update({
-      where: { id: user.id },
-      data: { username },
-    })
-  })
+  } catch (err) {
+    if (err instanceof UsernameError) throw err
+    if (
+      err instanceof Prisma.PrismaClientKnownRequestError &&
+      err.code === "P2002" &&
+      (err.meta?.target as string[] | undefined)?.includes("username")
+    ) {
+      throw new UsernameError("USERNAME_TAKEN", `@${username} is already taken`)
+    }
+    throw err
+  }
 }
 
 export class UsernameError extends Error {

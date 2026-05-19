@@ -24,12 +24,14 @@ function getVerifiedAt(payload: any): Date | null {
   if (!payload) return null
 
   if (payload.email_verified_at) {
-    return new Date(payload.email_verified_at)
+    const ts = Date.parse(payload.email_verified_at)
+    if (Number.isFinite(ts)) return new Date(ts)
   }
 
   const firstEmail = Array.isArray(payload.email_addresses) ? payload.email_addresses[0] : undefined
   if (firstEmail?.verification?.status === "verified" && firstEmail?.verification?.verified_at) {
-    return new Date(firstEmail.verification.verified_at)
+    const ts = Date.parse(firstEmail.verification.verified_at)
+    if (Number.isFinite(ts)) return new Date(ts)
   }
 
   return null

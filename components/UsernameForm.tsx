@@ -23,9 +23,11 @@ export function UsernameForm() {
   const [check, setCheck] = useState<CheckState>({ state: "idle" })
   const [submitting, setSubmitting] = useState(false)
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const abortRef = useRef<AbortController | null>(null)
 
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current)
+    if (abortRef.current) abortRef.current.abort()
 
     const trimmed = username.trim()
     if (!trimmed) {
@@ -35,21 +37,27 @@ export function UsernameForm() {
 
     setCheck({ state: "checking" })
     debounceRef.current = setTimeout(async () => {
+      const controller = new AbortController()
+      abortRef.current = controller
       try {
-        const res = await fetch(`/api/onboarding/check-username?username=${encodeURIComponent(trimmed)}`)
+        const res = await fetch(`/api/onboarding/check-username?username=${encodeURIComponent(trimmed)}`, {
+          signal: controller.signal,
+        })
         const data = (await res.json()) as UsernameAvailability
         if (data.status === "invalid") {
           setCheck({ state: "invalid", reason: data.reason })
         } else {
           setCheck({ state: data.status })
         }
-      } catch {
+      } catch (err) {
+        if (err instanceof DOMException && err.name === "AbortError") return
         setCheck({ state: "error" })
       }
     }, 350)
 
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current)
+      if (abortRef.current) abortRef.current.abort()
     }
   }, [username])
 

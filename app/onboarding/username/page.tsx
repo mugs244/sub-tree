@@ -3,14 +3,25 @@ import { auth } from "@clerk/nextjs/server"
 import { prisma } from "@/lib/db"
 import { UsernameForm } from "@/components/UsernameForm"
 
+async function waitForUserRecord(clerkUserId: string) {
+  const MAX_ATTEMPTS = 10
+  const DELAY_MS = 300
+  for (let i = 0; i < MAX_ATTEMPTS; i++) {
+    const user = await prisma.user.findUnique({
+      where: { clerk_user_id: clerkUserId },
+      select: { username: true },
+    })
+    if (user !== null) return user
+    if (i < MAX_ATTEMPTS - 1) await new Promise((r) => setTimeout(r, DELAY_MS))
+  }
+  return null
+}
+
 export default async function UsernameOnboardingPage() {
   const { userId } = await auth()
   if (!userId) redirect("/sign-in")
 
-  const user = await prisma.user.findUnique({
-    where: { clerk_user_id: userId },
-    select: { username: true },
-  })
+  const user = await waitForUserRecord(userId)
 
   if (user?.username) redirect("/dashboard")
 
