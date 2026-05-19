@@ -9,7 +9,7 @@ async function waitForUserRecord(clerkUserId: string) {
   for (let i = 0; i < MAX_ATTEMPTS; i++) {
     const user = await prisma.user.findUnique({
       where: { clerk_user_id: clerkUserId },
-      select: { username: true },
+      select: { username: true, profile: { select: { id: true } } },
     })
     if (user !== null) return user
     if (i < MAX_ATTEMPTS - 1) await new Promise((r) => setTimeout(r, DELAY_MS))
@@ -23,7 +23,10 @@ export default async function UsernameOnboardingPage() {
 
   const user = await waitForUserRecord(userId)
 
-  if (user?.username) redirect("/dashboard")
+  if (user?.username) {
+    if (!user.profile) redirect("/onboarding/profile")
+    redirect("/dashboard")
+  }
 
   return (
     <main className="min-h-screen flex items-center justify-center px-6 py-12 md:py-16">
