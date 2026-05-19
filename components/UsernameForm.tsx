@@ -22,6 +22,8 @@ export function UsernameForm() {
   const [username, setUsername] = useState("")
   const [check, setCheck] = useState<CheckState>({ state: "idle" })
   const [submitting, setSubmitting] = useState(false)
+  const [requestingReserved, setRequestingReserved] = useState(false)
+  const [reservedRequested, setReservedRequested] = useState<string | null>(null)
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const abortRef = useRef<AbortController | null>(null)
 
@@ -91,6 +93,24 @@ export function UsernameForm() {
 
   const canSubmit = check.state === "available" && !submitting
 
+  async function handleRequestReserved() {
+    setRequestingReserved(true)
+    try {
+      const res = await fetch("/api/onboarding/request-reserved-username", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username: username.trim() }),
+      })
+      if (res.ok || res.status === 202) {
+        setReservedRequested(username.trim())
+      }
+    } catch {
+      // silently ignore — request can be retried
+    } finally {
+      setRequestingReserved(false)
+    }
+  }
+
   return (
     <form onSubmit={handleSubmit} className="space-y-5">
       <div className="space-y-1.5">
@@ -126,6 +146,25 @@ export function UsernameForm() {
         <div className="min-h-[18px]">
           <StatusMessage state={check} username={username.trim()} />
         </div>
+
+        {check.state === "reserved" && (
+          <div className="text-xs pt-0.5">
+            {reservedRequested === username.trim() ? (
+              <p className="text-[color:var(--state-success)]">
+                Request submitted — we&apos;ll review it within 48 hours.
+              </p>
+            ) : (
+              <button
+                type="button"
+                onClick={handleRequestReserved}
+                disabled={requestingReserved}
+                className="text-foreground underline underline-offset-2 hover:no-underline transition-all duration-150 disabled:opacity-50"
+              >
+                {requestingReserved ? "Submitting…" : "Request this username →"}
+              </button>
+            )}
+          </div>
+        )}
       </div>
 
       {username && check.state !== "idle" && check.state !== "checking" && (

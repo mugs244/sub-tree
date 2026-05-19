@@ -67,6 +67,32 @@ export async function claimUsername(clerkUserId: string, username: string): Prom
   }
 }
 
+export async function requestReservedUsername(clerkUserId: string, username: string): Promise<void> {
+  const parseResult = usernameSchema.safeParse(username)
+  if (!parseResult.success) {
+    throw new UsernameError("INVALID_USERNAME", parseResult.error.issues[0]?.message ?? "Invalid username")
+  }
+
+  const user = await prisma.user.findUnique({
+    where: { clerk_user_id: clerkUserId },
+    select: { id: true },
+  })
+  if (!user) throw new UsernameError("USER_NOT_FOUND", "User record not found")
+
+  const reserved = await prisma.reservedUsername.findUnique({ where: { username }, select: { id: true } })
+  if (!reserved) throw new UsernameError("USERNAME_TAKEN", `@${username} is not a reserved username`)
+
+  const existing = await prisma.usernameClaim.findFirst({
+    where: { user_id: user.id, username, status: "PENDING" },
+    select: { id: true },
+  })
+  if (existing) return // idempotent
+
+  await prisma.usernameClaim.create({
+    data: { user_id: user.id, username, status: "PENDING" },
+  })
+}
+
 export class UsernameError extends Error {
   constructor(
     public readonly code:

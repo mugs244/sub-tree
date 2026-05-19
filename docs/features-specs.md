@@ -53,7 +53,7 @@ When a new feature is proposed, it gets a number and a row in this table. When a
 | 09  | Links Manager (CRUD + Reorder)       | Proposed    | Phase 2  | 02, 08           | `docs/features/09-links-manager.md`               |
 | 10  | Public Profile Page                  | Proposed    | Phase 2  | 02, 09           | `docs/features/10-public-profile.md`              |
 | 11  | Appearance & Theme Selection (Free Tier) | Proposed | Phase 2  | 08, 10           | `docs/features/11-appearance-free.md`             |
-| 12  | Reserved Username Admin Queue        | Proposed    | Phase 2  | 02, 03           | `docs/features/12-reserved-username-admin.md`     |
+| 12  | Reserved Username Admin Queue        | Shipped     | Phase 2  | 02, 03           | `docs/features/12-reserved-username-admin.md`     |
 | 13  | MTN MoMo Collections Integration     | Proposed    | Phase 3  | 02               | `docs/features/13-mtn-momo-integration.md`        |
 | 14  | Airtel Money Collections Integration | Proposed    | Phase 3  | 02               | `docs/features/14-airtel-money-integration.md`    |
 | 15  | Donation Page & STK Push Flow        | Proposed    | Phase 3  | 10, 13, 14       | `docs/features/15-donation-flow.md`               |
