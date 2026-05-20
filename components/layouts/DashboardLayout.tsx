@@ -24,6 +24,7 @@ const mobileNav: NavItem[] = [
   { label: "Home", href: "/dashboard", icon: Home },
   { label: "Links", href: "/dashboard/links", icon: Link2 },
   { label: "Donations", href: "/dashboard/donations", icon: Heart },
+  { label: "Appearance", href: "/dashboard/appearance", icon: Palette },
   { label: "Settings", href: "/dashboard/settings", icon: Settings },
 ]
 
@@ -103,7 +104,7 @@ export function DashboardLayout({ children, username }: DashboardLayoutProps) {
 
       {/* ── Mobile bottom tab bar ─────────────────────────── */}
       <nav
-        className="md:hidden fixed bottom-0 left-0 right-0 h-16 border-t border-border bg-background grid grid-cols-4 z-20"
+        className="md:hidden fixed bottom-0 left-0 right-0 h-16 border-t border-border bg-background grid grid-cols-5 z-20"
         aria-label="Mobile navigation"
       >
         {mobileNav.map(({ label, href, icon: Icon }) => {
