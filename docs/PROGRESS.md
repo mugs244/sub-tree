@@ -4,7 +4,7 @@ Update this file after every meaningful implementation change. Treat it as the r
 
 ## Current Phase
 
-Phase 2 complete. Phase 3 donation skeleton shipped. Next: Feature 12 (Reserved Username Admin Queue) and Phase 3 MoMo API integration (blocked on MTN/Airtel credentials).
+Phase 2 complete. Phase 3 donation skeleton + MoMo abstraction layer shipped. Next: Feature 16 (MoMo webhook handler) and Feature 17 (Africa's Talking SMS — blocked on API key).
 
 ## Completed
 
@@ -30,17 +30,24 @@ Phase 2 complete. Phase 3 donation skeleton shipped. Next: Feature 12 (Reserved 
 - **Feature 11 — Appearance shipped:** `components/AppearanceForm.tsx` — 5 theme presets with colour swatches, 3 button styles. `app/api/profile/appearance/route.ts` — POST, auth-guarded (added to `middleware.ts` protected routes). `app/(dashboard)/dashboard/appearance/page.tsx` — server component fetching profile theme/button state. Schema migration `20260519202414_feature_phase2_phase3_schema` adds `theme_preset` + `button_style` to `Profile`, `clicks` to `Link`, and full `Donation` + `DonationEvent` models with `DonationStatus` + `MomoProvider` enums.
 - **Feature 12 — Reserved Username Admin Queue shipped:** `lib/services/username.ts` extended with `requestReservedUsername` (idempotent — creates `UsernameClaim` record). `UsernameForm` updated: when a username is reserved, shows "Request this username →" link; after submission shows "Request submitted — we'll review it within 48 hours." `POST /api/onboarding/request-reserved-username`. Admin service `lib/services/admin.ts`: `isAdmin` (env var `ADMIN_CLERK_USER_IDS`), `listClaims`, `approveClaim` (transaction: set User.username + delete ReservedUsername + mark APPROVED), `rejectClaim`. Admin routes `GET /api/admin/claims` + `POST /api/admin/claims/[id]` (approve/reject). Admin page at `app/admin/claims/page.tsx` + `AdminClaimsTable` client component (approve button, reject with inline reason input). `/admin/(.*)` and `/api/admin/(.*)` added to middleware protected routes.
 - **Phase 3 Donation Skeleton shipped:** `components/DonateForm.tsx` — amount presets + custom, phone, donor name, note, pending state after submit. `app/api/payments/initiate/route.ts` — validates input, detects MTN vs Airtel from Uganda phone prefixes (077/078/039/031 = MTN, 070/075/074 = Airtel), creates `Donation` DB record, returns 202 with `idempotency_key`. TODO comment in place for MoMo STK push once API credentials are configured.
+- **Feature 18 — CSV Donation Export shipped:** `components/DonationExportButton.tsx` — client-side CSV generation and blob download. `app/api/donations/export/route.ts` — GET all donations for the authenticated user. Button added to Donations dashboard header.
+- **Feature 19 — Page View Analytics shipped:** `view_count Int @default(0)` added to `Profile` model. Migration `20260520174326_feature_19_view_count` applied. `components/PageViewTracker.tsx` — fires POST on mount (fire-and-forget). `app/api/views/[username]/route.ts` — unauthenticated, increments `view_count` via `updateMany`. Dashboard Home stat card now shows live view count.
+- **Feature 21 — Rate Limiting on Donation Initiation shipped:** `lib/rateLimit.ts` — in-memory sliding window rate limiter (Map-based, single-instance safe). Limits donation attempts to 3 per phone per 10 minutes. Returns 429 with `Retry-After` header. Documented: replace with Upstash Redis for multi-instance deployment.
+- **Feature 22 — OG Image Generation shipped:** `app/[username]/opengraph-image.tsx` — file-based Next.js OG image. Renders avatar, display name, @username, bio (truncated to 120 chars). Uses `ImageResponse` from `next/og`, `runtime = "nodejs"`, 1200×630px.
+- **Feature 23 — Account Deletion shipped:** `components/DeleteAccountButton.tsx` — two-step inline confirmation. `app/api/account/delete/route.ts` — soft-deletes in Postgres (sets `deleted_at`, clears `username`) then hard-deletes from Clerk. Donation records retained.
+- **Feature 13/14 — MoMo Service Abstraction Layer shipped:** `lib/services/momo/types.ts` — `MomoProvider` interface + shared types. `lib/services/momo/mtn.ts` — full MTN MoMo Collections client (OAuth2 Basic auth, `requestToPay`, HMAC-SHA256 `verifyCallback`). `lib/services/momo/airtel.ts` — full Airtel Money Collections client (client_credentials OAuth2, `requestToPay`, HMAC-SHA256 `verifyCallback`). Both clients wired to env vars; `requestToPay` call in `initiate/route.ts` is still behind a TODO comment pending credentials.
+- **Theme presets on public profile page:** CSS custom properties injected as inline `style` on `<main>` cascade through Tailwind `var()` chain — all children inherit the theme without client JS. `THEME_VARS` map covers default, warm, cool, forest, midnight.
+- **Profile edit in Settings:** `components/EditProfileForm.tsx` — reuses `/api/onboarding/save-profile`, shows "Saved!" state in-place (no redirect). Added to `app/(dashboard)/dashboard/settings/page.tsx` which also shows account info rows, `UserButton` for Clerk account management, and the danger zone.
 
 ## In Progress
 
-Nothing — all Phase 2 features are shipped.
+Nothing.
 
 ## Next Up
 
-1. **Phase 3 MoMo API** — MTN MoMo Collections + Airtel Money Collections integration (blocked: merchant applications in progress; estimated 2–6 weeks for production access).
-2. **Phase 3 MoMo API** — MTN MoMo Collections + Airtel Money Collections integration (blocked: merchant applications in progress; estimated 2–6 weeks for production access).
-3. **SMS notifications** — Africa's Talking: notify creator on each successful donation.
-4. **Webhook for MoMo callbacks** — `POST /api/webhooks/momo` to handle payment confirmation and update `Donation.status` + create `DonationEvent`.
+1. **Feature 16 — MoMo Webhook Handler** — `POST /api/webhooks/momo/mtn` and `POST /api/webhooks/momo/airtel`: verify HMAC signature via `verifyCallback`, update `Donation.status`, create `DonationEvent` record.
+2. **Feature 17 — SMS Notifications** — Africa's Talking: notify creator on successful donation (blocked: Africa's Talking API key not yet configured).
+3. **Wire MoMo STK push** — once MTN/Airtel sandbox credentials are available, remove the TODO comment in `app/api/payments/initiate/route.ts` and call `mtnMomo.requestToPay` / `airtelMoney.requestToPay`.
 
 ## Open Questions
 
@@ -61,7 +68,7 @@ Nothing — all Phase 2 features are shipped.
 - **Postgres via Prisma over raw SQL / Drizzle.** Prisma's schema-first model and migration tooling are friendlier for solo dev velocity. Drizzle is faster at runtime but adds complexity we don't need yet. Easy to migrate later if needed.
 - **Redis for OTP storage, not Postgres.** OTPs auto-expire via Redis TTL — no cleanup cron, no stale rows. Also faster for rate-limiting counters by IP and by phone.
 - **Clerk handles password storage and reset.** Password hashing, verification, and account recovery are managed by Clerk. Our app stores `clerk_user_id` and product state, not local password hashes.
-- **Africa's Talking over Twilio for SMS.** Cheaper in EA (~UGX 32/SMS vs Twilio's ~UGX 100+), better Uganda delivery rates, sender ID branding available through their UCC application process. Build a `SmsProvider` interface to keep Twilio as a future fallback for cross-border.
+- **Africa's Talking over Twilio for SMS.** Cheaper in EA (~UGX 32/SMS vs Twilio's ~UGX 100+), better Uganda delivery rates, sender ID branding available through their UCC application process. Build a `SmsProvider` interface to keep Twilio as a future fallback for cross-border. `africastalking@0.7.9` installed (Phase 1, anticipatory). Known: transitive `axios`/`lodash` audit warnings — acceptable risk until Feature 17 is wired; consider replacing with a direct `fetch` implementation in `lib/sms.ts` to avoid the axios dependency entirely.
 - **Clerk over custom auth.** Decided 2026-05-18. Original plan was custom phone-OTP auth via Africa's Talking with argon2id passwords and server sessions. Switched to Clerk to save 2-3 weeks. Trade-offs accepted: vendor dependency, per-MAU cost above 10k users, Twilio (not Africa's Talking) under the hood for auth SMS. Africa's Talking remains for donation notification SMS only.
 - **Direct-to-creator MoMo settlement.** Funds land in creator's registered MoMo number; platform fee split off via API. Avoids holding customer funds (which triggers BoU payment aggregator licensing). Trade-off: requires creators to be KYC-verified by MTN/Airtel before they can receive — design assumes that.
 - **Mobile-first, responsive web only (no native apps at MVP).** Most users will visit via shared links on mobile browsers; building two native apps doubles cost for marginal early benefit. PWA install banner can come in Phase 2.

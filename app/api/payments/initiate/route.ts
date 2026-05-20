@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import { z } from "zod"
 import { prisma } from "@/lib/db"
 import { randomUUID } from "crypto"
+import { checkRateLimit } from "@/lib/rateLimit"
 
 const initiateSchema = z.object({
   username: z.string().min(1),
@@ -52,6 +53,16 @@ export async function POST(req: Request): Promise<NextResponse> {
     return NextResponse.json(
       { error: "UNSUPPORTED_NETWORK", message: "Phone number must be on MTN or Airtel Uganda" },
       { status: 422 },
+    )
+  }
+
+  // 3 donation attempts per phone number per 10 minutes
+  const rl = checkRateLimit(`donate:${normalized}`, { windowMs: 10 * 60 * 1000, max: 3 })
+  if (!rl.allowed) {
+    const retryAfterSecs = Math.ceil(rl.retryAfterMs / 1000)
+    return NextResponse.json(
+      { error: "RATE_LIMITED", message: "Too many attempts. Please wait a few minutes and try again." },
+      { status: 429, headers: { "Retry-After": String(retryAfterSecs) } },
     )
   }
 

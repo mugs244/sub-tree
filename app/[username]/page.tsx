@@ -1,8 +1,50 @@
 import { notFound } from "next/navigation"
 import { prisma } from "@/lib/db"
 import { TrackedLink } from "@/components/TrackedLink"
+import { PageViewTracker } from "@/components/PageViewTracker"
 
 type Props = { params: Promise<{ username: string }> }
+
+const THEME_VARS: Record<string, React.CSSProperties> = {
+  default: {},
+  warm: {
+    "--bg-base": "#fffbf5",
+    "--bg-surface": "#f5ede0",
+    "--text-primary": "#1c1917",
+    "--text-muted": "#78716c",
+    "--border-default": "#e7e5e4",
+    "--accent-primary": "#92400e",
+    "--accent-hover": "#78350f",
+  } as React.CSSProperties,
+  cool: {
+    "--bg-base": "#f0f9ff",
+    "--bg-surface": "#e0f2fe",
+    "--text-primary": "#0c4a6e",
+    "--text-muted": "#0369a1",
+    "--border-default": "#bae6fd",
+    "--accent-primary": "#0369a1",
+    "--accent-hover": "#075985",
+  } as React.CSSProperties,
+  forest: {
+    "--bg-base": "#f0fdf4",
+    "--bg-surface": "#dcfce7",
+    "--text-primary": "#14532d",
+    "--text-muted": "#166534",
+    "--border-default": "#bbf7d0",
+    "--accent-primary": "#15803d",
+    "--accent-hover": "#166534",
+  } as React.CSSProperties,
+  midnight: {
+    "--bg-base": "#0f172a",
+    "--bg-surface": "#1e293b",
+    "--text-primary": "#e2e8f0",
+    "--text-muted": "#94a3b8",
+    "--border-default": "#334155",
+    "--accent-primary": "#e2e8f0",
+    "--accent-hover": "#f1f5f9",
+    "--primary-foreground": "#0f172a",
+  } as React.CSSProperties,
+}
 
 export async function generateMetadata({ params }: Props) {
   const { username } = await params
@@ -50,10 +92,15 @@ export default async function PublicProfilePage({ params }: Props) {
       ? "rounded-full"
       : "rounded-lg"
 
+  const themeStyle = THEME_VARS[profile.theme_preset] ?? {}
+
   return (
-    <main className="min-h-screen bg-surface flex flex-col items-center px-4 py-12">
+    <main
+      style={themeStyle}
+      className="min-h-screen bg-background flex flex-col items-center px-4 py-12"
+    >
+      <PageViewTracker username={username} />
       <div className="w-full max-w-sm space-y-6">
-        {/* Avatar */}
         {profile.avatar_url && (
           <div className="flex justify-center">
             <img
@@ -64,7 +111,6 @@ export default async function PublicProfilePage({ params }: Props) {
           </div>
         )}
 
-        {/* Identity */}
         <div className="text-center space-y-1">
           <h1 className="text-xl font-semibold tracking-tight">{profile.display_name}</h1>
           <p className="text-xs text-muted-foreground font-mono">@{username}</p>
@@ -73,7 +119,6 @@ export default async function PublicProfilePage({ params }: Props) {
           )}
         </div>
 
-        {/* Links */}
         {links.length > 0 ? (
           <div className="space-y-3">
             {links.map((link) => (
@@ -94,7 +139,6 @@ export default async function PublicProfilePage({ params }: Props) {
           <p className="text-center text-sm text-muted-foreground">No links yet.</p>
         )}
 
-        {/* Donate button */}
         <div className="pt-2">
           <a
             href={`/${username}/donate`}
@@ -107,7 +151,6 @@ export default async function PublicProfilePage({ params }: Props) {
           </a>
         </div>
 
-        {/* Footer */}
         <p className="text-center text-xs text-muted-foreground pt-4">
           <a href="/" className="hover:underline">Powered by Sub-tree</a>
         </p>

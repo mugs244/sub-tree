@@ -80,7 +80,7 @@ export async function requestReservedUsername(clerkUserId: string, username: str
   if (!user) throw new UsernameError("USER_NOT_FOUND", "User record not found")
 
   const reserved = await prisma.reservedUsername.findUnique({ where: { username }, select: { id: true } })
-  if (!reserved) throw new UsernameError("USERNAME_TAKEN", `@${username} is not a reserved username`)
+  if (!reserved) throw new UsernameError("USERNAME_NOT_RESERVED", `@${username} is not a reserved username`)
 
   const existing = await prisma.usernameClaim.findFirst({
     where: { user_id: user.id, username, status: "PENDING" },
@@ -99,6 +99,7 @@ export class UsernameError extends Error {
       | "INVALID_USERNAME"
       | "USERNAME_TAKEN"
       | "USERNAME_RESERVED"
+      | "USERNAME_NOT_RESERVED"
       | "USER_NOT_FOUND"
       | "ALREADY_HAS_USERNAME",
     message: string,

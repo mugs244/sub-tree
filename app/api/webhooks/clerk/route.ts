@@ -8,7 +8,7 @@ if (!WEBHOOK_SECRET) {
 }
 
 export async function POST(req: Request) {
-  const webhook = new Webhook(WEBHOOK_SECRET)
+  const webhook = new Webhook(WEBHOOK_SECRET!)
   const signature = req.headers.get("Clerk-Signature") ?? req.headers.get("clerk-signature")
   if (!signature) {
     return new NextResponse("Missing Clerk signature header", { status: 400 })

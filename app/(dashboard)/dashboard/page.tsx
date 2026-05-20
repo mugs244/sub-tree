@@ -9,7 +9,7 @@ export default async function DashboardHomePage() {
     where: { clerk_user_id: userId! },
     select: {
       username: true,
-      profile: { select: { display_name: true } },
+      profile: { select: { display_name: true, view_count: true } },
       _count: { select: { links: true, donations: true } },
     },
   })
@@ -44,7 +44,7 @@ export default async function DashboardHomePage() {
         <StatCard
           icon={Eye}
           label="Profile views"
-          value="—"
+          value={user?.profile?.view_count ?? 0}
           href={`/${username}`}
           external
         />

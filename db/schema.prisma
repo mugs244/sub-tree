@@ -35,6 +35,7 @@ model Profile {
   avatar_url    String?
   theme_preset  String  @default("default")
   button_style  String  @default("rounded")
+  view_count    Int     @default(0)
   created_at    DateTime @default(now())
   updated_at    DateTime @updatedAt
 

@@ -1,6 +1,7 @@
 import { auth } from "@clerk/nextjs/server"
 import { prisma } from "@/lib/db"
 import { Heart } from "lucide-react"
+import { DonationExportButton } from "@/components/DonationExportButton"
 
 export default async function DonationsPage() {
   const { userId } = await auth()
@@ -39,7 +40,10 @@ export default async function DonationsPage() {
 
   return (
     <div className="p-6 md:p-8 max-w-3xl space-y-6">
-      <h1 className="text-2xl font-semibold tracking-tight">Donations</h1>
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-semibold tracking-tight">Donations</h1>
+        <DonationExportButton />
+      </div>
       <div className="border border-border rounded-xl overflow-hidden">
         <table className="w-full text-sm">
           <thead className="bg-surface border-b border-border">

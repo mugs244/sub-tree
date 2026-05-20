@@ -32,40 +32,38 @@ export async function listClaims(status?: "PENDING" | "APPROVED" | "REJECTED") {
 }
 
 export async function approveClaim(claimId: number): Promise<void> {
-  const claim = await prisma.usernameClaim.findUnique({
-    where: { id: claimId },
-    select: {
-      id: true,
-      username: true,
-      status: true,
-      user_id: true,
-      user: { select: { username: true } },
-    },
-  })
-  if (!claim) throw new Error("Claim not found")
-  if (claim.status !== "PENDING") throw new Error("Claim is not pending")
-  if (claim.user.username) throw new Error("User already has a username — cannot reassign")
+  await prisma.$transaction(async (tx) => {
+    const claim = await tx.usernameClaim.findUnique({
+      where: { id: claimId },
+      select: {
+        id: true,
+        username: true,
+        status: true,
+        user_id: true,
+        user: { select: { username: true } },
+      },
+    })
+    if (!claim) throw new Error("Claim not found")
+    if (claim.status !== "PENDING") throw new Error("Claim is not pending")
+    if (claim.user.username) throw new Error("User already has a username — cannot reassign")
 
-  await prisma.$transaction([
-    prisma.user.update({ where: { id: claim.user_id }, data: { username: claim.username } }),
-    prisma.reservedUsername.deleteMany({ where: { username: claim.username } }),
-    prisma.usernameClaim.update({
+    await tx.user.update({ where: { id: claim.user_id }, data: { username: claim.username } })
+    await tx.reservedUsername.deleteMany({ where: { username: claim.username } })
+    await tx.usernameClaim.update({
       where: { id: claimId },
       data: { status: "APPROVED", reviewed_at: new Date() },
-    }),
-  ])
+    })
+  })
 }
 
 export async function rejectClaim(claimId: number, message?: string): Promise<void> {
-  const claim = await prisma.usernameClaim.findUnique({
-    where: { id: claimId },
-    select: { id: true, status: true },
-  })
-  if (!claim) throw new Error("Claim not found")
-  if (claim.status !== "PENDING") throw new Error("Claim is not pending")
-
-  await prisma.usernameClaim.update({
-    where: { id: claimId },
+  const { count } = await prisma.usernameClaim.updateMany({
+    where: { id: claimId, status: "PENDING" },
     data: { status: "REJECTED", message: message ?? null, reviewed_at: new Date() },
   })
+  if (count === 0) {
+    const exists = await prisma.usernameClaim.findUnique({ where: { id: claimId }, select: { id: true } })
+    if (!exists) throw new Error("Claim not found")
+    throw new Error("Claim is not pending")
+  }
 }
