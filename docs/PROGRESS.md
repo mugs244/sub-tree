@@ -4,7 +4,7 @@ Update this file after every meaningful implementation change. Treat it as the r
 
 ## Current Phase
 
-Phase 2 complete. Phase 3 donation skeleton + MoMo abstraction layer shipped. Next: Feature 16 (MoMo webhook handler) and Feature 17 (Africa's Talking SMS — blocked on API key).
+Phase 2 complete. Phase 3 donation flow + webhook handlers shipped. Landing page live. Next: Feature 17 (Africa's Talking SMS — blocked on API key) and wiring the MoMo STK push once credentials arrive.
 
 ## Completed
 
@@ -39,15 +39,18 @@ Phase 2 complete. Phase 3 donation skeleton + MoMo abstraction layer shipped. Ne
 - **Theme presets on public profile page:** CSS custom properties injected as inline `style` on `<main>` cascade through Tailwind `var()` chain — all children inherit the theme without client JS. `THEME_VARS` map covers default, warm, cool, forest, midnight.
 - **Profile edit in Settings:** `components/EditProfileForm.tsx` — reuses `/api/onboarding/save-profile`, shows "Saved!" state in-place (no redirect). Added to `app/(dashboard)/dashboard/settings/page.tsx` which also shows account info rows, `UserButton` for Clerk account management, and the danger zone.
 
+- **Feature 16 — MoMo Webhook Handlers shipped:** `lib/services/donation.ts` — `handleMomoCallback`: finds donation by `idempotency_key`, idempotency-guards already-settled records, updates status to COMPLETED/FAILED, sets `provider_tx_id`, appends `DonationEvent`. `POST /api/webhooks/momo/mtn/route.ts` — reads raw body, verifies `X-Callback-Signature` HMAC via `mtnMomo.verifyCallback`, delegates to handler. `POST /api/webhooks/momo/airtel/route.ts` — same pattern, `X-Airtel-Signature`, `airtelMoney.verifyCallback`. Both routes return 200 on success to prevent provider retries.
+- **Landing page shipped:** Hero, feature strip (links / mobile money / analytics), "Up in three steps" explainer, CTA banner, sticky nav, footer. No hardcoded colours — all design tokens from `globals.css`.
+
 ## In Progress
 
 Nothing.
 
 ## Next Up
 
-1. **Feature 16 — MoMo Webhook Handler** — `POST /api/webhooks/momo/mtn` and `POST /api/webhooks/momo/airtel`: verify HMAC signature via `verifyCallback`, update `Donation.status`, create `DonationEvent` record.
-2. **Feature 17 — SMS Notifications** — Africa's Talking: notify creator on successful donation (blocked: Africa's Talking API key not yet configured).
-3. **Wire MoMo STK push** — once MTN/Airtel sandbox credentials are available, remove the TODO comment in `app/api/payments/initiate/route.ts` and call `mtnMomo.requestToPay` / `airtelMoney.requestToPay`.
+1. **Feature 17 — SMS Notifications** — Africa's Talking: notify creator on successful donation (blocked: Africa's Talking API key not yet configured). Call `handleMomoCallback` → after status update to COMPLETED, send "You received UGX X" SMS to the creator's phone via `lib/sms.ts`.
+2. **Wire MoMo STK push** — once MTN/Airtel sandbox credentials are available, remove the TODO comment in `app/api/payments/initiate/route.ts` and call `mtnMomo.requestToPay` / `airtelMoney.requestToPay`.
+3. **Register webhook URLs with MTN/Airtel** — configure `POST https://sub-tree.com/api/webhooks/momo/mtn` and `.../airtel` in the respective developer portals once API credentials are approved.
 
 ## Open Questions
 
