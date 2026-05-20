@@ -76,7 +76,7 @@ export function DonateForm({ username, displayName }: DonateFormProps) {
           </p>
         </div>
         <p className="text-xs text-muted-foreground">
-          Mobile money integration coming soon — this is a preview.
+          Enter your PIN on your phone to complete the donation.
         </p>
         <Button variant="ghost" className="w-full" onClick={() => setStep("amount")}>
           Back

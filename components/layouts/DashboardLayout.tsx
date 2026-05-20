@@ -3,7 +3,7 @@
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { UserButton } from "@clerk/nextjs"
-import { Home, Link2, Heart, Palette, Settings } from "lucide-react"
+import { Home, Link2, Heart, Palette, Settings, ExternalLink } from "lucide-react"
 import { Logo } from "@/components/brand/Logo"
 
 interface NavItem {
@@ -72,9 +72,20 @@ export function DashboardLayout({ children, username }: DashboardLayoutProps) {
           })}
         </nav>
 
-        <div className="h-16 flex items-center gap-3 px-4 border-t border-border">
-          <UserButton />
-          <span className="text-sm font-medium text-foreground truncate">@{username}</span>
+        <div className="border-t border-border px-3 py-3 space-y-1">
+          <Link
+            href={`/${username}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-muted-foreground hover:bg-surface hover:text-foreground transition-colors duration-150"
+          >
+            <ExternalLink className="h-4 w-4 shrink-0" strokeWidth={1.5} />
+            View profile
+          </Link>
+          <div className="flex items-center gap-3 px-3 py-2">
+            <UserButton />
+            <span className="text-sm font-medium text-foreground truncate">@{username}</span>
+          </div>
         </div>
       </aside>
 
