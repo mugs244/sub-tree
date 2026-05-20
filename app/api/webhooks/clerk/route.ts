@@ -8,31 +8,24 @@ if (!WEBHOOK_SECRET) {
 }
 
 export async function POST(req: Request) {
-  const webhook = new Webhook(WEBHOOK_SECRET!)
-  const signature = req.headers.get("Clerk-Signature") ?? req.headers.get("clerk-signature")
-  if (!signature) {
-    return new NextResponse("Missing Clerk signature header", { status: 400 })
-  }
+  const svixId = req.headers.get("svix-id")
+  const svixTimestamp = req.headers.get("svix-timestamp")
+  const svixSignature = req.headers.get("svix-signature")
 
-  const headers: Record<string, string> = {
-    "webhook-signature": signature,
-    "webhook-timestamp":
-      req.headers.get("Clerk-Timestamp") ??
-      req.headers.get("clerk-timestamp") ??
-      req.headers.get("svix-timestamp") ??
-      req.headers.get("webhook-timestamp") ?? "",
-    "webhook-id":
-      req.headers.get("Clerk-Id") ??
-      req.headers.get("clerk-id") ??
-      req.headers.get("svix-id") ??
-      req.headers.get("webhook-id") ?? "",
+  if (!svixId || !svixTimestamp || !svixSignature) {
+    return new NextResponse("Missing svix headers", { status: 400 })
   }
 
   const body = await req.text()
+  const webhook = new Webhook(WEBHOOK_SECRET!)
   let event: any
   try {
-    event = webhook.verify(body, headers)
-  } catch (error) {
+    event = webhook.verify(body, {
+      "svix-id": svixId,
+      "svix-timestamp": svixTimestamp,
+      "svix-signature": svixSignature,
+    })
+  } catch {
     return new NextResponse("Invalid Clerk webhook signature", { status: 400 })
   }
 
@@ -53,7 +46,7 @@ export async function POST(req: Request) {
       default:
         break
     }
-  } catch (error) {
+  } catch {
     return new NextResponse("Failed to process Clerk webhook event", { status: 500 })
   }
 
