@@ -128,3 +128,14 @@ body {
   background-color: var(--bg-base);
   color: var(--text-primary);
 }
+
+input,
+textarea,
+select {
+  color: var(--text-primary);
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: var(--text-placeholder);
+}
