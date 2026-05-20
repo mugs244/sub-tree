@@ -1,6 +1,5 @@
 "use client"
 
-import React from "react"
 import { SignUp } from "@clerk/nextjs"
 
 export default function SignUpPage() {
@@ -10,7 +9,7 @@ export default function SignUpPage() {
         <div className="mb-6 text-center">
           <h1 className="text-2xl font-semibold">Create your Sub-tree account</h1>
         </div>
-        <SignUp routing="path" path="/sign-up" />
+        <SignUp routing="path" path="/sign-up" fallbackRedirectUrl="/onboarding/username" />
       </div>
     </div>
   )

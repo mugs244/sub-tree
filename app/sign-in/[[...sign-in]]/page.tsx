@@ -1,6 +1,5 @@
 "use client"
 
-import React from "react"
 import { SignIn } from "@clerk/nextjs"
 
 export default function SignInPage() {
@@ -10,7 +9,7 @@ export default function SignInPage() {
         <div className="mb-6 text-center">
           <h1 className="text-2xl font-semibold">Sign in to Sub-tree</h1>
         </div>
-        <SignIn routing="path" path="/sign-in" />
+        <SignIn routing="path" path="/sign-in" fallbackRedirectUrl="/dashboard" />
       </div>
     </div>
   )
