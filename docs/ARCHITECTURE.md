@@ -4,24 +4,23 @@
 
 | Layer            | Technology                              | Role                                                                          |
 | ---------------- | --------------------------------------- | ----------------------------------------------------------------------------- |
-| Framework        | Next.js 14 (App Router) + TypeScript    | Server-rendered React, file-based routing, API route handlers, server actions |
-| UI               | Tailwind CSS + shadcn/ui                | Utility-first styling and accessible component primitives                     |
+| Framework        | Next.js 16.2.6 (App Router) + TypeScript | Server-rendered React, file-based routing, API route handlers, server actions. `proxy.ts` replaces `middleware.ts` in this version. `params` are Promises. |
+| UI               | Tailwind CSS v4 + shadcn/ui             | Utility-first styling. All tokens in `app/globals.css` under `@theme inline` — no `tailwind.config.ts`. |
 | Fonts            | Geist Sans + Geist Mono via `next/font` | Optimized self-hosted fonts with zero layout shift                            |
-| Auth             | Clerk | Phone OTP, email verification, sessions, password reset, user management — handled end-to-end |
-| Database         | PostgreSQL 16 + Prisma ORM              | Source of truth for users, links, profiles, donations, financial records      |
-| Cache / Ephemeral | Redis (Upstash in prod, Docker local)  | rate-limit counters, idempotency keys, session cache    |
-| SMS — Donation Notifications | Africa's Talking | "You received UGX X" alerts to creators after successful donations |
-| Email            | Clerk built-in | Transactional auth emails handled by Clerk; product emails deferred |
-| Mobile Money     | MTN MoMo Collections API + Airtel Money Collections API | Donation collection via STK push, webhook-based confirmation                 |
-| Email            | Resend (or Postmark)                    | Transactional email (non-auth): donation receipts, product/notification emails, newsletters |
-| File Storage     | Cloudflare R2                           | User avatars, custom backgrounds, exported CSVs                               |
-| Validation       | Zod                                     | Runtime validation at every system boundary                                   |
-| Logging          | Pino                                    | Structured JSON logs                                                          |
-| Hosting          | Vercel (app) + Neon or Supabase (DB)    | Edge-deployed Next.js with managed Postgres                                   |
-| CDN / DNS        | Cloudflare                              | DNS, edge caching for public profile pages, DDoS protection                   |
-| Domain registrar | Cloudflare Registrar (`.com`) + Ugandan registrar (`.ug`) | At-cost domain registration with WHOIS privacy                            |
-| Analytics        | Plausible or PostHog (self-hosted)      | Page views, link clicks, conversion tracking — privacy-friendly               |
-| Background jobs  | Vercel Cron + Inngest (if needed later) | Scheduled tasks: cleanup of expired OTPs, aggregation jobs, payout retries    |
+| Auth             | Clerk v7 (`@clerk/nextjs ^7.3.7`) — production instance | Phone OTP, email verification, sessions, password reset. JS proxy at `app/__clerk/[[...path]]/route.ts` via `createFrontendApiProxyHandlers()`. Webhooks verified with Svix (`svix-id`, `svix-timestamp`, `svix-signature` headers). |
+| Database         | PostgreSQL + Prisma v7 ORM              | Hosted on Render. Schema at `db/schema.prisma`, config at `prisma.config.ts`. `postinstall: prisma generate` runs on Vercel. |
+| Cache / Ephemeral | In-memory sliding window (Map) — `lib/rateLimit.ts` | Rate-limit counters at MVP. Upgrade path: Upstash Redis for multi-instance. Redis not yet provisioned. |
+| SMS — Donation Notifications | Africa's Talking (`africastalking@0.7.9`) | "You received UGX X" alerts to creators after successful donations. API key configured. Feature 17 not yet wired. |
+| Email            | Clerk built-in                          | Transactional auth emails handled by Clerk; product emails deferred          |
+| Mobile Money     | MTN MoMo Collections API + Airtel Money Collections API | Donation collection via STK push, webhook-based confirmation. Clients built (`lib/services/momo/`), credentials pending. |
+| File Storage     | Vercel Blob (planned — pending Pro plan) | User avatars, exported CSVs. Currently avatar stored as pasted URL. Add `@vercel/blob` + `BLOB_READ_WRITE_TOKEN` when Vercel Pro is active. |
+| Validation       | Zod v4 (`^4.4.3`)                       | Runtime validation at every system boundary                                   |
+| Logging          | `console.error` at MVP                  | Replace with Pino structured logger before production scale                   |
+| Hosting          | Vercel (app) + Render Postgres (DB)     | Production branch: `feature/03-clerk-auth`. Live at `sub-tree.vercel.app`.   |
+| CDN / DNS        | Cloudflare (planned)                    | DNS, edge caching for public profile pages, DDoS protection                   |
+| Domain registrar | Not yet registered                      | Target: `sub-tree.com` (Cloudflare Registrar) + `sub-tree.ug` (Ugandan registrar) |
+| Analytics        | Built-in view + click counters          | `view_count` on Profile, `clicks` on Link. External analytics tool deferred. |
+| Background jobs  | None at MVP                             | Vercel Cron or Trigger.dev when async volume justifies it (see `pending-dependencies.md`) |
 
 ## System Boundaries
 

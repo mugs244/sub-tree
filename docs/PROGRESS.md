@@ -4,7 +4,7 @@ Update this file after every meaningful implementation change. Treat it as the r
 
 ## Current Phase
 
-Phase 2 complete. Phase 3 donation flow + webhook handlers shipped. Landing page live. Next: Feature 17 (Africa's Talking SMS — blocked on API key) and wiring the MoMo STK push once credentials arrive.
+Production deployment live at `sub-tree.vercel.app`. Clerk auth working end-to-end (sign-up → webhook → DB → onboarding). Platform icons, sign-out, and input color fixes shipped. Next: dashboard analytics improvements, donation notification feed (polling), referrer attribution, and profile picture upload (Vercel Blob — pending Pro plan).
 
 ## Completed
 
@@ -42,15 +42,36 @@ Phase 2 complete. Phase 3 donation flow + webhook handlers shipped. Landing page
 - **Feature 16 — MoMo Webhook Handlers shipped:** `lib/services/donation.ts` — `handleMomoCallback`: finds donation by `idempotency_key`, idempotency-guards already-settled records, updates status to COMPLETED/FAILED, sets `provider_tx_id`, appends `DonationEvent`. `POST /api/webhooks/momo/mtn/route.ts` — reads raw body, verifies `X-Callback-Signature` HMAC via `mtnMomo.verifyCallback`, delegates to handler. `POST /api/webhooks/momo/airtel/route.ts` — same pattern, `X-Airtel-Signature`, `airtelMoney.verifyCallback`. Both routes return 200 on success to prevent provider retries.
 - **Landing page shipped:** Hero, feature strip (links / mobile money / analytics), "Up in three steps" explainer, CTA banner, sticky nav, footer. No hardcoded colours — all design tokens from `globals.css`.
 
+- **Clerk production instance configured:** Switched from development (`pk_test_`) to production (`pk_live_`) keys. Clerk JS proxy route added at `app/__clerk/[[...path]]/route.ts` using `createFrontendApiProxyHandlers()` — required for Clerk's JS bundle to load through the domain on Vercel. Middleware matcher updated to include `/__clerk(.*)`. Clerk JS proxy also enabled in Clerk dashboard.
+- **Clerk webhook handler fixed:** Was checking `Clerk-Signature` header (doesn't exist); Clerk sends `svix-id`, `svix-timestamp`, `svix-signature`. All webhook events (user.created, user.updated, user.deleted) were silently returning 400 — no DB rows were being created on sign-up. Fixed to read svix headers directly.
+- **Clerk webhook URL corrected:** Was pointing to a Vercel preview deployment URL. Updated to `https://sub-tree.vercel.app/api/webhooks/clerk`. Tested via Clerk dashboard replay — `200 {"received":true}`.
+- **Input text color fix:** Tailwind v4 does not set `color` on form elements by default. Added explicit `color: var(--text-primary)` and placeholder color to `app/globals.css`. Text in all inputs/textareas now visible.
+- **`zod` added as explicit dependency:** Was present only as a transitive dep (from Svix/Prisma). Added `"zod": "^4.4.3"` to `package.json` to prevent breakage on dep tree changes.
+- **Platform icons on links (`lib/utils/platform.ts` + `components/PlatformIcon.tsx`):** URL → platform detection for 19 platforms: YouTube, Instagram, TikTok, Twitter/X, Facebook, WhatsApp, GitHub, LinkedIn, Substack, Patreon, Spotify, SoundCloud, Twitch, Discord, Pinterest, Snapchat, Telegram, Medium, Beehiiv. Globe fallback for unrecognised URLs. Icons use `currentColor` (inherit from design tokens). Shown on `LinkCard` in dashboard and on link buttons on public profile page.
+- **Sign-out button in sidebar:** Explicit `<SignOutButton>` with `LogOut` icon added to `DashboardLayout` sidebar footer, above the `UserButton`.
+- **Appearance live preview:** `components/AppearanceForm.tsx` rebuilt with split layout — controls on the left, live mockup on the right showing avatar initial, display name, @handle, sample link buttons, and donate CTA — all updating in real time as settings change.
+- **Sidebar "View profile" link:** External link to `/@username` in the sidebar footer so creators can quickly check their public page.
+- **Mobile nav fixed:** Dashboard bottom tab bar expanded from 4 to 5 items to include Appearance (`grid-cols-5`).
+- **DonateForm copy updated:** Removed "mobile money coming soon" copy; replaced with "Enter your PIN on your phone to complete the donation."
+- **Custom 404 page:** `app/not-found.tsx` — branded 404 with Logo, description, and home CTA.
+- **Auth page polish:** Sign-in and sign-up pages use `bg-surface`, `fallbackRedirectUrl` set (`/dashboard` and `/onboarding/username` respectively).
+- **`postinstall: prisma generate`** added to `package.json` so Vercel runs Prisma codegen after `npm install` — fixes TypeScript build errors on Vercel.
+- **`lib/db.ts` deferred init:** Changed from throwing at import time (`throw new Error(...)`) to `?? ""` so builds succeed when `DATABASE_URL` is not set at build time. `app/[username]/opengraph-image.tsx` marked `export const dynamic = "force-dynamic"` to prevent build-time DB access.
+- **Production deployed to Vercel:** `feature/03-clerk-auth` branch set as production branch. Render Postgres is the live database. All env vars (`NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`, `CLERK_SECRET_KEY`, `CLERK_WEBHOOK_SECRET`, `DATABASE_URL`, `AFRICASTALKING_USERNAME`, `AFRICASTALKING_API_KEY`) uploaded to Vercel.
+
 ## In Progress
 
 Nothing.
 
 ## Next Up
 
-1. **Feature 17 — SMS Notifications** — Africa's Talking: notify creator on successful donation (blocked: Africa's Talking API key not yet configured). Call `handleMomoCallback` → after status update to COMPLETED, send "You received UGX X" SMS to the creator's phone via `lib/sms.ts`.
-2. **Wire MoMo STK push** — once MTN/Airtel sandbox credentials are available, remove the TODO comment in `app/api/payments/initiate/route.ts` and call `mtnMomo.requestToPay` / `airtelMoney.requestToPay`.
-3. **Register webhook URLs with MTN/Airtel** — configure `POST https://sub-tree.com/api/webhooks/momo/mtn` and `.../airtel` in the respective developer portals once API credentials are approved.
+1. **Dashboard home analytics improvements** — Show total donations received (count + UGX sum of COMPLETED), top-clicked link, profile views trend. No schema changes needed.
+2. **Referrer attribution on donations** — Add `referrer_source` column to `Donation` table. On the public profile page, read `?ref=` param first then fall back to `document.referrer`, normalise to platform name, store in `sessionStorage`. Pass `referrer_source` to `POST /api/payments/initiate`. Dashboard analytics shows "YouTube — 5 donations — UGX 45,000". Requires Prisma migration.
+3. **Donation notification feed (polling)** — Add `read_at` column to `DonationEvent` table. New `/dashboard/notifications` page (or panel) polling `/api/notifications` every 30s. Each card shows donor name, amount, message, timestamp, platform. Requires Prisma migration.
+4. **Profile picture upload** — Vercel Blob (`@vercel/blob`) for file upload. Replace avatar URL text field with file picker in `EditProfileForm` and onboarding `ProfileForm`. Requires `BLOB_READ_WRITE_TOKEN` env var (Vercel Pro plan). Add to `pending-dependencies.md` until plan is upgraded.
+5. **Feature 17 — SMS Notifications** — Africa's Talking: notify creator on successful donation. Call after `handleMomoCallback` sets status to COMPLETED, send "You received UGX X from [donor]" SMS to creator's phone via `lib/sms.ts`. API key available in env (`AFRICASTALKING_API_KEY`).
+6. **Wire MoMo STK push** — once MTN/Airtel sandbox credentials are available, remove the TODO comment in `app/api/payments/initiate/route.ts` and call `mtnMomo.requestToPay` / `airtelMoney.requestToPay`.
+7. **Register webhook URLs with MTN/Airtel** — configure `POST https://sub-tree.vercel.app/api/webhooks/momo/mtn` and `.../airtel` in the respective developer portals once API credentials are approved.
 
 ## Open Questions
 
