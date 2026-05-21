@@ -10,9 +10,8 @@ export async function POST(req: Request, { params }: Params): Promise<NextRespon
 
   // Rate limit by IP
   const ip = req.headers.get("x-forwarded-for") || req.headers.get("x-real-ip") || "unknown"
-  try {
-    await checkRateLimit({ key: `view:${ip}` })
-  } catch {
+  const rl = checkRateLimit(`view:${ip}`, { windowMs: 60_000, max: 10 })
+  if (!rl.allowed) {
     return new NextResponse(null, { status: 429, headers: { "Retry-After": "60" } })
   }
 
