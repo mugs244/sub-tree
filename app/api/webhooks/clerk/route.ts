@@ -2,12 +2,13 @@ import { NextResponse } from "next/server"
 import { Webhook } from "svix"
 import { handleClerkUserCreated, handleClerkUserDeleted, handleClerkUserUpdated } from "@/lib/services/clerk"
 
-const WEBHOOK_SECRET = process.env.CLERK_WEBHOOK_SECRET
-if (!WEBHOOK_SECRET) {
-  throw new Error("CLERK_WEBHOOK_SECRET must be set for Clerk webhook verification")
-}
-
 export async function POST(req: Request) {
+  const WEBHOOK_SECRET = process.env.CLERK_WEBHOOK_SECRET
+  if (!WEBHOOK_SECRET) {
+    console.error("CLERK_WEBHOOK_SECRET environment variable is not set")
+    return new NextResponse("Webhook configuration error", { status: 500 })
+  }
+
   const svixId = req.headers.get("svix-id")
   const svixTimestamp = req.headers.get("svix-timestamp")
   const svixSignature = req.headers.get("svix-signature")
@@ -17,7 +18,7 @@ export async function POST(req: Request) {
   }
 
   const body = await req.text()
-  const webhook = new Webhook(WEBHOOK_SECRET!)
+  const webhook = new Webhook(WEBHOOK_SECRET)
   let event: any
   try {
     event = webhook.verify(body, {
@@ -46,7 +47,8 @@ export async function POST(req: Request) {
       default:
         break
     }
-  } catch {
+  } catch (err) {
+    console.error("Failed to process Clerk webhook event:", err)
     return new NextResponse("Failed to process Clerk webhook event", { status: 500 })
   }
 
