@@ -51,6 +51,7 @@ Production deployment live at `sub-tree.vercel.app`. Clerk auth working end-to-e
 - **Sign-out button in sidebar:** Explicit `<SignOutButton>` with `LogOut` icon added to `DashboardLayout` sidebar footer, above the `UserButton`.
 - **Appearance live preview:** `components/AppearanceForm.tsx` rebuilt with split layout — controls on the left, live mockup on the right showing avatar initial, display name, @handle, sample link buttons, and donate CTA — all updating in real time as settings change.
 - **Sidebar "View profile" link:** External link to `/@username` in the sidebar footer so creators can quickly check their public page.
+- **Landing page redesign:** Hero rebuilt as 2-column desktop layout — headline/CTAs left, static profile card mockup right showing a real preview of the product. Stats strip added (Free · MTN + Airtel · 1 link). Feature section upgraded from flat icon list to bordered cards. Step numbers changed to filled dark circles with horizontal connector lines on desktop. Mobile money highlight section added with donate form mockup. Footer expanded with Sign up, Sign in, and Contact links.
 - **Mobile nav fixed:** Dashboard bottom tab bar expanded from 4 to 5 items to include Appearance (`grid-cols-5`).
 - **DonateForm copy updated:** Removed "mobile money coming soon" copy; replaced with "Enter your PIN on your phone to complete the donation."
 - **Custom 404 page:** `app/not-found.tsx` — branded 404 with Logo, description, and home CTA.
