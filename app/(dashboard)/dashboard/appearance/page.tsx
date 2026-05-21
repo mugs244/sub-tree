@@ -19,11 +19,11 @@ export default async function AppearancePage() {
 
   const profile = await prisma.profile.findUnique({
     where: { user_id: user.id },
-    select: { theme_preset: true, button_style: true, display_name: true, avatar_url: true },
+    select: { theme_preset: true, button_style: true, display_name: true, avatar_url: true, bio: true },
   })
 
   return (
-    <div className="p-6 md:p-8 max-w-4xl space-y-8">
+    <div className="p-6 md:p-8 max-w-5xl space-y-8">
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">Appearance</h1>
         <p className="text-sm text-muted-foreground mt-1">
@@ -37,6 +37,7 @@ export default async function AppearancePage() {
         displayName={profile?.display_name ?? user.username ?? "Your Name"}
         username={user.username ?? "username"}
         avatarUrl={profile?.avatar_url ?? undefined}
+        bio={profile?.bio ?? undefined}
       />
     </div>
   )
