@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 import { Download, Loader2 } from "lucide-react"
+import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 
 interface DonationRow {
@@ -37,7 +38,11 @@ export function DonationExportButton() {
     setLoading(true)
     try {
       const res = await fetch("/api/donations/export")
-      if (!res.ok) return
+      if (!res.ok) {
+        const error = res.statusText || `Error ${res.status}`
+        toast.error(`Export failed: ${error}`)
+        return
+      }
       const { data } = (await res.json()) as { data: DonationRow[] }
       const csv = toCSV(data)
       const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" })
@@ -47,6 +52,9 @@ export function DonationExportButton() {
       a.download = `donations-${new Date().toISOString().slice(0, 10)}.csv`
       a.click()
       URL.revokeObjectURL(url)
+      toast.success("Export complete")
+    } catch (err) {
+      toast.error("Could not export donations — please try again")
     } finally {
       setLoading(false)
     }

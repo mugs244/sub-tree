@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
+import { signOut } from "@clerk/nextjs"
 import { Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 
@@ -21,7 +22,8 @@ export function DeleteAccountButton() {
         setError(body.message ?? "Could not delete account")
         return
       }
-      router.push("/")
+      // Sign out before redirecting
+      await signOut({ redirectUrl: "/" })
     } catch {
       setError("Could not delete account — please try again")
     } finally {

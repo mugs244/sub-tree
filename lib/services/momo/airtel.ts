@@ -33,8 +33,19 @@ async function getAccessToken(): Promise<string> {
     throw new Error(`Airtel token error: ${res.status} ${await res.text()}`)
   }
 
-  const data = (await res.json()) as { access_token: string }
-  return data.access_token
+  let data: unknown
+  try {
+    data = await res.json()
+  } catch (err) {
+    throw new Error(`Airtel token parse error: ${await res.text()}`)
+  }
+
+  const payload = data as { access_token?: unknown }
+  if (typeof payload.access_token !== "string" || !payload.access_token.trim()) {
+    throw new Error(`Airtel token error: missing or empty access_token`)
+  }
+
+  return payload.access_token
 }
 
 async function requestToPay(params: MomoRequestToPayParams): Promise<MomoRequestToPayResult> {

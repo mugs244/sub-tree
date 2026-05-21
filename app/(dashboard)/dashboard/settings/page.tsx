@@ -1,14 +1,24 @@
 import { auth } from "@clerk/nextjs/server"
+import { redirect } from "next/navigation"
 import { prisma } from "@/lib/db"
-import { UserButton } from "@clerk/nextjs"
 import { EditProfileForm } from "@/components/EditProfileForm"
 import { DeleteAccountButton } from "@/components/DeleteAccountButton"
 
 export default async function SettingsPage() {
   const { userId } = await auth()
+  if (!userId) redirect("/sign-in")
 
   const user = await prisma.user.findUnique({
-    where: { clerk_user_id: userId! },
+    where: { clerk_user_id: userId },
+    select: {
+      username: true,
+      email: true,
+      phone: true,
+      tier: true,
+      created_at: true,
+      profile: { select: { display_name: true, bio: true, avatar_url: true } },
+    },
+  })
     select: {
       username: true,
       email: true,
@@ -47,16 +57,6 @@ export default async function SettingsPage() {
               ? new Date(user.created_at).toLocaleDateString("en-UG", { month: "long", year: "numeric" })
               : "—"}
           />
-        </div>
-      </section>
-
-      <section className="space-y-4">
-        <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Clerk account</h2>
-        <div className="bg-surface border border-border rounded-xl p-4 flex items-center gap-4">
-          <UserButton />
-          <p className="text-sm text-muted-foreground">
-            Manage your password, connected accounts, and security via Clerk.
-          </p>
         </div>
       </section>
 

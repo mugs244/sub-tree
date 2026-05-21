@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect, useRef } from "react"
 import { Loader2, Check } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -20,6 +20,13 @@ export function EditProfileForm({ initialDisplayName, initialBio, initialAvatarU
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  useEffect(() => {
+    return () => {
+      if (timerRef.current) clearTimeout(timerRef.current)
+    }
+  }, [])
 
   async function handleSave(e: React.FormEvent) {
     e.preventDefault()
@@ -43,7 +50,8 @@ export function EditProfileForm({ initialDisplayName, initialBio, initialAvatarU
         return
       }
       setSaved(true)
-      setTimeout(() => setSaved(false), 2000)
+      if (timerRef.current) clearTimeout(timerRef.current)
+      timerRef.current = setTimeout(() => setSaved(false), 2000)
     } catch {
       setError("Could not save — please try again")
     } finally {

@@ -36,8 +36,19 @@ async function getAccessToken(): Promise<string> {
     throw new Error(`MTN MoMo token error: ${res.status} ${await res.text()}`)
   }
 
-  const data = (await res.json()) as { access_token: string }
-  return data.access_token
+  let data: unknown
+  try {
+    data = await res.json()
+  } catch (err) {
+    throw new Error(`MTN MoMo token parse error: ${await res.text()}`)
+  }
+
+  const payload = data as { access_token?: unknown }
+  if (typeof payload.access_token !== "string" || !payload.access_token.trim()) {
+    throw new Error(`MTN MoMo token error: missing or empty access_token`)
+  }
+
+  return payload.access_token
 }
 
 async function requestToPay(params: MomoRequestToPayParams): Promise<MomoRequestToPayResult> {
@@ -72,7 +83,27 @@ async function requestToPay(params: MomoRequestToPayParams): Promise<MomoRequest
     throw new Error(`MTN MoMo requestToPay error: ${res.status} ${await res.text()}`)
   }
 
-  return { providerTxId: params.referenceId }
+  // Fetch transaction status to get the provider's transaction ID
+  const getRes = await fetch(`${baseUrl}/collection/v1_0/requesttopay/${params.referenceId}`, {
+    method: "GET",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "X-Target-Environment": env,
+      "Ocp-Apim-Subscription-Key": process.env.MTN_MOMO_SUBSCRIPTION_KEY ?? "",
+    },
+  })
+
+  let providerTxId: string | undefined
+  if (getRes.ok) {
+    try {
+      const txData = (await getRes.json()) as { financialTransactionId?: string }
+      providerTxId = txData.financialTransactionId
+    } catch {
+      // Silently fail if we can't fetch the transaction details
+    }
+  }
+
+  return { providerTxId }
 }
 
 function verifyCallback(rawBody: string, signature: string): MomoCallbackPayload | null {

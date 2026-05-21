@@ -9,7 +9,12 @@ export default function SignUpPage() {
         <div className="mb-6 text-center">
           <h1 className="text-2xl font-semibold">Create your Sub-tree account</h1>
         </div>
-        <SignUp routing="path" path="/sign-up" fallbackRedirectUrl="/onboarding/username" />
+        <SignUp
+          routing="path"
+          path="/sign-up"
+          fallbackRedirectUrl="/onboarding/username"
+          signInUrl="/sign-in"
+        />
       </div>
     </div>
   )

@@ -8,6 +8,8 @@ const isProtectedRoute = createRouteMatcher([
   "/api/profile/(.*)",
   "/api/admin/(.*)",
   "/api/donations/list",
+  "/api/donations/export",
+  "/api/account/delete",
   "/api/settings/(.*)",
 ]);
 
