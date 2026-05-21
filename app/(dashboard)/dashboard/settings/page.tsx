@@ -19,15 +19,6 @@ export default async function SettingsPage() {
       profile: { select: { display_name: true, bio: true, avatar_url: true } },
     },
   })
-    select: {
-      username: true,
-      email: true,
-      phone: true,
-      tier: true,
-      created_at: true,
-      profile: { select: { display_name: true, bio: true, avatar_url: true } },
-    },
-  })
 
   return (
     <div className="p-6 md:p-8 max-w-2xl space-y-10">
