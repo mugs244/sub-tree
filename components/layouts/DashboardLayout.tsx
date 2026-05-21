@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { UserButton, SignOutButton } from "@clerk/nextjs"
+import { SignOutButton } from "@clerk/nextjs"
 import { Home, Link2, Heart, Palette, Settings, ExternalLink, LogOut } from "lucide-react"
 import { Logo } from "@/components/brand/Logo"
 
@@ -89,8 +89,7 @@ export function DashboardLayout({ children, username }: DashboardLayoutProps) {
               Sign out
             </button>
           </SignOutButton>
-          <div className="flex items-center gap-3 px-3 py-2">
-            <UserButton />
+          <div className="px-3 py-2">
             <span className="text-sm font-medium text-foreground truncate">@{username}</span>
           </div>
         </div>
@@ -102,7 +101,6 @@ export function DashboardLayout({ children, username }: DashboardLayoutProps) {
           <Link href="/dashboard">
             <Logo variant="icon" />
           </Link>
-          <UserButton />
         </header>
 
         <main className="flex-1 pb-16 md:pb-0 overflow-auto">{children}</main>
