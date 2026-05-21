@@ -26,11 +26,11 @@ export function Logo({
     <div
       className={cn(
         s.box,
-        "bg-primary rounded-lg flex items-center justify-center shrink-0"
+        "bg-primary text-primary-foreground rounded-lg flex items-center justify-center shrink-0"
       )}
       aria-label="Sub-tree"
     >
-      <TreeMark className={cn(s.svg, "text-base")} />
+      <TreeMark className={s.svg} />
     </div>
   );
 
