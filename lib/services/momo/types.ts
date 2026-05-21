@@ -7,7 +7,7 @@ export interface MomoRequestToPayParams {
 }
 
 export interface MomoRequestToPayResult {
-  providerTxId: string    // provider's transaction reference
+  providerTxId?: string   // not synchronously available for STK push; arrives via webhook
 }
 
 export type MomoCallbackPayload = {
