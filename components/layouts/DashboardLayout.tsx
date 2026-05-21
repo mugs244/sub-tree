@@ -2,8 +2,8 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { UserButton } from "@clerk/nextjs"
-import { Home, Link2, Heart, Palette, Settings, ExternalLink } from "lucide-react"
+import { UserButton, SignOutButton } from "@clerk/nextjs"
+import { Home, Link2, Heart, Palette, Settings, ExternalLink, LogOut } from "lucide-react"
 import { Logo } from "@/components/brand/Logo"
 
 interface NavItem {
@@ -83,6 +83,12 @@ export function DashboardLayout({ children, username }: DashboardLayoutProps) {
             <ExternalLink className="h-4 w-4 shrink-0" strokeWidth={1.5} />
             View profile
           </Link>
+          <SignOutButton>
+            <button className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-muted-foreground hover:bg-surface hover:text-foreground transition-colors duration-150 w-full">
+              <LogOut className="h-4 w-4 shrink-0" strokeWidth={1.5} />
+              Sign out
+            </button>
+          </SignOutButton>
           <div className="flex items-center gap-3 px-3 py-2">
             <UserButton />
             <span className="text-sm font-medium text-foreground truncate">@{username}</span>

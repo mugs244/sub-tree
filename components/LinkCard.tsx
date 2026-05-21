@@ -5,6 +5,8 @@ import { ChevronUp, ChevronDown, Pencil, Trash2, Loader2, Check, X, ExternalLink
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { PlatformIcon } from "@/components/PlatformIcon"
+import { detectPlatform } from "@/lib/utils/platform"
 
 export interface LinkItem {
   id: number
@@ -108,9 +110,12 @@ export function LinkCard({ link, isFirst, isLast, onUpdate, onDelete, onReorder 
           </div>
 
           <div className="flex-1 min-w-0">
-            <p className={`text-sm font-medium truncate ${!link.is_enabled ? "text-muted-foreground line-through" : ""}`}>
-              {link.label}
-            </p>
+            <div className={`flex items-center gap-2 ${!link.is_enabled ? "text-muted-foreground" : ""}`}>
+              <PlatformIcon platform={detectPlatform(link.url)} className="h-4 w-4 shrink-0" />
+              <p className={`text-sm font-medium truncate ${!link.is_enabled ? "line-through" : ""}`}>
+                {link.label}
+              </p>
+            </div>
             <a
               href={link.url}
               target="_blank"

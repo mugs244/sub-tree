@@ -2,6 +2,8 @@ import { notFound } from "next/navigation"
 import { prisma } from "@/lib/db"
 import { TrackedLink } from "@/components/TrackedLink"
 import { PageViewTracker } from "@/components/PageViewTracker"
+import { PlatformIcon } from "@/components/PlatformIcon"
+import { detectPlatform } from "@/lib/utils/platform"
 
 type Props = { params: Promise<{ username: string }> }
 
@@ -127,10 +129,11 @@ export default async function PublicProfilePage({ params }: Props) {
                 href={link.url}
                 linkId={link.id}
                 className={[
-                  "flex items-center justify-center w-full px-4 py-3 text-sm font-medium border border-border bg-background hover:bg-surface transition-colors duration-150",
+                  "flex items-center justify-center gap-2.5 w-full px-4 py-3 text-sm font-medium border border-border bg-background hover:bg-surface transition-colors duration-150",
                   buttonClass,
                 ].join(" ")}
               >
+                <PlatformIcon platform={detectPlatform(link.url)} className="h-4 w-4 shrink-0" />
                 {link.label}
               </TrackedLink>
             ))}
