@@ -1,13 +1,12 @@
 "use client"
 
 import { useState } from "react"
-import { useRouter } from "next/navigation"
-import { signOut } from "@clerk/nextjs"
+import { useClerk } from "@clerk/nextjs"
 import { Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 
 export function DeleteAccountButton() {
-  const router = useRouter()
+  const { signOut } = useClerk()
   const [confirming, setConfirming] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const [error, setError] = useState<string | null>(null)
