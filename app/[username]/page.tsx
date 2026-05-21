@@ -1,8 +1,10 @@
+import { Suspense } from "react"
 import { notFound } from "next/navigation"
 import { prisma } from "@/lib/db"
 import { TrackedLink } from "@/components/TrackedLink"
 import { PageViewTracker } from "@/components/PageViewTracker"
 import { PlatformIcon } from "@/components/PlatformIcon"
+import { ReferrerTracker } from "@/components/ReferrerTracker"
 import { detectPlatform } from "@/lib/utils/platform"
 
 type Props = { params: Promise<{ username: string }> }
@@ -102,6 +104,7 @@ export default async function PublicProfilePage({ params }: Props) {
       className="min-h-screen bg-background flex flex-col items-center px-4 py-12"
     >
       <PageViewTracker username={username} />
+      <Suspense><ReferrerTracker /></Suspense>
       <div className="w-full max-w-sm space-y-6">
         {profile.avatar_url && (
           <div className="flex justify-center">

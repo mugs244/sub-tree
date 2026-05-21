@@ -115,9 +115,10 @@ model Donation {
   provider        MomoProvider
   provider_tx_id  String?        @unique
   idempotency_key String         @unique
-  note            String?
-  created_at      DateTime       @default(now())
-  updated_at      DateTime       @updatedAt
+  note             String?
+  referrer_source  String?
+  created_at       DateTime       @default(now())
+  updated_at       DateTime       @updatedAt
 
   user            User           @relation(fields: [user_id], references: [id], onDelete: Restrict)
   events          DonationEvent[]
@@ -128,15 +129,17 @@ model Donation {
 }
 
 model DonationEvent {
-  id          Int      @id @default(autoincrement())
+  id          Int       @id @default(autoincrement())
   donation_id Int
   event_type  String
   payload     Json
-  created_at  DateTime @default(now())
+  read_at     DateTime?
+  created_at  DateTime  @default(now())
 
-  donation    Donation @relation(fields: [donation_id], references: [id], onDelete: Restrict)
+  donation    Donation  @relation(fields: [donation_id], references: [id], onDelete: Restrict)
 
   @@index([donation_id])
+  @@index([donation_id, read_at])
 }
 
 enum DonationStatus {

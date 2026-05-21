@@ -34,6 +34,7 @@ export function DonateForm({ username, displayName }: DonateFormProps) {
     if (!phone.trim()) { setError("Phone number is required"); return }
 
     setSubmitting(true)
+    const referrerSource = sessionStorage.getItem("st_referrer") || undefined
     try {
       const res = await fetch("/api/payments/initiate", {
         method: "POST",
@@ -44,6 +45,7 @@ export function DonateForm({ username, displayName }: DonateFormProps) {
           phone: phone.trim(),
           donor_name: donorName.trim() || undefined,
           note: note.trim() || undefined,
+          referrer_source: referrerSource,
         }),
       })
 

@@ -4,7 +4,7 @@ Update this file after every meaningful implementation change. Treat it as the r
 
 ## Current Phase
 
-Production deployment live at `sub-tree.vercel.app`. Clerk auth working end-to-end (sign-up → webhook → DB → onboarding). Platform icons, sign-out, and input color fixes shipped. Next: dashboard analytics improvements, donation notification feed (polling), referrer attribution, and profile picture upload (Vercel Blob — pending Pro plan).
+Production deployment live at `sub-tree.vercel.app`. Clerk auth working end-to-end (sign-up → webhook → DB → onboarding). Dashboard analytics, donation notification feed, and referrer attribution shipped. Next: profile picture upload (Vercel Blob — pending Pro plan), Feature 17 SMS notifications, MoMo credentials.
 
 ## Completed
 
@@ -58,6 +58,9 @@ Production deployment live at `sub-tree.vercel.app`. Clerk auth working end-to-e
 - **`postinstall: prisma generate`** added to `package.json` so Vercel runs Prisma codegen after `npm install` — fixes TypeScript build errors on Vercel.
 - **`lib/db.ts` deferred init:** Changed from throwing at import time (`throw new Error(...)`) to `?? ""` so builds succeed when `DATABASE_URL` is not set at build time. `app/[username]/opengraph-image.tsx` marked `export const dynamic = "force-dynamic"` to prevent build-time DB access.
 - **Production deployed to Vercel:** `feature/03-clerk-auth` branch set as production branch. Render Postgres is the live database. All env vars (`NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`, `CLERK_SECRET_KEY`, `CLERK_WEBHOOK_SECRET`, `DATABASE_URL`, `AFRICASTALKING_USERNAME`, `AFRICASTALKING_API_KEY`) uploaded to Vercel.
+- **Dashboard home analytics improvements:** Rebuilt dashboard home with 4 stat cards (links, completed donations, profile views, total UGX received), donation breakdown by provider (MTN vs Airtel) with percentage bars, top-source referrer breakdown with per-source donation total, top-clicked link panel, and live notification feed.
+- **Referrer attribution on donations:** `referrer_source String?` column added to `Donation` (migration `20260521173448_add_referrer_source_and_read_at`). `components/ReferrerTracker.tsx` — client component on public profile page, reads `?ref=` param first then falls back to `document.referrer` → platform name via `detectPlatform`, stores result in `sessionStorage` under key `st_referrer`. `DonateForm` reads `st_referrer` on submit and passes `referrer_source` to `POST /api/payments/initiate`. Route schema accepts and stores `referrer_source`.
+- **Donation notification feed (polling):** `read_at DateTime?` column added to `DonationEvent` (same migration). `GET /api/notifications` — auth-guarded, returns last 30 PAYMENT_COMPLETED events for the signed-in creator with donation info. `PATCH /api/notifications/[id]/read` — marks event read (ownership-verified). `components/NotificationsFeed.tsx` — client component, polls every 30 s, shows donor name, amount, note, timestamp, referrer source; unread items highlighted with dot; click to dismiss.
 
 ## In Progress
 
@@ -65,10 +68,7 @@ Nothing.
 
 ## Next Up
 
-1. **Dashboard home analytics improvements** — Show total donations received (count + UGX sum of COMPLETED), top-clicked link, profile views trend. No schema changes needed.
-2. **Referrer attribution on donations** — Add `referrer_source` column to `Donation` table. On the public profile page, read `?ref=` param first then fall back to `document.referrer`, normalise to platform name, store in `sessionStorage`. Pass `referrer_source` to `POST /api/payments/initiate`. Dashboard analytics shows "YouTube — 5 donations — UGX 45,000". Requires Prisma migration.
-3. **Donation notification feed (polling)** — Add `read_at` column to `DonationEvent` table. New `/dashboard/notifications` page (or panel) polling `/api/notifications` every 30s. Each card shows donor name, amount, message, timestamp, platform. Requires Prisma migration.
-4. **Profile picture upload** — Vercel Blob (`@vercel/blob`) for file upload. Replace avatar URL text field with file picker in `EditProfileForm` and onboarding `ProfileForm`. Requires `BLOB_READ_WRITE_TOKEN` env var (Vercel Pro plan). Add to `pending-dependencies.md` until plan is upgraded.
+1. **Profile picture upload** — Vercel Blob (`@vercel/blob`) for file upload. Replace avatar URL text field with file picker in `EditProfileForm` and onboarding `ProfileForm`. Requires `BLOB_READ_WRITE_TOKEN` env var (Vercel Pro plan). Add to `pending-dependencies.md` until plan is upgraded.
 5. **Feature 17 — SMS Notifications** — Africa's Talking: notify creator on successful donation. Call after `handleMomoCallback` sets status to COMPLETED, send "You received UGX X from [donor]" SMS to creator's phone via `lib/sms.ts`. API key available in env (`AFRICASTALKING_API_KEY`).
 6. **Wire MoMo STK push** — once MTN/Airtel sandbox credentials are available, remove the TODO comment in `app/api/payments/initiate/route.ts` and call `mtnMomo.requestToPay` / `airtelMoney.requestToPay`.
 7. **Register webhook URLs with MTN/Airtel** — configure `POST https://sub-tree.vercel.app/api/webhooks/momo/mtn` and `.../airtel` in the respective developer portals once API credentials are approved.
