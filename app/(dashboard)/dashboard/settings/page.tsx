@@ -22,7 +22,7 @@ export default async function SettingsPage() {
   })
 
   return (
-    <div className="p-6 md:p-8 max-w-2xl space-y-10">
+    <div className="px-4 py-5 md:p-8 max-w-2xl space-y-10">
       <h1 className="text-2xl font-semibold tracking-tight">Settings</h1>
 
       <section className="space-y-4">

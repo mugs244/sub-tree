@@ -38,6 +38,7 @@ export function EditProfileForm({
   async function handleSave(e: React.SyntheticEvent<HTMLFormElement>) {
     e.preventDefault()
     if (!displayName.trim()) { setError("Display name is required"); return }
+    navigator?.vibrate?.(20)
     setSaving(true)
     setSaved(false)
     setError(null)

@@ -38,21 +38,29 @@ export function NotificationsFeed() {
   }, [fetchItems])
 
   async function markRead(id: number) {
-    await fetch(`/api/notifications/${id}/read`, { method: "PATCH" })
+    navigator?.vibrate?.(20)
     setItems((prev) =>
       prev.map((n) =>
         n.id === id ? { ...n, read_at: new Date().toISOString() } : n,
       ),
     )
+    await fetch(`/api/notifications/${id}/read`, { method: "PATCH" })
   }
 
   if (loading) {
     return (
-      <div className="space-y-2">
+      <ul className="space-y-2">
         {[...Array(3)].map((_, i) => (
-          <div key={i} className="h-16 rounded-xl bg-surface animate-pulse" />
+          <li key={i} className="flex items-start gap-3 rounded-xl border border-border px-4 py-3">
+            <span className="mt-1.5 h-2 w-2 rounded-full bg-surface animate-pulse shrink-0" />
+            <div className="flex-1 space-y-2 min-w-0">
+              <div className="h-3.5 rounded-md bg-surface animate-pulse w-3/4" />
+              <div className="h-3 rounded-md bg-surface animate-pulse w-1/2" />
+              <div className="h-3 rounded-md bg-surface animate-pulse w-1/4" />
+            </div>
+          </li>
         ))}
-      </div>
+      </ul>
     )
   }
 

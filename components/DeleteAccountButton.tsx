@@ -40,7 +40,7 @@ export function DeleteAccountButton() {
             variant="destructive"
             size="sm"
             disabled={deleting}
-            onClick={handleDelete}
+            onClick={() => { navigator?.vibrate?.(20); handleDelete() }}
           >
             {deleting && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
             {deleting ? "Deleting…" : "Yes, delete my account"}
@@ -49,7 +49,7 @@ export function DeleteAccountButton() {
             variant="ghost"
             size="sm"
             disabled={deleting}
-            onClick={() => { setConfirming(false); setError(null) }}
+            onClick={() => { navigator?.vibrate?.(20); setConfirming(false); setError(null) }}
           >
             Cancel
           </Button>
@@ -59,7 +59,7 @@ export function DeleteAccountButton() {
   }
 
   return (
-    <Button variant="destructive" size="sm" onClick={() => setConfirming(true)}>
+    <Button variant="destructive" size="sm" onClick={() => { navigator?.vibrate?.(20); setConfirming(true) }}>
       Delete account
     </Button>
   )

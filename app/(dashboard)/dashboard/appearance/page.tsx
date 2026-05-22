@@ -23,7 +23,7 @@ export default async function AppearancePage() {
   })
 
   return (
-    <div className="p-6 md:p-8 max-w-5xl space-y-8">
+    <div className="px-4 py-5 md:p-8 max-w-5xl space-y-8">
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">Appearance</h1>
         <p className="text-sm text-muted-foreground mt-1">

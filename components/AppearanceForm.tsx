@@ -158,7 +158,7 @@ export function AppearanceForm({
                 <button
                   key={preset.value}
                   type="button"
-                  onClick={() => setTheme(preset.value)}
+                  onClick={() => { navigator?.vibrate?.(20); setTheme(preset.value) }}
                   aria-label={`${preset.label} theme`}
                   aria-pressed={active}
                   className={[
@@ -205,7 +205,7 @@ export function AppearanceForm({
                 <button
                   key={s.value}
                   type="button"
-                  onClick={() => setButtonStyle(s.value)}
+                  onClick={() => { navigator?.vibrate?.(20); setButtonStyle(s.value) }}
                   aria-label={`${s.label} button style`}
                   aria-pressed={active}
                   className={[

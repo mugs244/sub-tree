@@ -31,14 +31,13 @@ export function LinkCard({ link, isFirst, isLast, onUpdate, onDelete, onReorder 
   const [label, setLabel] = useState(link.label)
   const [url, setUrl] = useState(link.url)
   const [saving, setSaving] = useState(false)
-  const [toggling, setToggling] = useState(false)
   const [deleting, setDeleting] = useState(false)
-  const [moving, setMoving] = useState<"up" | "down" | null>(null)
   const [error, setError] = useState<string | null>(null)
 
   async function handleSave() {
     setError(null)
     setSaving(true)
+    navigator?.vibrate?.(20)
     try {
       await onUpdate(link.id, { label: label.trim(), url: url.trim() })
       setEditing(false)
@@ -50,6 +49,7 @@ export function LinkCard({ link, isFirst, isLast, onUpdate, onDelete, onReorder 
   }
 
   function handleCancel() {
+    navigator?.vibrate?.(20)
     setLabel(link.label)
     setUrl(link.url)
     setError(null)
@@ -57,15 +57,16 @@ export function LinkCard({ link, isFirst, isLast, onUpdate, onDelete, onReorder 
   }
 
   async function handleToggle() {
-    setToggling(true)
+    navigator?.vibrate?.(20)
     try {
       await onUpdate(link.id, { is_enabled: !link.is_enabled })
-    } finally {
-      setToggling(false)
+    } catch {
+      // rollback handled by parent
     }
   }
 
   async function handleDelete() {
+    navigator?.vibrate?.(20)
     if (!confirm(`Delete "${link.label}"?`)) return
     setDeleting(true)
     try {
@@ -76,11 +77,11 @@ export function LinkCard({ link, isFirst, isLast, onUpdate, onDelete, onReorder 
   }
 
   async function handleReorder(direction: "up" | "down") {
-    setMoving(direction)
+    navigator?.vibrate?.(20)
     try {
       await onReorder(link.id, direction)
-    } finally {
-      setMoving(null)
+    } catch {
+      // rollback handled by parent
     }
   }
 
@@ -88,24 +89,24 @@ export function LinkCard({ link, isFirst, isLast, onUpdate, onDelete, onReorder 
     <div className={`bg-background border border-border rounded-xl p-4 space-y-3 transition-opacity duration-150 ${deleting ? "opacity-40 pointer-events-none" : ""}`}>
       {!editing ? (
         <div className="flex items-start gap-3">
-          <div className="flex flex-col gap-0.5 shrink-0">
+          <div className="flex flex-col shrink-0">
             <button
               type="button"
               onClick={() => handleReorder("up")}
-              disabled={isFirst || moving !== null}
+              disabled={isFirst}
               aria-label="Move up"
-              className="p-0.5 rounded text-muted-foreground hover:text-foreground disabled:opacity-30 transition-colors duration-150"
+              className="p-1.5 rounded text-muted-foreground hover:text-foreground disabled:opacity-30 transition-colors duration-150"
             >
-              {moving === "up" ? <Loader2 className="h-4 w-4 animate-spin" /> : <ChevronUp className="h-4 w-4" />}
+              <ChevronUp className="h-4 w-4" />
             </button>
             <button
               type="button"
               onClick={() => handleReorder("down")}
-              disabled={isLast || moving !== null}
+              disabled={isLast}
               aria-label="Move down"
-              className="p-0.5 rounded text-muted-foreground hover:text-foreground disabled:opacity-30 transition-colors duration-150"
+              className="p-1.5 rounded text-muted-foreground hover:text-foreground disabled:opacity-30 transition-colors duration-150"
             >
-              {moving === "down" ? <Loader2 className="h-4 w-4 animate-spin" /> : <ChevronDown className="h-4 w-4" />}
+              <ChevronDown className="h-4 w-4" />
             </button>
           </div>
 
@@ -135,11 +136,9 @@ export function LinkCard({ link, isFirst, isLast, onUpdate, onDelete, onReorder 
               aria-checked={link.is_enabled}
               aria-label={link.is_enabled ? "Disable link" : "Enable link"}
               onClick={handleToggle}
-              disabled={toggling}
               className={[
                 "relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
                 link.is_enabled ? "bg-primary" : "bg-muted",
-                toggling ? "opacity-50" : "",
               ].join(" ")}
             >
               <span
@@ -151,7 +150,7 @@ export function LinkCard({ link, isFirst, isLast, onUpdate, onDelete, onReorder 
             </button>
             <button
               type="button"
-              onClick={() => setEditing(true)}
+              onClick={() => { navigator?.vibrate?.(20); setEditing(true) }}
               aria-label="Edit link"
               className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-surface transition-colors duration-150"
             >
@@ -177,7 +176,7 @@ export function LinkCard({ link, isFirst, isLast, onUpdate, onDelete, onReorder 
               value={label}
               onChange={(e) => setLabel(e.target.value)}
               placeholder="My website"
-              className="h-8 text-sm"
+              className="h-9 text-sm"
             />
           </div>
           <div className="space-y-1.5">
@@ -188,16 +187,16 @@ export function LinkCard({ link, isFirst, isLast, onUpdate, onDelete, onReorder 
               value={url}
               onChange={(e) => setUrl(e.target.value)}
               placeholder="https://…"
-              className="h-8 text-sm font-mono"
+              className="h-9 text-sm font-mono"
             />
           </div>
           {error && <p className="text-xs text-destructive">{error}</p>}
           <div className="flex gap-2">
-            <Button size="sm" onClick={handleSave} disabled={saving} className="h-8">
+            <Button size="sm" onClick={handleSave} disabled={saving} className="h-9">
               {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Check className="h-3.5 w-3.5" />}
               <span className="ml-1.5">{saving ? "Saving…" : "Save"}</span>
             </Button>
-            <Button size="sm" variant="ghost" onClick={handleCancel} disabled={saving} className="h-8">
+            <Button size="sm" variant="ghost" onClick={handleCancel} disabled={saving} className="h-9">
               <X className="h-3.5 w-3.5" />
               <span className="ml-1.5">Cancel</span>
             </Button>

@@ -27,12 +27,13 @@ export function DonateForm({ username, displayName }: DonateFormProps) {
 
   const resolvedAmount = amount !== "" ? amount : parseInt(customAmount.replace(/\D/g, ""), 10) || 0
 
-  async function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.SyntheticEvent<HTMLFormElement>) {
     e.preventDefault()
     setError(null)
     if (resolvedAmount < 500) { setError("Minimum donation is UGX 500"); return }
     if (!phone.trim()) { setError("Phone number is required"); return }
 
+    navigator?.vibrate?.(20)
     setSubmitting(true)
     const referrerSource = sessionStorage.getItem("st_referrer") || undefined
     try {
@@ -96,7 +97,7 @@ export function DonateForm({ username, displayName }: DonateFormProps) {
             <button
               key={a}
               type="button"
-              onClick={() => { setAmount(a); setCustomAmount("") }}
+              onClick={() => { navigator?.vibrate?.(20); setAmount(a); setCustomAmount("") }}
               className={[
                 "py-2 text-sm font-medium rounded-lg border transition-colors duration-150",
                 amount === a
