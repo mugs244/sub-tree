@@ -262,7 +262,7 @@ function Step({
 
 function ProfileMockup() {
   return (
-    <div className="w-[260px] rounded-2xl border border-border bg-background shadow-sm overflow-hidden">
+    <div className="w-full max-w-[260px] rounded-2xl border border-border bg-background shadow-sm overflow-hidden">
       {/* header bar */}
       <div className="h-2 bg-surface border-b border-border" />
       <div className="px-5 py-6 space-y-4">
@@ -306,7 +306,7 @@ function ProfileMockup() {
 
 function DonatePreview() {
   return (
-    <div className="w-[220px] rounded-xl border border-border bg-background p-5 space-y-3">
+    <div className="w-full max-w-[220px] rounded-xl border border-border bg-background p-5 space-y-3">
       <p className="text-xs font-medium">Amount (UGX)</p>
       <div className="grid grid-cols-3 gap-1.5">
         {["2,000", "5,000", "10,000"].map((a, i) => (

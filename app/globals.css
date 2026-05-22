@@ -124,6 +124,11 @@
 }
 
 /* ── Base styles ─────────────────────────────────────── */
+html,
+body {
+  overflow-x: hidden;
+}
+
 body {
   background-color: var(--bg-base);
   color: var(--text-primary);
