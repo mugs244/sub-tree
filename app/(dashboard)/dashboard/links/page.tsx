@@ -11,7 +11,7 @@ export default async function LinksPage() {
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">Links</h1>
         <p className="text-sm text-muted-foreground mt-1">
-          {links.length} link{links.length !== 1 ? "s" : ""} · drag to reorder
+          {links.length} link{links.length !== 1 ? "s" : ""}
         </p>
       </div>
       <LinksManager initialLinks={links} />

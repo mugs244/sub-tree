@@ -143,34 +143,33 @@ export function LinksManager({ initialLinks }: LinksManagerProps) {
           className="bg-surface border border-border rounded-xl p-4 space-y-3"
         >
           <div className="space-y-1.5">
-            <Label htmlFor="new-label" className="text-xs font-medium">Label</Label>
+            <Label htmlFor="new-label" className="text-sm font-medium">Label</Label>
             <Input
               id="new-label"
               value={newLabel}
               onChange={(e) => setNewLabel(e.target.value)}
               placeholder="My website"
-              className="h-9 text-sm"
+              className="h-11"
               autoFocus
             />
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="new-url" className="text-xs font-medium">URL</Label>
+            <Label htmlFor="new-url" className="text-sm font-medium">URL</Label>
             <Input
               id="new-url"
               type="url"
               value={newUrl}
               onChange={(e) => setNewUrl(e.target.value)}
               placeholder="https://…"
-              className="h-9 text-sm font-mono"
+              className="h-11 font-mono text-sm"
             />
           </div>
           <div className="flex gap-2">
-            <Button type="submit" size="sm" className="h-9">Add link</Button>
+            <Button type="submit" className="h-11 flex-1">Add link</Button>
             <Button
               type="button"
-              size="sm"
               variant="ghost"
-              className="h-9"
+              className="h-11 flex-1"
               onClick={() => {
                 navigator?.vibrate?.(20)
                 setShowAdd(false)
@@ -186,7 +185,7 @@ export function LinksManager({ initialLinks }: LinksManagerProps) {
       ) : (
         <Button
           variant="outline"
-          className="w-full border-dashed h-11 text-muted-foreground hover:text-foreground"
+          className="w-full border-dashed h-12 text-muted-foreground hover:text-foreground"
           onClick={() => {
             navigator?.vibrate?.(20)
             setShowAdd(true)
