@@ -63,6 +63,8 @@ Production deployment live at `sub-tree.vercel.app` on `feature/03-clerk-auth` b
 - **Dashboard home analytics improvements:** Rebuilt dashboard home with 4 stat cards (links, completed donations, profile views, total UGX received), donation breakdown by provider (MTN vs Airtel) with percentage bars, top-source referrer breakdown with per-source donation total, top-clicked link panel, and live notification feed.
 - **Referrer attribution on donations:** `referrer_source String?` column added to `Donation` (migration `20260521173448_add_referrer_source_and_read_at`). `components/ReferrerTracker.tsx` — client component on public profile page, reads `?ref=` param first then falls back to `document.referrer` → platform name via `detectPlatform`, stores result in `sessionStorage` under key `st_referrer`. `DonateForm` reads `st_referrer` on submit and passes `referrer_source` to `POST /api/payments/initiate`. Route schema accepts and stores `referrer_source`.
 - **Donation notification feed (polling):** `read_at DateTime?` column added to `DonationEvent` (same migration). `GET /api/notifications` — auth-guarded, returns last 30 PAYMENT_COMPLETED events for the signed-in creator with donation info. `PATCH /api/notifications/[id]/read` — marks event read (ownership-verified). `components/NotificationsFeed.tsx` — client component, polls every 30 s, shows donor name, amount, note, timestamp, referrer source; unread items highlighted with dot; click to dismiss.
+- **Feature 36 — Pesapal + OpenFloat aggregator integration shipped:** `lib/services/payments/pesapal.ts` — Pesapal v3 Collections client: `getToken` (OAuth2 consumer key/secret), `requestToPay` (SubmitOrderRequest → STK push to phone), `getTransactionStatus` (called by IPN handler to confirm status). `lib/services/payments/openfloat.ts` — OpenFloat client: API key auth, `requestToPay`, HMAC-SHA256 `verifyCallback`. `app/api/webhooks/payments/pesapal/route.ts` — GET handler (Pesapal IPN is a GET), reads `orderTrackingId` from query params, calls `getTransactionStatus`, delegates to `handleMomoCallback`. `app/api/webhooks/payments/openfloat/route.ts` — POST handler, verifies signature, delegates to `handleMomoCallback`. `/api/payments/initiate` updated with aggregator-first fallback chain: Pesapal → OpenFloat → direct MTN/Airtel; each leg skipped if its env vars are absent; all failures leave donation in PENDING for manual review.
+- **Feature 17 — Africa's Talking SMS notifications shipped:** `lib/sms.ts` — `sendSms(to, message)` using Africa's Talking REST API (no SDK — avoids CommonJS interop). Sandbox URL auto-selected when `AFRICASTALKING_USERNAME === "sandbox"`. Phone normalised to international format. Errors swallowed so SMS failure never crashes the payment flow. Wired into `lib/services/donation.ts`: after `COMPLETED` status is written, fetches creator's `User.phone` and sends "X just donated UGX Y to you on Sub-tree." SMS failures are logged and silently swallowed.
 
 ## In Progress
 
@@ -70,12 +72,13 @@ Nothing.
 
 ## Next Up
 
-1. **Feature 36 — Pesapal + OpenFloat aggregator integration.** Build `lib/services/payments/pesapal.ts` and `lib/services/payments/openfloat.ts` implementing the existing `MomoProvider` interface. Add webhook routes at `/api/webhooks/payments/{pesapal,openfloat}`. Update `/api/payments/initiate` to call aggregator first, with `lib/services/momo/*` direct clients as fallback if aggregator returns an error.
-2. **Feature 17 — Africa's Talking SMS notifications.** Wire `lib/sms.ts`. Call from `handleMomoCallback` after `status = COMPLETED`. Send "You received UGX X from [donor name]" to creator's phone via `africastalking@0.7.9` (already in dependencies).
-3. **Profile picture upload — Vercel Blob.** Requires Vercel Pro. Add `@vercel/blob`, replace avatar URL text field with file picker in `EditProfileForm` and onboarding `ProfileForm`. Set `BLOB_READ_WRITE_TOKEN`.
-4. **Register webhook URLs with Pesapal + OpenFloat** in their respective dashboards once merchant onboarding completes.
-5. **Merge `feature/03-clerk-auth` → `main` and set `main` as Vercel production branch.** Five-minute task. Resolves technical debt called out in ARCHITECTURE.md.
-6. **Register `sub-tree.com`** via Cloudflare Registrar. Currently running on `sub-tree.vercel.app`.
+1. **Register webhook URLs with Pesapal + OpenFloat** in their respective dashboards once merchant onboarding completes:
+   - `https://sub-tree.vercel.app/api/webhooks/payments/pesapal` (GET IPN)
+   - `https://sub-tree.vercel.app/api/webhooks/payments/openfloat` (POST)
+   - Add `PESAPAL_CONSUMER_KEY`, `PESAPAL_CONSUMER_SECRET`, `PESAPAL_IPN_ID`, `PESAPAL_ENVIRONMENT`, `PESAPAL_CALLBACK_URL`, `OPENFLOAT_API_KEY`, `OPENFLOAT_WEBHOOK_SECRET` to Vercel env vars.
+2. **Profile picture upload — Vercel Blob.** Requires Vercel Pro. Add `@vercel/blob`, replace avatar URL text field with file picker in `EditProfileForm` and onboarding `ProfileForm`. Set `BLOB_READ_WRITE_TOKEN`.
+3. **Merge `feature/03-clerk-auth` → `main` and set `main` as Vercel production branch.** Five-minute task. Resolves technical debt called out in ARCHITECTURE.md.
+4. **Register `sub-tree.com`** via Cloudflare Registrar. Currently running on `sub-tree.vercel.app`.
 
 ## Open Questions
 

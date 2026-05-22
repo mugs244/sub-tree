@@ -3,6 +3,11 @@ import { z } from "zod"
 import { prisma } from "@/lib/db"
 import { randomUUID } from "crypto"
 import { checkRateLimit } from "@/lib/rateLimit"
+import { pesapal } from "@/lib/services/payments/pesapal"
+import { openFloat } from "@/lib/services/payments/openfloat"
+import { mtnMomo } from "@/lib/services/momo/mtn"
+import { airtelMoney } from "@/lib/services/momo/airtel"
+import type { MomoProvider } from "@/lib/services/momo/types"
 
 const initiateSchema = z.object({
   username: z.string().min(1),
@@ -92,9 +97,52 @@ export async function POST(req: Request): Promise<NextResponse> {
     )
   }
 
-  // TODO: trigger MoMo STK push here once MTN/Airtel API credentials are configured
-  // const momoClient = provider === "MTN_MOMO" ? mtnClient : airtelClient
-  // await momoClient.requestToPay({ amount, phone: normalized, referenceId: idempotencyKey })
+  // Aggregator-first STK push: Pesapal → OpenFloat → direct MTN/Airtel
+  const directProvider: MomoProvider = provider === "MTN_MOMO" ? mtnMomo : airtelMoney
+  const chain: Array<{ name: string; client: MomoProvider; configured: boolean }> = [
+    {
+      name: "Pesapal",
+      client: pesapal,
+      configured: !!(process.env.PESAPAL_CONSUMER_KEY && process.env.PESAPAL_CONSUMER_SECRET),
+    },
+    {
+      name: "OpenFloat",
+      client: openFloat,
+      configured: !!process.env.OPENFLOAT_API_KEY,
+    },
+    {
+      name: provider === "MTN_MOMO" ? "MTN direct" : "Airtel direct",
+      client: directProvider,
+      configured:
+        provider === "MTN_MOMO"
+          ? !!(process.env.MTN_MOMO_API_USER && process.env.MTN_MOMO_API_KEY)
+          : !!(process.env.AIRTEL_CLIENT_ID && process.env.AIRTEL_CLIENT_SECRET),
+    },
+  ]
+
+  const stkParams = {
+    amount,
+    phone: normalized,
+    referenceId: idempotencyKey,
+    payerMessage: "Sub-tree donation",
+  }
+
+  let lastError: unknown
+  for (const { name, client, configured } of chain) {
+    if (!configured) continue
+    try {
+      await client.requestToPay(stkParams)
+      break
+    } catch (err) {
+      console.error(`${name} STK push failed, trying next`, err)
+      lastError = err
+    }
+  }
+
+  if (lastError) {
+    // All configured providers failed — donation record stays PENDING for manual review
+    console.error("All payment providers failed for", idempotencyKey, lastError)
+  }
 
   return NextResponse.json({ data: { idempotency_key: idempotencyKey } }, { status: 202 })
 }

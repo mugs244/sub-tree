@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/db"
+import { sendSms } from "@/lib/sms"
 import type { MomoCallbackPayload } from "./momo/types"
 
 export async function handleMomoCallback(
@@ -20,13 +21,14 @@ export async function handleMomoCallback(
 
   const newStatus = status === "SUCCESSFUL" ? "COMPLETED" : "FAILED"
 
-  await prisma.$transaction([
+  const [updatedDonation] = await prisma.$transaction([
     prisma.donation.update({
       where: { id: donation.id },
       data: {
         status: newStatus,
         ...(providerTxId ? { provider_tx_id: providerTxId } : {}),
       },
+      select: { amount: true, donor_name: true, user_id: true },
     }),
     prisma.donationEvent.create({
       data: {
@@ -40,4 +42,16 @@ export async function handleMomoCallback(
       },
     }),
   ])
+
+  if (newStatus === "COMPLETED") {
+    const creator = await prisma.user.findUnique({
+      where: { id: updatedDonation.user_id },
+      select: { phone: true },
+    })
+    if (creator?.phone) {
+      const donor = updatedDonation.donor_name ?? "Someone"
+      const amount = updatedDonation.amount.toLocaleString()
+      await sendSms(creator.phone, `${donor} just donated UGX ${amount} to you on Sub-tree. 🎉`)
+    }
+  }
 }
