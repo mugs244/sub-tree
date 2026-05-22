@@ -1,5 +1,7 @@
 import { z } from "zod"
 
+const ugandaPhoneRegex = /^(?:\+?256|0)(7[0-9])\d{7}$/
+
 export const saveProfileSchema = z.object({
   display_name: z
     .string()
@@ -13,8 +15,14 @@ export const saveProfileSchema = z.object({
     .transform((v) => v?.trim() || null),
   avatar_url: z
     .string()
-    .url("Avatar must be a valid URL")
+    .url({ message: "Avatar must be a valid URL" })
     .max(500)
+    .optional()
+    .or(z.literal(""))
+    .transform((v) => v || null),
+  momo_number: z
+    .string()
+    .regex(ugandaPhoneRegex, "Enter a valid Uganda mobile number (e.g. 0771234567)")
     .optional()
     .or(z.literal(""))
     .transform((v) => v || null),

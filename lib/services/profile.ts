@@ -26,18 +26,23 @@ export async function saveProfile(
   })
   if (!user) throw new ProfileError("USER_NOT_FOUND", "User record not found")
 
-  await prisma.profile.upsert({
-    where: { user_id: user.id },
-    create: {
-      user_id: user.id,
-      display_name: parsed.data.display_name,
-      bio: parsed.data.bio ?? null,
-      avatar_url: parsed.data.avatar_url ?? null,
-    },
-    update: {
-      display_name: parsed.data.display_name,
-      bio: parsed.data.bio ?? null,
-      avatar_url: parsed.data.avatar_url ?? null,
-    },
-  })
+  await prisma.$transaction([
+    prisma.profile.upsert({
+      where: { user_id: user.id },
+      create: {
+        user_id: user.id,
+        display_name: parsed.data.display_name,
+        bio: parsed.data.bio ?? null,
+        avatar_url: parsed.data.avatar_url ?? null,
+      },
+      update: {
+        display_name: parsed.data.display_name,
+        bio: parsed.data.bio ?? null,
+        avatar_url: parsed.data.avatar_url ?? null,
+      },
+    }),
+    ...(parsed.data.momo_number !== undefined
+      ? [prisma.user.update({ where: { id: user.id }, data: { momo_number: parsed.data.momo_number } })]
+      : []),
+  ])
 }

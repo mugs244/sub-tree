@@ -16,6 +16,7 @@ export default async function SettingsPage() {
       phone: true,
       tier: true,
       created_at: true,
+      momo_number: true,
       profile: { select: { display_name: true, bio: true, avatar_url: true } },
     },
   })
@@ -31,6 +32,7 @@ export default async function SettingsPage() {
             initialDisplayName={user?.profile?.display_name ?? ""}
             initialBio={user?.profile?.bio ?? ""}
             initialAvatarUrl={user?.profile?.avatar_url ?? ""}
+            initialMomoNumber={user?.momo_number ?? ""}
           />
         </div>
       </section>
@@ -40,7 +42,8 @@ export default async function SettingsPage() {
         <div className="bg-surface border border-border rounded-xl divide-y divide-border">
           <Row label="Username" value={`@${user?.username ?? "—"}`} mono />
           <Row label="Email" value={user?.email ?? "—"} />
-          <Row label="Phone" value={user?.phone ?? "—"} mono />
+          <Row label="Auth phone" value={user?.phone ?? "—"} mono />
+          <Row label="Donation number" value={user?.momo_number ?? "Not set"} mono />
           <Row label="Plan" value={user?.tier === "PRO" ? "Pro" : "Free"} />
           <Row
             label="Member since"

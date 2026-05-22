@@ -101,6 +101,14 @@ export function DashboardLayout({ children, username }: DashboardLayoutProps) {
           <Link href="/dashboard">
             <Logo variant="icon" />
           </Link>
+          <SignOutButton>
+            <button
+              className="flex items-center justify-center h-9 w-9 rounded-lg text-muted-foreground hover:bg-surface hover:text-foreground transition-colors duration-150"
+              aria-label="Sign out"
+            >
+              <LogOut className="h-5 w-5" strokeWidth={1.5} />
+            </button>
+          </SignOutButton>
         </header>
 
         <main className="flex-1 pb-16 md:pb-0 overflow-auto">{children}</main>

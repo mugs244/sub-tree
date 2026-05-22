@@ -11,6 +11,7 @@ model User {
   clerk_user_id     String          @unique
   username          String?         @unique
   phone             String?
+  momo_number       String?
   email             String?
   email_verified_at DateTime?
   account_type      AccountType     @default(INDIVIDUAL)

@@ -11,12 +11,19 @@ interface EditProfileFormProps {
   initialDisplayName: string
   initialBio: string
   initialAvatarUrl: string
+  initialMomoNumber: string
 }
 
-export function EditProfileForm({ initialDisplayName, initialBio, initialAvatarUrl }: EditProfileFormProps) {
+export function EditProfileForm({
+  initialDisplayName,
+  initialBio,
+  initialAvatarUrl,
+  initialMomoNumber,
+}: EditProfileFormProps) {
   const [displayName, setDisplayName] = useState(initialDisplayName)
   const [bio, setBio] = useState(initialBio)
   const [avatarUrl, setAvatarUrl] = useState(initialAvatarUrl)
+  const [momoNumber, setMomoNumber] = useState(initialMomoNumber)
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -28,7 +35,7 @@ export function EditProfileForm({ initialDisplayName, initialBio, initialAvatarU
     }
   }, [])
 
-  async function handleSave(e: React.FormEvent) {
+  async function handleSave(e: React.SyntheticEvent<HTMLFormElement>) {
     e.preventDefault()
     if (!displayName.trim()) { setError("Display name is required"); return }
     setSaving(true)
@@ -42,6 +49,7 @@ export function EditProfileForm({ initialDisplayName, initialBio, initialAvatarU
           display_name: displayName.trim(),
           bio: bio.trim() || undefined,
           avatar_url: avatarUrl.trim() || undefined,
+          momo_number: momoNumber.trim() || undefined,
         }),
       })
       if (!res.ok) {
@@ -102,6 +110,22 @@ export function EditProfileForm({ initialDisplayName, initialBio, initialAvatarU
           onChange={(e) => setAvatarUrl(e.target.value)}
           placeholder="https://…"
         />
+      </div>
+
+      <div className="space-y-1.5">
+        <Label htmlFor="edit-momo" className="text-sm font-medium">
+          Donation number <span className="text-muted-foreground font-normal">(MTN or Airtel)</span>
+        </Label>
+        <Input
+          id="edit-momo"
+          type="tel"
+          value={momoNumber}
+          onChange={(e) => setMomoNumber(e.target.value)}
+          placeholder="0771234567"
+        />
+        <p className="text-xs text-muted-foreground">
+          Donations from supporters will be sent to this number.
+        </p>
       </div>
 
       {error && <p className="text-xs text-destructive">{error}</p>}

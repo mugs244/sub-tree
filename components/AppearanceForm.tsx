@@ -185,8 +185,8 @@ export function AppearanceForm({
                     {preset.label}
                   </span>
                   {active && (
-                    <span className="absolute top-1.5 right-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-foreground">
-                      <Check className="h-2.5 w-2.5 text-background" strokeWidth={3} />
+                    <span className="absolute top-1.5 right-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-white shadow-sm ring-1 ring-black/10">
+                      <Check className="h-2.5 w-2.5 text-gray-900" strokeWidth={3} />
                     </span>
                   )}
                 </button>
