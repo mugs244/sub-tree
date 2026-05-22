@@ -180,102 +180,152 @@ Migration: `feature_39_shop`
 ## API Surface
 
 ```
-# Products
-POST   /api/shop/products                        — create product (Business+ only)
-GET    /api/shop/products                        — list caller's products
-PATCH  /api/shop/products/[id]                   — update product
-DELETE /api/shop/products/[id]                   — soft-delete (status = INACTIVE)
-
-# Public
-GET    /api/public/shop/[username]               — list active products for a profile page
-GET    /api/public/shop/[username]/[product_id]  — product detail
-
-# Checkout
-POST   /api/shop/checkout                        — initiate Pesapal payment, create Order in HELD state
-GET    /api/shop/orders/[id]                     — order status (buyer-facing, keyed on pesapal_txn_id)
-POST   /api/shop/orders/[id]/dispute             — buyer raises a dispute
-
-# Seller order management
-GET    /api/shop/seller/orders                   — list seller's orders with escrow state
-GET    /api/shop/seller/orders/[id]              — order detail
-
-# Downloads (digital)
-GET    /api/shop/download/[token]                — serve signed Vercel Blob URL; validates token, expiry, count
-
-# Cron (internal — secured via CRON_SECRET header)
-POST   /api/cron/escrow-release                  — daily job; finds orders where escrow_release_at <= NOW()
-                                                   and escrow_status = HELD; triggers Pesapal release API;
-                                                   writes OrderEvent(ESCROW_RELEASED); notifies seller
-
-# Admin
-GET    /api/admin/disputes                       — list disputed orders
-PATCH  /api/admin/disputes/[id]                  — resolve: release to seller or refund to buyer
+POST   /api/shop/products              — create product (Business+)
+GET    /api/shop/products              — list my products
+PATCH  /api/shop/products/[id]         — update product
+DELETE /api/shop/products/[id]         — deactivate (soft — status = INACTIVE)
+POST   /api/shop/products/[id]/upload  — get Vercel Blob signed upload URL (digital only)
+GET    /api/public/[username]/shop     — public shop products list
+GET    /api/public/products/[id]       — product detail (public)
+POST   /api/orders/initiate            — start checkout (creates PENDING order, initiates Pesapal)
+GET    /api/orders/[id]/status         — poll order status
+GET    /api/orders/[id]/download       — get signed download URL (digital only — validates token)
+POST   /api/orders/[id]/dispute        — buyer raises dispute
+GET    /api/shop/orders                — creator's order list
+GET    /api/shop/escrow                — creator's escrow summary (held funds, release timeline)
+POST   /api/webhooks/payments/pesapal/shop   — shop-specific Pesapal webhook (or unified handler discriminates)
+GET    /api/admin/disputes             — admin dispute queue
+POST   /api/admin/disputes/[id]/resolve — admin resolves dispute (release to seller OR refund to buyer)
+GET    /api/cron/escrow-release        — Vercel Cron daily auto-release pass (protected by CRON_SECRET)
 ```
 
-The Pesapal webhook handler (`POST /api/webhooks/payments`) is extended to handle Shop payment confirmations: create the Order record, set `escrow_status = HELD`, set `escrow_release_at`, generate `download_token` for digital, write `OrderEvent(PAYMENT_CONFIRMED)`.
+## Escrow Auto-Release Job
+
+Daily Vercel Cron job:
+
+1. Query: orders where `escrow_status = HELD AND escrow_release_at <= NOW() AND dispute_raised_at IS NULL`
+2. For each: initiate Pesapal disbursement to seller's MoMo, mark `escrow_status = RELEASED`, append `OrderEvent(ESCROW_RELEASED)`
+3. If disbursement fails: do NOT change status; log error; retry next day
+4. Affiliate commission flagging happens here too (see Feature 40)
+
+This job is the trigger condition for installing Trigger.dev from `pending-dependencies.md`. At launch volume, Vercel Cron is sufficient. When daily order count exceeds ~500 or reliability matters more, migrate.
+
+## Digital Delivery
+
+On successful payment webhook (digital products only):
+
+1. Generate cryptographically random 32-byte download token (URL-safe base64)
+2. Hash the token, store hash in `Order.download_token`
+3. Set `download_expires_at = NOW() + 48 hours`
+4. Return success page with download URL: `/api/orders/[id]/download?token=[raw_token]`
+5. Optionally SMS the link via Africa's Talking
+
+Download endpoint:
+- Validates token hash matches stored hash
+- Checks not expired
+- Checks `download_count < 3`
+- Generates short-lived Vercel Blob signed URL (60 second TTL)
+- Increments `download_count`
+- Appends `OrderEvent(DOWNLOAD_ACCESSED)` with masked IP
+- Redirects to the signed Blob URL
+
+## UI Changes
+
+### Dashboard — Shop tab (Business+)
+- Product list with stock, sales, revenue
+- "Add Product" button → modal/page for creation
+- Per-product: edit, deactivate, view orders, affiliate program toggle
+- Bulk actions deferred to post-launch
+
+### Dashboard — Orders tab (Business+)
+- Filterable order list (status, date range, product)
+- Per-order detail: buyer info, payment status, escrow status, dispute status, release timeline
+- "Manually release" button (Business owner can release early if happy with delivery)
+
+### Dashboard — Escrow Summary widget
+- Held funds total (sum of orders in HELD state)
+- Next release date
+- Disputed orders count (red badge if > 0)
+
+### Public profile page — Shop section
+- Below link stack
+- Product cards (grid on desktop, list on mobile)
+- "View shop" link → `/[username]/shop` (full product grid)
+- Single product → `/[username]/shop/[product]`
+
+### Product detail page
+- Cover image, name, price, description
+- "Buy" CTA → checkout flow
+- "Limited stock — X remaining" badge if physical and stock < 10
+- For digital: "Instant download after purchase"
+
+### Checkout / Order confirmation
+- Buyer fills in name, phone, optional email
+- Pesapal STK push pending state
+- Success page:
+  - Digital: prominent "Download now" CTA, link valid for 48 hours, max 3 downloads, optional "Send to my email/SMS"
+  - Physical: creator's shipping instructions, expected delivery window, "Order #" for buyer's reference
 
 ## Scope
 
 ### In scope
-- Digital and physical product types
-- Vercel Blob upload for digital files (max 500MB)
-- Pesapal STK push checkout
-- Escrow hold + auto-release timer (3/7/14 days)
-- Signed time-limited download URLs (48h, max 3 downloads)
-- Dispute raising by buyer (manual admin resolution)
-- Seller escrow dashboard (held amount, release timeline)
-- Order management (list, detail, status)
-- Physical shipping instructions post-purchase
-- Stock tracking for physical products
-- Affiliate commission rate per product (consumed by Feature 40)
-- Cron job for daily escrow release
+- Product creation (digital + physical)
+- Vercel Blob digital file storage
+- Shop section on profile and standalone shop page
+- Product detail page
+- Pesapal checkout with escrow
+- Digital delivery (signed URLs, 48h expiry, 3 download limit)
+- Physical delivery instructions display
+- Order management dashboard
+- Escrow dashboard
+- Buyer-raised disputes
+- Manual admin dispute resolution
+- Auto-release cron job
+- Affiliate commission calculation at order time (consumed by Feature 40)
+- Affiliate program toggle per product
+- Manual early release by seller
 
 ### Out of scope
-- Automated dispute resolution (manual admin at v2 launch)
-- Subscription products or recurring payments
-- Product variants (sizes, colors) — flat product only
-- Bundle pricing
-- Discount codes
-- Reviews and ratings
-- Buyer account or purchase history (guest checkout only at v2)
-- Physical shipping integration (creator handles fulfillment)
-- Invoice generation (creator's responsibility)
-- VAT/tax calculation
+- Sub-tree handling physical fulfillment in any way
+- Refund flow beyond admin dispute resolution
+- Discount codes, promotional pricing
+- Product categories, search, filtering
+- Reviews or ratings
+- Recurring subscriptions for digital content
+- VAT/tax calculation (deferred to v1 Feature 30 — EFRIS)
+- Card payments (MoMo-first; Pesapal supports cards but we don't surface this at v2)
+- Buyer accounts (every purchase is one-shot, no buyer login)
+- Inventory beyond simple stock decrement
 
 ## New Invariants
 
-This feature operates under v2 Invariant 1 (affiliate commissions locked at order time). Invariant 1 is implemented here: `affiliate_amount` is calculated and written to the `Order` row at payment confirmation time and never updated after.
+Honors v2 Invariant 1 (affiliate amounts locked at order time — `affiliate_amount` set on Order creation, never updated).
 
 Service-level rules:
-- `seller_amount + affiliate_amount + platform_fee = amount_paid` must hold for every released order
-- `download_count` increments atomically; at 3 the token is invalidated regardless of expiry
-- A DISPUTED order cannot auto-release — cron job skips orders with `dispute_raised_at IS NOT NULL`
-- `OrderEvent` rows are append-only — never updated or deleted
-- Stock is decremented atomically at payment confirmation, not at checkout initiation
+- Order records are append-only. Status changes happen via OrderEvent rows.
+- Escrow funds are never released without either: (a) auto-release timer expiry with no dispute, or (b) explicit admin action resolving a dispute, or (c) explicit early release by seller.
+- Download tokens are single-use per request: regenerated on each successful download access, expired by time OR count whichever first.
+- `affiliate_rate` on Product is locked at the time an Order is created (in `Order.affiliate_amount`) — changing the rate later does not affect in-flight or completed orders.
+- Refunds reverse escrow back to buyer's MoMo via Pesapal; the Order moves to REFUNDED but is not deleted.
 
 ## Success Criteria
 
-1. A Business creator can list a digital product and a buyer can purchase and download it via MoMo in a single session
-2. A physical product order shows the creator's shipping instructions on the confirmation page
-3. Funds auto-release to the creator after the configured timer with no manual intervention required
-4. A buyer can raise a dispute before the escrow timer expires
-5. A download token expires after 48 hours and is invalidated after 3 downloads
-6. The escrow-release cron job runs daily and processes all eligible orders
-7. A Free or Pro creator cannot create a shop product (route returns 403)
-8. `seller_amount + affiliate_amount + platform_fee = amount_paid` holds for every completed order
-9. `npm run build` passes with no type errors
-
-## Migration Plan
-
-All new tables. Zero impact on existing data.
-
-The `escrow-release` cron job should be registered in `vercel.json` from day one, even before Shop is live, so the infrastructure is validated. Configure it to no-op when there are no eligible orders.
-
-Vercel Blob must be provisioned before digital products can be enabled — see `docs/pending-dependencies.md`.
+1. A Business creator can list a digital product, a buyer completes Pesapal checkout, and the buyer can download the file within 60 seconds of PIN approval
+2. A Business creator can list a physical product, a buyer completes checkout, and the buyer sees the creator's shipping instructions on the confirmation page
+3. Auto-release cron job correctly releases funds after the configured timer expires with no dispute
+4. A buyer can raise a dispute within the timer window and the admin sees it in the review queue
+5. Download links expire after 48 hours OR 3 downloads, whichever comes first
+6. A free or Pro (non-Business) creator cannot create products — sees upgrade prompt
+7. Pesapal escrow flow tested end-to-end in sandbox with at least 10 transactions including dispute scenarios
 
 ## Open Questions
 
-- **Pesapal release API**: does Pesapal expose an explicit "release escrow" API call, or does auto-release happen on their side by timer? If the latter, Sub-tree's cron just marks the order as released in our DB after the timer — the actual money movement is fully on Pesapal. Clarify during merchant onboarding.
-- **Download delivery via SMS**: adding a download link to the Pesapal payment success notification or via Africa's Talking (Feature 17) is cleaner than relying on a success page the buyer might close. Defer to Feature 17 integration pass.
-- **Stock race condition**: two buyers could initiate checkout simultaneously for the last physical unit. At MVP, decrement stock at payment confirmation (not at checkout start) and let the second buyer's payment confirm to an out-of-stock state — show an apology page. A proper reservation system (hold stock for 10 minutes at checkout start) is a v2 polish item.
-- **500MB upload limit on Vercel Blob**: Vercel's free tier has a 500MB total storage limit. Vercel Pro unlocks larger storage. Confirm Vercel tier before enabling file upload.
+- **Sub-tree's platform fee on shop sales**: recommend 8% on Business tier sales (vs 3% on donations). Confirm before building checkout math.
+- **Max digital file size**: 500MB suggested. Confirm Vercel Blob pricing supports this at MVP volume.
+- **Max download count per purchase**: 3 suggested. Confirm.
+- **Auto-release timer options**: 3 / 7 / 14 days. Confirm appropriate for EA physical delivery norms.
+- **Dispute window**: buyer can raise dispute any time before `escrow_release_at`. Should there be a minimum window even if seller sets 3 days? Recommend 3-day minimum dispute window enforced server-side.
+
+## Migration Plan
+
+Net new feature. No existing data affected.
