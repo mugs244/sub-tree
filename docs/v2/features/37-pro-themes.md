@@ -78,42 +78,103 @@ Migration: `npx prisma migrate dev --name feature_37_pro_themes`
 
 ## API Surface
 
-`PATCH /api/profile/appearance` — extend existing endpoint to accept new fields:
+The route exists already (Feature 11). Extend its Zod schema and tier-gate the new fields.
+
+`POST /api/profile/appearance` — extend existing endpoint:
 
 ```ts
+// New fields added to Zod schema — only accepted when caller tier is PRO+
+const hexColor = z.string().regex(/^#[0-9a-fA-F]{6}$/).nullable().optional()
+const fontKey  = z.enum(["geist", "inter", "playfair", "space-grotesk"]).nullable().optional()
+
 {
-  theme_preset?: string           // existing
-  button_style?: string           // existing
-  theme_bg_color?: string         // new, Pro only
-  theme_accent_color?: string     // new, Pro only
-  theme_button_color?: string     // new, Pro only
-  theme_button_text?: string      // new, Pro only
-  theme_card_bg?: string          // new, Pro only
-  theme_card_text?: string        // new, Pro only
-  theme_font?: string             // new, Pro only
-  hide_branding?: boolean         // new, Pro only
+  // existing (all tiers)
+  theme_preset?: string
+  button_style?: string
+
+  // Pro only — 403 if caller is FREE
+  theme_bg_color?: string | null
+  theme_accent_color?: string | null
+  theme_button_color?: string | null
+  theme_button_text?: string | null
+  theme_card_bg?: string | null
+  theme_card_text?: string | null
+  theme_font?: string | null
+  hide_branding?: boolean
 }
 ```
 
-Server validates that the caller's tier is PRO/BUSINESS/CONTENT_HOUSE before accepting the Pro-only fields. Free tier callers sending these fields get a 403.
+Server checks `user.tier` after Clerk auth. Free tier callers sending any Pro-only field get a 403 — do not silently drop the fields.
 
-## Public Profile Rendering
+## UI Changes
 
-The public profile page (`app/[username]/page.tsx`) currently builds a `themeStyle` object from `THEME_VARS`. Extend this:
+### Dashboard — Appearance tab
+- Existing layout (controls left, preview right) preserved
+- New "Custom theme" section below presets, with:
+  - 6 color picker inputs (using shadcn color input pattern or HTML `<input type="color">`)
+  - Font selector (radio cards, 4 options)
+  - "Hide Sub-tree branding" toggle
+- Free tier: Pro section visible but locked, with clear upgrade CTA inline
+- Save indicator (existing pattern) reflects auto-save state
 
-1. If the profile has any custom color fields set, those override the preset values on a per-field basis
-2. If `theme_font` is set, load the corresponding Google Font and inject it as a CSS variable on the page wrapper
-3. If `hide_branding` is true, suppress the "Powered by Sub-tree" footer
+### Public profile page
+- Reads theme fields from Profile record
+- Applies as scoped CSS custom properties on the `<main>` wrapper:
 
-Font loading must be server-side (next/font/google dynamic import, or a pre-loaded set). Do not lazy-load fonts client-side — it causes layout shift on 3G.
+```tsx
+<main style={{
+  "--page-bg": profile.theme_bg_color ?? THEME_VARS[profile.theme_preset].bg,
+  "--page-accent": profile.theme_accent_color ?? THEME_VARS[profile.theme_preset].accent,
+  // etc
+} as React.CSSProperties}>
+```
 
-## Acceptance Criteria
+- Falls back to existing preset values if custom is null
 
-- [ ] A Pro creator can set a custom hex color for each of the 6 color roles
-- [ ] Changes reflect in the live preview pane within 800ms
-- [ ] The public profile page applies the custom colors correctly
-- [ ] A Free creator sees the Pro color pickers in a locked state with an upgrade prompt
-- [ ] A Free creator's existing theme preset is unaffected
-- [ ] `hide_branding: true` removes the "Powered by Sub-tree" footer on the public page only — it still appears in the dashboard preview
-- [ ] Custom fonts load without layout shift on a throttled 3G connection
-- [ ] Sending Pro-only fields as a Free user returns 403
+## Scope
+
+### In scope
+- 6 color pickers for the 6 color roles
+- 8 new theme presets (5 free + 8 Pro = 13 total)
+- 4 font options
+- Button shape selector (already shipped as button_style — keep as-is)
+- Hide branding toggle
+- Tier-gate enforcement at API level (don't trust client)
+- Free tier sees Pro options as locked with upgrade nudge
+
+### Out of scope
+- Custom CSS input (too risky for v2 — XSS surface)
+- Animated backgrounds, gradients beyond solid colors
+- Per-link custom colors (global theme only at v2)
+- Dark mode for the dashboard (separate feature, deferred)
+- Custom font upload by creator (only curated list)
+- Logo upload (will land in Vercel Blob avatar work first)
+
+## New Invariants
+
+This feature does not introduce v2-level invariants. It honors v2 Invariant 6 (smart link cards render server-side — themes ARE server-side here, no concern).
+
+Service-level rules:
+- Color values validated server-side: must be valid hex format `#[0-9a-fA-F]{6}` or null
+- Font keys validated against a known whitelist
+- `hide_branding` checked against current tier at every render — a downgraded Pro creator sees branding restored automatically
+
+## Success Criteria
+
+1. A Pro creator can set a custom background color and see it on their public profile within 2 seconds of changing it
+2. A free creator sees Pro color options as locked with an upgrade prompt — cannot save custom values
+3. A creator who downgrades from Pro to Free sees their custom theme values preserved in the DB but the public page reverts to the preset (custom values display in the dashboard as "Restored when you upgrade to Pro again")
+4. Profile with no custom values renders identical to the current Feature 11 behavior
+5. `npm run build` passes with no type errors
+
+## Migration Plan
+
+Existing creators: all new Pro fields are nullable, default to null. Existing free-tier presets work unchanged. Zero visual change for existing users on deploy.
+
+When v1 Feature 20 (Pro tier billing) ships, the Pro section unlocks automatically based on `user.tier`.
+
+## Open Questions
+
+- "Reset to default" button — should it clear all Pro custom values at once? Recommend yes, include in scope.
+- Color picker UX on mobile — HTML `<input type="color">` is workable but not great. Consider a hex input alongside it.
+- Should hide_branding work at the free tier too if a creator just doesn't want it? Recommend no — branding removal is a real Pro upgrade reason.
