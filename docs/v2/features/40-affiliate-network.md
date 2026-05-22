@@ -199,81 +199,109 @@ Invalid refs (non-existent handle, no relationship, no grant): ignored silently.
 ## API Surface
 
 ```
-# Merchant — affiliate program management
-GET    /api/affiliates/merchant/requests               — incoming affiliate requests
-PATCH  /api/affiliates/merchant/requests/[id]          — approve / reject
-POST   /api/affiliates/merchant/invite                 — invite a creator by handle
-PATCH  /api/affiliates/merchant/grants/[id]            — add/revoke product grants
-GET    /api/affiliates/merchant/stats                  — per-affiliate sales breakdown
+# Merchant side
+POST   /api/affiliates/program/toggle              — enable/disable program for my shop
+PATCH  /api/shop/products/[id]/affiliate           — set per-product rate and open status
+GET    /api/affiliates/inbound                     — list inbound requests
+POST   /api/affiliates/inbound/[id]/approve        — approve, select products to grant
+POST   /api/affiliates/inbound/[id]/reject         — reject with reason
+POST   /api/affiliates/invite                      — invite a specific creator
+PATCH  /api/affiliates/[id]/grants                 — update which products an affiliate can promote
+POST   /api/affiliates/[id]/suspend                — suspend an active affiliate
 
-# Creator — affiliate participation
-GET    /api/affiliates/mine                            — list approved shops + products I can promote
-POST   /api/affiliates/request                         — send application to a merchant
-PATCH  /api/affiliates/invites/[id]                    — accept / decline merchant invite
-GET    /api/affiliates/earnings                        — commission balance, payout history
+# Affiliate (promoter) side
+POST   /api/affiliates/apply/[merchant-handle]     — apply to be an affiliate
+GET    /api/affiliates/my-shops                    — list approved shops + product grants
+GET    /api/affiliates/earnings                    — summary: pending, paid, total
+GET    /api/affiliates/payouts                     — history of weekly payouts
 
-# Public — affiliate program discovery
-GET    /api/public/shop/[username]/affiliate-program   — is the shop accepting affiliates? (for CTA display)
+# Public side (with affiliate context)
+GET    /api/public/products/[id]?ref=[handle]      — product detail with attribution
 
 # Cron (internal — secured via CRON_SECRET header)
-POST   /api/cron/affiliate-payouts                     — weekly Monday job; batches eligible commissions;
-                                                         triggers Pesapal disbursements; writes AffiliatePayoutRecords
+POST   /api/cron/affiliate-payouts                 — weekly batch (Monday)
 ```
+
+## UI Changes
+
+### Merchant — Shop → Affiliate Program tab
+- Toggle "Accept affiliate applications"
+- Per-product: rate (slider 0–50%) + "Open to affiliates" toggle
+- Pending requests list with affiliate's handle, follower count if available, profile preview
+- Approve: opens modal to select products from open list
+- Active affiliates list: handle, products granted, sales attributed, commission earned, "Suspend" button
+
+### Affiliate — My Affiliates tab
+- Approved shops list (cards): merchant handle, product count granted
+- Per shop: list of products with affiliate URL (copy button), commission rate, sales, earnings
+- Earnings summary card: pending payout (this week), paid to date, next payout date
+
+### Public product page with ref param
+- Looks identical to non-affiliate access — visitor doesn't see the affiliate's involvement
+- Server logs the attribution silently
+- Cookie set silently
+
+### Profile page with affiliate links (consumes Feature 42 smart link rendering)
+- Affiliate's link to a product renders as a rich card (price, image, "Buy now")
+- Per Invariant 2: this rich card renders ONLY because the affiliate is approved
+- If someone else copies the same affiliate URL onto their non-affiliate page, the link renders as a plain link (no rich card)
 
 ## Scope
 
 ### In scope
-- Bidirectional affiliate requests (creator-initiated and merchant-invited)
-- Per-affiliate, per-product grants (Invariant 5)
-- `?ref=` attribution with 7-day last-touch cookie
-- Commission locked at order creation (Invariant 1)
-- Weekly batch payout cron (Monday, min threshold UGX 5,000)
-- Affiliate dashboard: earnings, approved shops, shareable links
-- Merchant dashboard: affiliate list, per-affiliate sales stats, approve/revoke
-- SMS notification to affiliate on payout
-- `AffiliatePayoutRecord` as append-only audit trail
+- Affiliate program enable/disable per shop
+- Per-product rate + open toggle
+- Bidirectional request flow (creator-applies / merchant-invites)
+- Per-affiliate per-product grants
+- Approval/rejection with reason
+- Suspension of active affiliates
+- `?ref=` URL parameter parsing + cookie attribution
+- 7-day attribution window with last-touch
+- Commission calculation at order time (lock per Invariant 1)
+- Weekly batch payout cron
+- Minimum payout threshold (UGX 5,000)
+- Affiliate earnings dashboard
+- Merchant affiliate management dashboard
+- SMS notification on payout success
 
 ### Out of scope
-- Multi-level affiliate (no affiliates-of-affiliates — see V2-OVERVIEW deferred list)
-- Cross-platform affiliate (non-Sub-tree shops)
-- Real-time commission tracking (batch only)
-- Affiliate performance tiers or bonus rates
-- First-touch or linear attribution (last-touch only)
-- Automated fraud detection at launch (manual monitoring)
+- Multi-level affiliate (affiliates of affiliates) — fraud risk
+- Cross-platform affiliate (non-Sub-tree shops) — out of v2
+- Per-affiliate custom commission rate (rate is per-product, same for all affiliates of that product)
+- Performance analytics beyond clicks + sales counts
+- Automated dispute resolution for commission disputes
+- Affiliate program API for external platforms
+- Affiliate marketplace / discovery surface (in v2, affiliates have to seek out shops)
 
 ## New Invariants
 
-This feature implements v2 Invariant 1 (commissions locked at order time — the `affiliate_amount` column written at payment confirmation is never changed), v2 Invariant 2 (rich smart card preview only on approved affiliate pages — enforced at page render, not client-side), and v2 Invariant 5 (merchant controls which products each affiliate can promote — grants checked at cookie-set time and at checkout).
+Honors v2 Invariants 1, 2, 5.
 
 Service-level rules:
-- An affiliate cannot generate attribution for a product not in their grants
-- A suspended `AffiliateRelationship` prevents new cookie attribution but does NOT retroactively affect already-locked orders
-- `AffiliatePayoutRecord` rows are append-only — payment failures get a new FAILED record, not an update
-- The weekly cron only pays out commissions from orders where `escrow_status = RELEASED` — disputed or held orders are never included
+- Affiliate commission rates are locked at order creation. Subsequent changes to `Product.affiliate_rate` do not affect existing orders.
+- An affiliate can only see/promote products in their `AffiliateProductGrant` list with `revoked_at IS NULL`.
+- The order creation endpoint validates the affiliate relationship + product grant before setting `affiliate_user_id`.
+- Weekly payout only includes orders where escrow has been RELEASED AND `released_at <= NOW() - 7 days` (dispute buffer).
+- `AffiliatePayoutRecord` is append-only.
+- A creator cannot affiliate with their own shop (self-referral blocked at relationship creation).
+- Affiliates under the payout threshold (UGX 5,000) carry their balance forward; their commissions are never lost.
 
 ## Success Criteria
 
-1. A Pro creator can apply to a Business shop's affiliate program and be approved from the merchant dashboard
-2. A merchant can approve an affiliate and restrict them to 2 of 5 products
-3. A visitor who clicks an affiliate link and purchases within 7 days attributes the commission to the correct affiliate
-4. A different affiliate link clicked after the first overwrites the attribution cookie (last-touch)
-5. An invalid or expired `?ref=` parameter produces no attribution — order proceeds normally
-6. Weekly cron fires, calculates correct batch totals per affiliate, initiates Pesapal disbursement, and writes AffiliatePayoutRecords
-7. Affiliates below the UGX 5,000 threshold accumulate to the next week
-8. A Free creator cannot apply to affiliate programs (route returns 403)
-9. `npm run build` passes with no type errors
-
-## Migration Plan
-
-All new tables. `Order.affiliate_paid_at` is a nullable column added to an existing table from Feature 39.
-
-The attribution cookie and `?ref=` validation logic is pure server-side — no schema migration required for attribution to function.
-
-The weekly cron job should be registered in `vercel.json` at the same time as the escrow-release cron (Feature 39) so both jobs are managed together.
+1. A merchant can enable affiliate program, set per-product rates, and another creator can apply and be approved with specific product grants
+2. An approved affiliate sees only the products they've been granted in their dashboard
+3. A buyer purchasing through `?ref=` attribution correctly creates an Order with the affiliate's user_id and the locked commission amount
+4. Weekly cron job correctly aggregates released orders, applies minimum threshold, and disburses to affiliates via Pesapal
+5. A revoked affiliate's existing links stop rendering rich cards on their profile (Invariant 2)
+6. Last-touch attribution works: tapping a different affiliate's link within 7 days overwrites the cookie
 
 ## Open Questions
 
-- **Fraud detection baseline**: an affiliate could buy through their own link using a friend's phone number. At v2 launch, monitor manually — flag orders where `affiliate_user_id` matches an account with the same household IP or device fingerprint. Automated detection deferred to post-launch.
-- **Minimum payout threshold (UGX 5,000)**: right level? Too low and batch costs eat the commission; too high and small affiliates wait too long. Recommend making this configurable in admin settings rather than hardcoded.
-- **Affiliate link on profile — link_type integration**: when a creator adds their affiliate URL as a link, should the system auto-detect the `?ref=` and set `link_type = AFFILIATE`? Recommend yes — parse on save and set type accordingly. Needs coordination with Feature 42.
-- **Merchant suspends affiliate mid-week**: their in-flight `affiliate_amount` on unreleased orders is still owed (commission was locked at order creation). The suspension only prevents new attributions. Confirm this is the intended behavior before build.
+- **Platform fee split when affiliate is involved**: confirm that platform fee stays the same (8%), and the affiliate commission comes out of the seller's share, not added on top of the buyer's price.
+- **Minimum payout threshold UGX 5,000**: confirm appropriate for the market.
+- **Failed payout retry policy**: recommend retry next Monday's batch up to 3 times before marking PAYOUT_FAILED and alerting admin.
+- **Affiliate fraud detection**: an affiliate could buy through their own link with a different phone. Recommend basic detection — same buyer_phone purchasing through their own affiliate link more than once flags for manual review.
+
+## Migration Plan
+
+Net new feature. Depends on Feature 39 being fully shipped and tested first. Do not start until shop orders are flowing in sandbox.
