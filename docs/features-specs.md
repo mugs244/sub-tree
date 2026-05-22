@@ -44,27 +44,28 @@ When a new feature is proposed, it gets a number and a row in this table. When a
 | --- | ------------------------------------ | ----------- | -------- | ---------------- | ------------------------------------------------- |
 | 01  | Design System Setup                  | Proposed    | Phase 0  | —                | `docs/features/01-design-system.md`               |
 | 02  | Database Schema & Prisma Setup       | Proposed    | Phase 0  | —                | `docs/features/02-database-schema.md`             |
-| 03  | Clerk Auth Integration               | Shipped     | Phase 1  | 01, 02           | `docs/features/03-clerk-auth.md`                 |
+| 03  | Clerk Auth Integration               | Shipped     | Phase 1  | 01, 02           | `docs/features/03-clerk-auth.md`                  |
 | 04  | Username Claim & Onboarding          | Shipped     | Phase 1  | 03               | `docs/features/04-username-onboarding.md`         |
-| 05  | Quick Profile & First Link Onboarding | Proposed   | Phase 1  | 03               | `docs/features/05-onboarding-profile.md`          |
-| 06  | Login & Sessions                     | Superseded  | —        | by 03            | (merged into 03-clerk-auth.md)                   |
+| 05  | Quick Profile & First Link Onboarding | Shipped    | Phase 1  | 03               | `docs/features/05-onboarding-profile.md`          |
+| 06  | Login & Sessions                     | Superseded  | —        | by 03            | (merged into 03-clerk-auth.md)                    |
 | 07  | Password Reset                       | Superseded  | —        | by 03            | (handled by Clerk, no separate file)              |
-| 08  | Dashboard Shell & Navigation         | Proposed    | Phase 2  | 01, 03           | `docs/features/08-dashboard-shell.md`             |
-| 09  | Links Manager (CRUD + Reorder)       | Proposed    | Phase 2  | 02, 08           | `docs/features/09-links-manager.md`               |
-| 10  | Public Profile Page                  | Proposed    | Phase 2  | 02, 09           | `docs/features/10-public-profile.md`              |
-| 11  | Appearance & Theme Selection (Free Tier) | Proposed | Phase 2  | 08, 10           | `docs/features/11-appearance-free.md`             |
+| 08  | Dashboard Shell & Navigation         | Shipped     | Phase 2  | 01, 03           | `docs/features/08-dashboard-shell.md`             |
+| 09  | Links Manager (CRUD + Reorder)       | Shipped     | Phase 2  | 02, 08           | `docs/features/09-links-manager.md`               |
+| 10  | Public Profile Page                  | Shipped     | Phase 2  | 02, 09           | `docs/features/10-public-profile.md`              |
+| 11  | Appearance & Theme Selection (Free Tier) | Shipped | Phase 2  | 08, 10           | `docs/features/11-appearance-free.md`             |
 | 12  | Reserved Username Admin Queue        | Shipped     | Phase 2  | 02, 03           | `docs/features/12-reserved-username-admin.md`     |
-| 13  | MTN MoMo Collections Integration     | Proposed    | Phase 3  | 02               | `docs/features/13-mtn-momo-integration.md`        |
-| 14  | Airtel Money Collections Integration | Proposed    | Phase 3  | 02               | `docs/features/14-airtel-money-integration.md`    |
-| 15  | Donation Page & STK Push Flow        | Proposed    | Phase 3  | 10, 13, 14       | `docs/features/15-donation-flow.md`               |
-| 16  | Payment Webhook Handling             | Proposed    | Phase 3  | 13, 14, 15       | `docs/features/16-payment-webhooks.md`            |
-| 17  | Donation Notifications (SMS + In-App) | Proposed   | Phase 3  | 03, 16           | `docs/features/17-donation-notifications.md`      |
-| 18  | Transaction History & CSV Export     | Proposed    | Phase 3  | 16               | `docs/features/18-transaction-history.md`         |
-| 19  | Analytics (Page Views, Link Clicks)  | Proposed    | Phase 4  | 09, 10           | `docs/features/19-analytics.md`                   |
+| 13  | MTN MoMo Collections Integration     | Shipped*    | Phase 3  | 02               | `docs/features/13-mtn-momo-integration.md`        |
+| 14  | Airtel Money Collections Integration | Shipped*    | Phase 3  | 02               | `docs/features/14-airtel-money-integration.md`    |
+| 15  | Donation Page & STK Push Flow        | Partial     | Phase 3  | 10, 13, 14       | `docs/features/15-donation-flow.md`               |
+| 16  | Payment Webhook Handling             | Shipped     | Phase 3  | 13, 14, 15       | `docs/features/16-payment-webhooks.md`            |
+| 17  | Donation Notifications (SMS + In-App) | Partial    | Phase 3  | 03, 16           | `docs/features/17-donation-notifications.md`      |
+| 18  | Transaction History & CSV Export     | Shipped     | Phase 3  | 16               | `docs/features/18-transaction-history.md`         |
+| 19  | Analytics (Page Views, Link Clicks)  | Shipped     | Phase 4  | 09, 10           | `docs/features/19-analytics.md`                   |
 | 20  | Pro Tier Subscription & Billing      | Proposed    | Phase 4  | 13, 14, 19       | `docs/features/20-pro-tier.md`                    |
-| 21  | Rate Limiting & Fraud Rails          | Proposed    | Phase 4  | 03, 15           | `docs/features/21-fraud-rails.md`                 |
-| 22  | OG Image Generation for Profiles     | Proposed    | Phase 4  | 10               | `docs/features/22-og-images.md`                   |
-| 23  | Account Settings & Deletion          | Proposed    | Phase 4  | 03               | `docs/features/23-account-settings.md`            |
+| 21  | Rate Limiting & Fraud Rails          | Shipped     | Phase 4  | 03, 15           | `docs/features/21-fraud-rails.md`                 |
+| 22  | OG Image Generation for Profiles     | Shipped     | Phase 4  | 10               | `docs/features/22-og-images.md`                   |
+| 23  | Account Settings & Deletion          | Shipped     | Phase 4  | 03               | `docs/features/23-account-settings.md`            |
+| 36  | Payment Aggregators (Pesapal + OpenFloat) | Greenlit | Phase 3  | 13, 14, 16      | `docs/features/36-payment-aggregators.md`         |
 | 24  | Business / NGO KYB Upgrade           | Deferred    | Phase 5  | 03, 12           | `docs/features/24-business-ngo-kyb.md`            |
 | 25  | Custom Domains for Pro               | Deferred    | Phase 5  | 10, 20           | `docs/features/25-custom-domains.md`              |
 | 26  | Kenya M-Pesa Integration             | Deferred    | Phase 5  | 13               | `docs/features/26-mpesa-integration.md`           |
@@ -72,6 +73,10 @@ When a new feature is proposed, it gets a number and a row in this table. When a
 | 28  | Pro Tier Advanced Themes             | Deferred    | Phase 5  | 11, 20           | `docs/features/28-themes-pro.md`                  |
 | 29  | Ecosystem KYC Layer Integration      | Deferred    | Phase 5+ | —                | `docs/features/29-kyc-layer-integration.md`       |
 | 30  | EFRIS Aggregator Hook (Tax Receipts) | Deferred    | Phase 5+ | 18, 24           | `docs/features/30-efris-tax-receipts.md`          |
+
+---
+
+> \* Features 13 and 14 (direct MTN + Airtel clients) shipped but are being repositioned as fallback paths. Feature 36 introduces Pesapal + OpenFloat as the primary payment rails. Direct clients remain in the codebase per the architectural decision documented in PROGRESS.md.
 
 ---
 

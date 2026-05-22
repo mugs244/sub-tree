@@ -4,7 +4,7 @@ Update this file after every meaningful implementation change. Treat it as the r
 
 ## Current Phase
 
-Production deployment live at `sub-tree.vercel.app`. Clerk auth working end-to-end (sign-up → webhook → DB → onboarding). Dashboard analytics, donation notification feed, and referrer attribution shipped. Next: profile picture upload (Vercel Blob — pending Pro plan), Feature 17 SMS notifications, MoMo credentials.
+Production deployment live at `sub-tree.vercel.app` on `feature/03-clerk-auth` branch. v1 architecture is essentially complete — Clerk auth, dashboard, link manager, public profile, donation flow, webhook handlers, analytics, OG images, account deletion all shipped. Final blockers to live money flow: payment aggregator integration (Pesapal + OpenFloat per `docs/features/36-payment-aggregators.md`), Africa's Talking SMS wiring (Feature 17), and Vercel Pro for avatar uploads.
 
 ## Completed
 
@@ -70,10 +70,12 @@ Nothing.
 
 ## Next Up
 
-1. **Profile picture upload** — Vercel Blob (`@vercel/blob`) for file upload. Replace avatar URL text field with file picker in `EditProfileForm` and onboarding `ProfileForm`. Requires `BLOB_READ_WRITE_TOKEN` env var (Vercel Pro plan). Add to `pending-dependencies.md` until plan is upgraded.
-5. **Feature 17 — SMS Notifications** — Africa's Talking: notify creator on successful donation. Call after `handleMomoCallback` sets status to COMPLETED, send "You received UGX X from [donor]" SMS to creator's phone via `lib/sms.ts`. API key available in env (`AFRICASTALKING_API_KEY`).
-6. **Wire MoMo STK push** — once MTN/Airtel sandbox credentials are available, remove the TODO comment in `app/api/payments/initiate/route.ts` and call `mtnMomo.requestToPay` / `airtelMoney.requestToPay`.
-7. **Register webhook URLs with MTN/Airtel** — configure `POST https://sub-tree.vercel.app/api/webhooks/momo/mtn` and `.../airtel` in the respective developer portals once API credentials are approved.
+1. **Feature 36 — Pesapal + OpenFloat aggregator integration.** Build `lib/services/payments/pesapal.ts` and `lib/services/payments/openfloat.ts` implementing the existing `MomoProvider` interface. Add webhook routes at `/api/webhooks/payments/{pesapal,openfloat}`. Update `/api/payments/initiate` to call aggregator first, with `lib/services/momo/*` direct clients as fallback if aggregator returns an error.
+2. **Feature 17 — Africa's Talking SMS notifications.** Wire `lib/sms.ts`. Call from `handleMomoCallback` after `status = COMPLETED`. Send "You received UGX X from [donor name]" to creator's phone via `africastalking@0.7.9` (already in dependencies).
+3. **Profile picture upload — Vercel Blob.** Requires Vercel Pro. Add `@vercel/blob`, replace avatar URL text field with file picker in `EditProfileForm` and onboarding `ProfileForm`. Set `BLOB_READ_WRITE_TOKEN`.
+4. **Register webhook URLs with Pesapal + OpenFloat** in their respective dashboards once merchant onboarding completes.
+5. **Merge `feature/03-clerk-auth` → `main` and set `main` as Vercel production branch.** Five-minute task. Resolves technical debt called out in ARCHITECTURE.md.
+6. **Register `sub-tree.com`** via Cloudflare Registrar. Currently running on `sub-tree.vercel.app`.
 
 ## Open Questions
 
@@ -104,6 +106,8 @@ Nothing.
 - **No native dark mode at MVP.** Saves ~20% of component work. Pro-tier feature in Phase 2.
 - **Tailwind CSS v4 (no tailwind.config.ts).** This Next.js version ships with Tailwind v4. All theme extensions (color tokens, font mappings) live in `app/globals.css` under `@theme inline`. No config file — the CSS is the config.
 - **shadcn `sonner` instead of `toast`.** The `toast` component is deprecated in recent shadcn. `sonner` is the replacement — same trigger API, better defaults. Feature spec 01 will be updated when shipped.
+- **Payment aggregators over direct MoMo, decided 2026-05-21.** Switched from direct MTN MoMo + Airtel Money as the active path to Pesapal + OpenFloat as primary, with direct clients retained as fallback. Reasons: Pesapal is BoU-licensed (resolves payment-aggregator regulatory question), faster merchant onboarding (~5-10 days vs 2-6 weeks per direct integration), pan-EA support out of the box (M-Pesa, MTN Tanzania, etc.), and cleaner operational story. Trade-off: higher per-transaction fee (~3-4% aggregator vs ~1.5% direct). Acceptable at MVP volumes; direct fallback is available if fees become material at scale.
+- **`lib/services/momo/*` retained as fallback, not deleted.** The direct MTN + Airtel client work is preserved as a contingency path for: (a) aggregator outages, (b) future migration back to direct if volume justifies it, (c) regions where aggregators don't operate. Marked in ARCHITECTURE.md stack table as fallback explicitly.
 
 ## Session Notes
 
