@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Link card (manager)</title>
+<link rel="stylesheet" href="../colors_and_type.css" />
+<style>
+  body { margin: 0; padding: 20px; background: var(--bg-base); font-family: var(--font-sans); }
+  .card { background: #fff; border: 1px solid var(--border-default); border-radius: 0.75rem; overflow: hidden; max-width: 460px; }
+  .body { display: flex; align-items: center; gap: 12px; padding: 14px 16px; }
+  .icon-platform { width: 20px; height: 20px; color: var(--text-muted); flex-shrink: 0; }
+  .info { flex: 1; min-width: 0; }
+  .label { font-size: 14px; font-weight: 500; color: var(--text-primary); line-height: 1.3; }
+  .url { font-family: var(--font-mono); font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+  .clicks { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+  .toggle { position: relative; width: 44px; height: 24px; border-radius: 9999px; background: #111827; flex-shrink: 0; transition: background 200ms; }
+  .toggle::after { content: ""; position: absolute; right: 2px; top: 2px; width: 20px; height: 20px; border-radius: 50%; background: #fff; box-shadow: 0 1px 2px rgba(0,0,0,0.1); }
+  .strip { display: flex; border-top: 1px solid var(--border-default); }
+  .strip a { flex: 1; display: flex; justify-content: center; padding: 12px; color: var(--text-muted); border-right: 1px solid var(--border-default); }
+  .strip a:last-child { border-right: 0; }
+  .strip svg { width: 16px; height: 16px; }
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="body">
+    <svg class="icon-platform" viewBox="0 0 24 24" fill="currentColor"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>
+    <div class="info">
+      <div class="label">YouTube Channel</div>
+      <div class="url">https://youtube.com/@amara</div>
+      <div class="clicks">312 clicks</div>
+    </div>
+    <div class="toggle" aria-label="enabled"></div>
+  </div>
+  <div class="strip">
+    <a aria-label="up"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 15l-6-6-6 6"/></svg></a>
+    <a aria-label="down"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg></a>
+    <a aria-label="edit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4z"/></svg></a>
+    <a aria-label="open"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6M15 3h6v6M10 14L21 3"/></svg></a>
+    <a aria-label="delete" style="color:#dc2626"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></a>
+  </div>
+</div>
+</body>
+</html>

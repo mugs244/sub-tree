@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Theme presets</title>
+<link rel="stylesheet" href="../colors_and_type.css" />
+<style>
+  body { margin: 0; padding: 20px; background: var(--bg-base); }
+  .row { display: grid; grid-template-columns: repeat(6, 1fr); gap: 10px; }
+  .theme { border-radius: var(--radius-lg); padding: 16px 12px; text-align: center; border: 1px solid var(--border-default); }
+  .dot { width: 28px; height: 28px; border-radius: 50%; margin: 0 auto 10px; }
+  .name { font-size: 12px; font-weight: 600; }
+  .sub { font-family: var(--font-mono); font-size: 10px; opacity: 0.7; margin-top: 4px; }
+  .btn { display: inline-block; padding: 6px 14px; border-radius: var(--radius-md); font-size: 11px; font-weight: 500; margin-top: 10px; }
+</style>
+</head>
+<body>
+<div class="row">
+  <div class="theme" style="background:#ffffff">
+    <div class="dot" style="background:#111827"></div>
+    <div class="name" style="color:#111827">Default</div>
+    <div class="sub" style="color:#6b7280">mono Â· b/w</div>
+    <div class="btn" style="background:#111827;color:#fff">Support</div>
+  </div>
+  <div class="theme" style="background:#fffbf5">
+    <div class="dot" style="background:#92400e"></div>
+    <div class="name" style="color:#1c1917">Warm</div>
+    <div class="sub" style="color:#78716c">sand Â· sienna</div>
+    <div class="btn" style="background:#92400e;color:#fff">Support</div>
+  </div>
+  <div class="theme" style="background:#f0f9ff">
+    <div class="dot" style="background:#0369a1"></div>
+    <div class="name" style="color:#0c4a6e">Cool</div>
+    <div class="sub" style="color:#0369a1">sky Â· sea</div>
+    <div class="btn" style="background:#0369a1;color:#fff">Support</div>
+  </div>
+  <div class="theme" style="background:#f0fdf4">
+    <div class="dot" style="background:#15803d"></div>
+    <div class="name" style="color:#14532d">Forest</div>
+    <div class="sub" style="color:#166534">mint Â· emerald</div>
+    <div class="btn" style="background:#15803d;color:#fff">Support</div>
+  </div>
+  <div class="theme" style="background:#f6faf3">
+    <div class="dot" style="background:#4d7c0f"></div>
+    <div class="name" style="color:#365314">Sage</div>
+    <div class="sub" style="color:#4d7c0f">sage Â· olive</div>
+    <div class="btn" style="background:#4d7c0f;color:#fff">Support</div>
+  </div>
+  <div class="theme" style="background:#0f172a">
+    <div class="dot" style="background:#e2e8f0"></div>
+    <div class="name" style="color:#e2e8f0">Midnight</div>
+    <div class="sub" style="color:#94a3b8">navy Â· slate</div>
+    <div class="btn" style="background:#e2e8f0;color:#0f172a">Support</div>
+  </div>
+</div>
+</body>
+</html>

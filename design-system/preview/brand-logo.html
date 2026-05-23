@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Brand logo</title>
+<link rel="stylesheet" href="../colors_and_type.css" />
+<style>
+  body { margin: 0; padding: 24px; background: var(--bg-base); font-family: var(--font-sans); display: grid; grid-template-columns: auto auto 1fr; gap: 28px; align-items: center; }
+  .lockup { display: flex; align-items: center; gap: 10px; }
+  .mark { width: 36px; height: 36px; background: #111827; color: #fff; border-radius: 0.5rem; display: inline-flex; align-items: center; justify-content: center; }
+  .mark svg { width: 24px; height: 24px; }
+  .word { font-size: 20px; font-weight: 600; letter-spacing: -0.01em; color: var(--text-primary); }
+  .word .h { color: var(--text-muted); }
+  .meta { font-family: var(--font-mono); font-size: 11px; color: var(--text-muted); margin-top: 6px; }
+  .col { text-align: center; }
+</style>
+</head>
+<body>
+<div class="col">
+  <div class="lockup">
+    <span class="mark">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12 3 L9 7 L12 7 L15 7 L12 3 Z" fill="currentColor"/>
+        <path d="M8 10 L12 6 L16 10"/>
+        <path d="M7 14 L12 9 L17 14"/>
+        <path d="M6 18 L12 12 L18 18"/>
+        <path d="M12 18 L12 21" stroke-width="2"/>
+      </svg>
+    </span>
+    <span class="word">Sub<span class="h">-</span>tree</span>
+  </div>
+  <div class="meta">lockup Â· default</div>
+</div>
+<div class="col">
+  <span class="mark" style="width:48px;height:48px;border-radius:0.625rem">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="width:32px;height:32px">
+      <path d="M12 3 L9 7 L12 7 L15 7 L12 3 Z" fill="currentColor"/>
+      <path d="M8 10 L12 6 L16 10"/>
+      <path d="M7 14 L12 9 L17 14"/>
+      <path d="M6 18 L12 12 L18 18"/>
+      <path d="M12 18 L12 21" stroke-width="2"/>
+    </svg>
+  </span>
+  <div class="meta">icon Â· lg</div>
+</div>
+<div class="col">
+  <span class="word" style="font-size:32px">Sub<span class="h">-</span>tree</span>
+  <div class="meta">wordmark Â· Geist 600 -1%</div>
+</div>
+</body>
+</html>

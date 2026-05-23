@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Badges & status</title>
+<link rel="stylesheet" href="../colors_and_type.css" />
+<style>
+  body { margin: 0; padding: 24px; background: var(--bg-base); font-family: var(--font-sans); display: flex; flex-direction: column; gap: 18px; }
+  .row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  .badge { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 9999px; font-size: 12px; font-weight: 500; line-height: 1; }
+  .pill-icon { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px 4px 8px; border-radius: 9999px; border: 1px solid var(--border-default); background: #fff; font-size: 12px; font-weight: 500; color: var(--text-muted); }
+  .pill-icon svg { width: 12px; height: 12px; }
+  .label { font-family: var(--font-mono); font-size: 11px; color: var(--text-muted); width: 92px; flex-shrink: 0; }
+</style>
+</head>
+<body>
+<div class="row"><div class="label">status</div>
+  <span class="badge" style="background:#dcfce7;color:#16a34a">Completed</span>
+  <span class="badge" style="background:#fef3c7;color:#d97706">Pending</span>
+  <span class="badge" style="background:#fef3c7;color:#d97706">Processing</span>
+  <span class="badge" style="background:#fee2e2;color:#dc2626">Failed</span>
+  <span class="badge" style="background:#f9fafb;color:#6b7280">Reversed</span>
+</div>
+<div class="row"><div class="label">eyebrow</div>
+  <span class="pill-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15 15 0 0 1 4 10 15 15 0 0 1-4 10 15 15 0 0 1-4-10 15 15 0 0 1 4-10z"/></svg>Built for East African creators</span>
+  <span class="pill-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2"/><path d="M12 18h.01"/></svg>Mobile money built in</span>
+</div>
+</body>
+</html>

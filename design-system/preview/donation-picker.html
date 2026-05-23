@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Donation amount picker</title>
+<link rel="stylesheet" href="../colors_and_type.css" />
+<style>
+  body { margin: 0; padding: 24px; background: var(--bg-base); font-family: var(--font-sans); }
+  .wrap { max-width: 360px; position: relative; }
+  .label { font-size: 14px; font-weight: 500; margin-bottom: 10px; color: var(--text-primary); }
+  .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .chip { padding: 10px 0; font-size: 14px; font-weight: 500; border: 1px solid var(--border-default); border-radius: 0.5rem; text-align: center; background: #fff; color: var(--text-primary); cursor: pointer; transition: background 150ms, color 150ms, border-color 150ms; user-select: none; }
+  .chip.selected { background: #111827; color: #fff; border-color: #111827; }
+  .chip.other { color: var(--text-placeholder); }
+  .chip:hover:not(.selected) { border-color: var(--text-secondary); }
+
+  .donate {
+    position: relative;
+    margin-top: 16px;
+    background: #111827;
+    color: #fff;
+    text-align: center;
+    padding: 12px;
+    border-radius: 0.5rem;
+    font-family: var(--font-sans);
+    font-weight: 500;
+    font-size: 14px;
+    width: 100%;
+    border: 0;
+    cursor: pointer;
+    transition: background 150ms, transform 200ms cubic-bezier(0.34, 1.56, 0.64, 1);
+    overflow: visible;
+  }
+  .donate:hover { background: #1f2937; }
+  .donate.thanking { background: #16a34a; pointer-events: none; }
+  .donate.bouncing { transform: scale(0.96); }
+
+  .donate-label { display: inline-flex; align-items: center; gap: 8px; }
+  .donate-label .check { display: none; }
+  .donate.thanking .donate-label .text { display: none; }
+  .donate.thanking .donate-label .check { display: inline; }
+
+  .meta {
+    text-align: center;
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-top: 10px;
+    transition: opacity 200ms;
+  }
+
+  /* ââ Thank you overlay ââ */
+  .thanks {
+    position: absolute;
+    left: 0; right: 0;
+    bottom: 100%;
+    margin-bottom: 14px;
+    text-align: center;
+    font-size: 14px;
+    font-weight: 600;
+    color: #111827;
+    opacity: 0;
+    transform: translateY(8px);
+    pointer-events: none;
+    transition: opacity 280ms, transform 280ms;
+  }
+  .thanks.show { opacity: 1; transform: translateY(0); }
+  .thanks .sub { display: block; font-size: 11px; font-weight: 400; color: var(--text-muted); margin-top: 4px; font-family: var(--font-mono); }
+
+  /* ââ Heart burst ââ */
+  .burst {
+    position: absolute;
+    left: 50%; top: 50%;
+    width: 0; height: 0;
+    pointer-events: none;
+    z-index: 5;
+  }
+  .burst .heart {
+    position: absolute;
+    left: 50%; top: 50%;
+    transform: translate(-50%, -50%) scale(0);
+    font-size: 28px;
+    line-height: 1;
+    animation: heart-rise 900ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+  @keyframes heart-rise {
+    0%   { transform: translate(-50%, -50%) scale(0) rotate(-12deg); opacity: 0; }
+    25%  { transform: translate(-50%, -110%) scale(1.6) rotate(2deg); opacity: 1; }
+    65%  { transform: translate(-50%, -180%) scale(1.4) rotate(-4deg); opacity: 1; }
+    100% { transform: translate(-50%, -260%) scale(0.6) rotate(6deg); opacity: 0; }
+  }
+
+  .particle {
+    position: absolute;
+    left: 50%; top: 50%;
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: #fbbf24;
+    box-shadow: 0 0 6px rgba(251, 191, 36, 0.5);
+    transform: translate(-50%, -50%);
+    animation: particle-fly 900ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    opacity: 0;
+  }
+  .particle.heart {
+    width: auto; height: auto;
+    background: transparent;
+    box-shadow: none;
+    font-size: 14px;
+    line-height: 1;
+  }
+
+  @keyframes particle-fly {
+    0%   { transform: translate(-50%, -50%) scale(0); opacity: 1; }
+    20%  { opacity: 1; }
+    100% {
+      transform: translate(calc(-50% + var(--dx)), calc(-50% + var(--dy))) scale(0.4);
+      opacity: 0;
+    }
+  }
+
+  /* Ring pulse */
+  .ring {
+    position: absolute;
+    left: 50%; top: 50%;
+    width: 12px; height: 12px;
+    border-radius: 50%;
+    border: 2px solid #fbbf24;
+    transform: translate(-50%, -50%) scale(1);
+    animation: ring-out 700ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    opacity: 0.6;
+  }
+  @keyframes ring-out {
+    0%   { transform: translate(-50%, -50%) scale(0.4); opacity: 0.8; border-width: 3px; }
+    100% { transform: translate(-50%, -50%) scale(12); opacity: 0; border-width: 1px; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .donate, .thanks, .burst .heart, .particle, .ring { animation: none !important; transition: none !important; }
+    .thanks.show { opacity: 1; transform: none; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap" id="wrap">
+  <div class="label">Amount (UGX)</div>
+  <div class="grid" id="amounts">
+    <div class="chip">2,000</div>
+    <div class="chip selected">5,000</div>
+    <div class="chip">10,000</div>
+    <div class="chip">20,000</div>
+    <div class="chip">50,000</div>
+    <div class="chip other">Other</div>
+  </div>
+
+  <div class="thanks" id="thanks">
+    Thank you ð
+    <span class="sub">Payment sent to Amara</span>
+  </div>
+
+  <button class="donate" id="donate" type="button">
+    <span class="donate-label">
+      <span class="text">Donate UGX <span id="amt">5,000</span></span>
+      <span class="check">Sent â thank you</span>
+    </span>
+  </button>
+
+  <div class="meta" id="meta">Payments go directly to Amara Naledi via MTN MoMo or Airtel Money.</div>
+</div>
+
+<script>
+  const chips = document.querySelectorAll("#amounts .chip");
+  const amtEl = document.getElementById("amt");
+  chips.forEach(c => c.addEventListener("click", () => {
+    if (c.classList.contains("other")) return;
+    chips.forEach(x => x.classList.remove("selected"));
+    c.classList.add("selected");
+    amtEl.textContent = c.textContent.trim();
+  }));
+
+  const donate = document.getElementById("donate");
+  const thanks = document.getElementById("thanks");
+  const wrap = document.getElementById("wrap");
+
+  let busy = false;
+  donate.addEventListener("click", () => {
+    if (busy) return;
+    busy = true;
+
+    // tactile bounce
+    donate.classList.add("bouncing");
+    setTimeout(() => donate.classList.remove("bouncing"), 140);
+
+    // Heart explosion anchored to button center
+    const rect = donate.getBoundingClientRect();
+    const wrapRect = wrap.getBoundingClientRect();
+    const x = rect.left - wrapRect.left + rect.width / 2;
+    const y = rect.top - wrapRect.top + rect.height / 2;
+
+    const burst = document.createElement("div");
+    burst.className = "burst";
+    burst.style.left = x + "px";
+    burst.style.top = y + "px";
+
+    // Rising hero heart
+    const hero = document.createElement("div");
+    hero.className = "heart";
+    hero.textContent = "ð";
+    burst.appendChild(hero);
+
+    // Ring pulse
+    const ring = document.createElement("div");
+    ring.className = "ring";
+    burst.appendChild(ring);
+
+    // Particles â mix of dots and small hearts radiating outward
+    const COUNT = 14;
+    for (let i = 0; i < COUNT; i++) {
+      const p = document.createElement("div");
+      const isHeart = i % 3 === 0;
+      p.className = "particle" + (isHeart ? " heart" : "");
+      const angle = (i / COUNT) * Math.PI * 2 + (Math.random() - 0.5) * 0.4;
+      const dist = 60 + Math.random() * 50;
+      const dx = Math.cos(angle) * dist;
+      const dy = Math.sin(angle) * dist - 10;
+      p.style.setProperty("--dx", dx + "px");
+      p.style.setProperty("--dy", dy + "px");
+      p.style.animationDelay = (Math.random() * 80) + "ms";
+      if (isHeart) p.textContent = "ð";
+      burst.appendChild(p);
+    }
+
+    wrap.appendChild(burst);
+    setTimeout(() => burst.remove(), 1100);
+
+    // Switch button + show thank-you
+    donate.classList.add("thanking");
+    thanks.classList.add("show");
+
+    // Vibrate if supported (matches the LinkCard pattern from the codebase)
+    if (navigator.vibrate) navigator.vibrate(20);
+
+    // Reset after a beat so the demo loops
+    setTimeout(() => {
+      donate.classList.remove("thanking");
+      thanks.classList.remove("show");
+      busy = false;
+    }, 2400);
+  });
+</script>
+</body>
+</html>

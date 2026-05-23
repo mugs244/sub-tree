@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Voice & copy</title>
+<link rel="stylesheet" href="../colors_and_type.css" />
+<style>
+  body { margin: 0; padding: 22px 24px; background: var(--bg-base); font-family: var(--font-sans); }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px 18px; }
+  .card { border: 1px solid var(--border-default); border-radius: 0.75rem; padding: 14px; }
+  .eyebrow { font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-muted); font-weight: 500; margin-bottom: 6px; }
+  .quote { font-size: 14px; color: var(--text-primary); line-height: 1.5; }
+  .quote .mono { font-family: var(--font-mono); }
+  .yes { color: #16a34a; font-weight: 600; }
+  .no { color: #dc2626; font-weight: 600; text-decoration: line-through; }
+</style>
+</head>
+<body>
+<div class="grid">
+  <div class="card"><div class="eyebrow">Hero couplet</div><div class="quote">All your links.<br/>One page.</div></div>
+  <div class="card"><div class="eyebrow">CTA voice</div><div class="quote"><span class="yes">Claim your username</span> Â· <span class="no">Sign up now!</span></div></div>
+  <div class="card"><div class="eyebrow">Pending state</div><div class="quote">Check your phone. A payment prompt has been sent to <span class="mono">07XX XXX XXX</span>.</div></div>
+  <div class="card"><div class="eyebrow">Currency format</div><div class="quote"><span class="mono">UGX 5,000</span> Â· never <span class="no">5,000 UGX</span></div></div>
+  <div class="card"><div class="eyebrow">Error tone</div><div class="quote">Could not save â please try again</div></div>
+  <div class="card"><div class="eyebrow">Emoji budget</div><div class="quote">Support Amara <span style="font-size:16px">ð</span> â the only emoji shipped, only on the donate button.</div></div>
+</div>
+</body>
+</html>

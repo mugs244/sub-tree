@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Colors â Neutrals</title>
+<link rel="stylesheet" href="../colors_and_type.css" />
+<style>
+  body { margin: 0; padding: 24px; background: var(--bg-base); }
+  .grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; }
+  .swatch { border: 1px solid var(--border-default); border-radius: var(--radius-lg); overflow: hidden; }
+  .chip { height: 64px; }
+  .meta { padding: 8px 10px; }
+  .name { font-size: 12px; font-weight: 600; color: var(--text-primary); line-height: 1.2; }
+  .hex { font-family: var(--font-mono); font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+</style>
+</head>
+<body>
+<div class="grid">
+  <div class="swatch"><div class="chip" style="background:#ffffff;border-bottom:1px solid var(--border-default)"></div><div class="meta"><div class="name">Base</div><div class="hex">#FFFFFF</div></div></div>
+  <div class="swatch"><div class="chip" style="background:#f9fafb"></div><div class="meta"><div class="name">Surface</div><div class="hex">#F9FAFB</div></div></div>
+  <div class="swatch"><div class="chip" style="background:#f3f4f6"></div><div class="meta"><div class="name">Border subtle</div><div class="hex">#F3F4F6</div></div></div>
+  <div class="swatch"><div class="chip" style="background:#e5e7eb"></div><div class="meta"><div class="name">Border default</div><div class="hex">#E5E7EB</div></div></div>
+  <div class="swatch"><div class="chip" style="background:#9ca3af"></div><div class="meta"><div class="name">Placeholder</div><div class="hex">#9CA3AF</div></div></div>
+  <div class="swatch"><div class="chip" style="background:#6b7280"></div><div class="meta"><div class="name">Text muted</div><div class="hex">#6B7280</div></div></div>
+  <div class="swatch"><div class="chip" style="background:#4b5563"></div><div class="meta"><div class="name">Text secondary</div><div class="hex">#4B5563</div></div></div>
+  <div class="swatch"><div class="chip" style="background:#1f2937"></div><div class="meta"><div class="name">Accent hover</div><div class="hex">#1F2937</div></div></div>
+  <div class="swatch"><div class="chip" style="background:#111827"></div><div class="meta"><div class="name">Text / Accent</div><div class="hex">#111827</div></div></div>
+  <div class="swatch"><div class="chip" style="background:#000000"></div><div class="meta"><div class="name">Pure black</div><div class="hex">unused</div></div></div>
+</div>
+</body>
+</html>

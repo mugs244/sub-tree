@@ -1,0 +1,81 @@
+/* Sub-tree UI kit â shared styles
+   Drop into any UI kit's index.html before your JSX components. */
+@import url("../colors_and_type.css");
+
+* { box-sizing: border-box; }
+body { margin: 0; }
+
+/* ââ Buttons ââââââââââââââââââââââââââââââââââââââââ */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  gap: 8px; font-family: var(--font-sans); font-size: 14px;
+  font-weight: 500; line-height: 1; padding: 11px 18px;
+  border-radius: 0.5rem; border: 1px solid transparent;
+  cursor: pointer; transition: background 150ms, color 150ms, border-color 150ms;
+  white-space: nowrap;
+}
+.btn.primary { background: #111827; color: #fff; }
+.btn.primary:hover { background: #1f2937; }
+.btn.outline { border-color: var(--border-default); background: #fff; color: #111827; }
+.btn.outline:hover { background: var(--bg-surface); }
+.btn.ghost { background: transparent; color: var(--text-secondary); }
+.btn.ghost:hover { color: var(--text-primary); background: var(--bg-surface); }
+.btn.sm { padding: 7px 14px; font-size: 13px; }
+.btn.lg { padding: 13px 22px; font-size: 15px; }
+.btn.full { width: 100%; }
+.btn:disabled { opacity: 0.5; pointer-events: none; }
+
+/* ââ Inputs âââââââââââââââââââââââââââââââââââââââââ */
+.input {
+  display: block; width: 100%; font-family: var(--font-sans);
+  font-size: 14px; height: 40px; padding: 0 12px;
+  border: 1px solid var(--border-default); border-radius: 0.5rem;
+  background: #fff; color: var(--text-primary); outline: none;
+  transition: border-color 150ms, box-shadow 150ms;
+}
+.input.mono { font-family: var(--font-mono); }
+.input.h-11 { height: 44px; }
+.input::placeholder { color: var(--text-placeholder); }
+.input:focus { box-shadow: 0 0 0 2px rgba(17,24,39,0.2); border-color: var(--border-focus); }
+.input.invalid { border-color: var(--state-error); }
+
+/* ââ Labels / helpers âââââââââââââââââââââââââââââââ */
+.label { font-size: 14px; font-weight: 500; color: var(--text-primary); display: block; margin-bottom: 6px; }
+.helper { font-size: 12px; color: var(--text-muted); margin-top: 6px; }
+.helper.error { color: var(--state-error); }
+.req { color: var(--state-error); }
+
+/* ââ Cards ââââââââââââââââââââââââââââââââââââââââââ */
+.card { background: #fff; border: 1px solid var(--border-default); border-radius: 0.75rem; }
+.card.surface { background: var(--bg-surface); }
+.card.padded { padding: 24px; }
+
+/* ââ Badges âââââââââââââââââââââââââââââââââââââââââ */
+.badge { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 9999px; font-size: 12px; font-weight: 500; line-height: 1; }
+.badge.success { background: var(--state-success-bg); color: var(--state-success); }
+.badge.warning { background: var(--state-warning-bg); color: var(--state-warning); }
+.badge.error { background: var(--state-error-bg); color: var(--state-error); }
+.badge.muted { background: var(--bg-surface); color: var(--text-muted); }
+.badge.outline { background: #fff; color: var(--text-muted); border: 1px solid var(--border-default); }
+.badge.outline.dark { color: var(--text-primary); }
+
+/* ââ Utilities ââââââââââââââââââââââââââââââââââââââ */
+.mono { font-family: var(--font-mono); }
+.muted { color: var(--text-muted); }
+.divider { border-top: 1px solid var(--border-default); }
+.focus-ring:focus-visible { outline: 2px solid rgba(17,24,39,0.25); outline-offset: 2px; }
+
+/* ââ Lucide-ish stroke icon defaults ââââââââââââââââ */
+.icon { width: 16px; height: 16px; stroke-width: 2; stroke: currentColor; fill: none; stroke-linecap: round; stroke-linejoin: round; flex-shrink: 0; }
+.icon.lg { width: 20px; height: 20px; }
+.icon.xl { width: 24px; height: 24px; }
+.icon.empty { width: 48px; height: 48px; stroke-width: 1; }
+
+/* ââ Sub-tree logo (markup matches assets/brand/Logo.tsx) ââ */
+.st-logo { display: inline-flex; align-items: center; gap: 10px; }
+.st-logo .mark { width: 36px; height: 36px; background: #111827; color: #fff; border-radius: 0.5rem; display: inline-flex; align-items: center; justify-content: center; }
+.st-logo .mark.sm { width: 28px; height: 28px; border-radius: 0.375rem; }
+.st-logo .mark svg { width: 22px; height: 22px; }
+.st-logo .mark.sm svg { width: 18px; height: 18px; }
+.st-logo .word { font-size: 18px; font-weight: 600; letter-spacing: -0.01em; color: var(--text-primary); }
+.st-logo .word .hy { color: var(--text-muted); }

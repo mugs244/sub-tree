@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Elevation</title>
+<link rel="stylesheet" href="../colors_and_type.css" />
+<style>
+  body { margin: 0; padding: 28px 24px; background: var(--bg-surface); }
+  .row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
+  .box { background: #fff; border-radius: var(--radius-lg); padding: 18px 16px; text-align: center; }
+  .name { font-size: 12px; font-weight: 600; color: var(--text-primary); }
+  .meta { font-family: var(--font-mono); font-size: 10px; color: var(--text-muted); margin-top: 4px; }
+</style>
+</head>
+<body>
+<div class="row">
+  <div class="box" style="border:1px solid var(--border-default)">
+    <div class="name">Border only</div>
+    <div class="meta">default â does 95% of the work</div>
+  </div>
+  <div class="box" style="border:1px solid var(--border-default); box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.04)">
+    <div class="name">shadow-sm</div>
+    <div class="meta">profile mockup, toggle thumb</div>
+  </div>
+  <div class="box" style="border:1px solid var(--border-default); box-shadow: 0 4px 12px -2px rgb(0 0 0 / 0.06)">
+    <div class="name">shadow-md</div>
+    <div class="meta">modal / popover (rare)</div>
+  </div>
+</div>
+</body>
+</html>
