@@ -1,6 +1,130 @@
 import Link from "next/link"
 import { Logo } from "@/components/brand/Logo"
-import { Link2, Heart, BarChart2, ArrowRight, Globe, Smartphone } from "lucide-react"
+import { PlatformIcon } from "@/components/PlatformIcon"
+import { Link2, Heart, BarChart2, ArrowRight, Globe, Smartphone, Check, Minus } from "lucide-react"
+import type { Platform } from "@/lib/utils/platform"
+
+// ── Orbit ring ───────────────────────────────────────────
+const ORBIT_PLATFORMS: Platform[] = [
+  "youtube", "instagram", "tiktok", "twitter",
+  "whatsapp", "spotify", "substack", "facebook",
+]
+const ORBIT_PERIOD = 30
+
+// ── Logo bar ─────────────────────────────────────────────
+const LOGO_BAR_NAMES = [
+  { name: "Kampala Eats",  cls: "font-serif" },
+  { name: "BORN HERE",    cls: "font-mono font-bold tracking-[0.18em] uppercase text-[11px]" },
+  { name: "rolex daily",  cls: "italic font-light" },
+  { name: "Mama Asha",    cls: "italic font-medium" },
+  { name: "Naks FM",      cls: "font-bold tracking-tight" },
+  { name: "OliMu",        cls: "tracking-tighter font-semibold" },
+]
+
+// ── Testimonials ─────────────────────────────────────────
+const TESTIMONIALS = [
+  {
+    quote: "I used to send five different links to anyone who asked. Now there’s just one. My MoMo number stays private and the money still lands.",
+    name: "Amara Naledi",
+    role: "Food creator · Kampala",
+    handle: "@amara",
+    initial: "A",
+  },
+  {
+    quote: "The donation fee on Pro paid for itself in the first week. Supporters from the diaspora send larger amounts when they don’t have to use a card.",
+    name: "Joel Mukasa",
+    role: "Musician",
+    handle: "@joelm",
+    initial: "J",
+  },
+  {
+    quote: "We run a small youth choir. Sub-tree gave us one page for the schedule, the donate button and a way to sell rehearsal recordings — all in shillings.",
+    name: "St. Andrew’s Voices",
+    role: "Choir · Entebbe",
+    handle: "@standrews",
+    initial: "S",
+  },
+]
+
+// ── Pricing tiers ─────────────────────────────────────────
+type FeatureValue = string | boolean
+
+interface Tier {
+  id: string
+  name: string
+  blurb: string
+  price: number | null
+  cta: string
+  highlight: boolean
+  features: { label: string; value: FeatureValue }[]
+}
+
+const TIERS: Tier[] = [
+  {
+    id: "free",
+    name: "Free",
+    blurb: "All your links, one page.",
+    price: null,
+    cta: "Get started",
+    highlight: false,
+    features: [
+      { label: "Donation fee",         value: "5%" },
+      { label: "Themes",               value: "5 presets" },
+      { label: "Fundraiser campaigns", value: false },
+      { label: "Sell products",        value: false },
+      { label: "Affiliate",            value: false },
+      { label: "Members",              value: "1" },
+    ],
+  },
+  {
+    id: "pro",
+    name: "Pro",
+    blurb: "Customise everything. Run campaigns.",
+    price: 15000,
+    cta: "Start Pro trial",
+    highlight: true,
+    features: [
+      { label: "Donation fee",         value: "3%" },
+      { label: "Themes",               value: "Custom colours + fonts" },
+      { label: "Fundraiser campaigns", value: true },
+      { label: "Sell products",        value: false },
+      { label: "Affiliate",            value: "Promoter" },
+      { label: "Members",              value: "1" },
+    ],
+  },
+  {
+    id: "business",
+    name: "Business",
+    blurb: "Sell, not just collect.",
+    price: 40000,
+    cta: "Start Business trial",
+    highlight: false,
+    features: [
+      { label: "Donation fee",         value: "3%" },
+      { label: "Themes",               value: "Custom colours + fonts" },
+      { label: "Fundraiser campaigns", value: true },
+      { label: "Sell products",        value: true },
+      { label: "Affiliate",            value: "Promoter + merchant" },
+      { label: "Members",              value: "1" },
+    ],
+  },
+  {
+    id: "house",
+    name: "Content House",
+    blurb: "For groups, labels and small teams.",
+    price: 80000,
+    cta: "Talk to us",
+    highlight: false,
+    features: [
+      { label: "Donation fee",         value: "3%" },
+      { label: "Themes",               value: "Custom, shared" },
+      { label: "Fundraiser campaigns", value: true },
+      { label: "Sell products",        value: true },
+      { label: "Affiliate",            value: "Promoter + merchant" },
+      { label: "Members",              value: "Up to 10" },
+    ],
+  },
+]
 
 export default function LandingPage() {
   return (
@@ -38,10 +162,14 @@ export default function LandingPage() {
                 <Globe className="h-3 w-3" />
                 Built for East African creators
               </span>
-              <h1 className="text-4xl sm:text-5xl font-semibold tracking-tight leading-[1.1] mb-5">
-                All your links.<br />
-                One page.
-              </h1>
+              {/* Orbit ring wraps just the h1 so icons orbit the headline */}
+              <div className="relative">
+                <OrbitRing />
+                <h1 className="relative z-10 text-4xl sm:text-5xl font-semibold tracking-tight leading-[1.1] mb-5">
+                  All your links.<br />
+                  One page.
+                </h1>
+              </div>
               <p className="text-base text-muted-foreground leading-relaxed mb-8 max-w-md">
                 Share everything you create — links, content, social profiles — and accept mobile money donations directly, all from a single Sub-tree link.
               </p>
@@ -75,6 +203,22 @@ export default function LandingPage() {
             <StatItem value="Free" label="to get started" />
             <StatItem value="MTN + Airtel" label="mobile money" />
             <StatItem value="1 link" label="for everything" />
+          </div>
+        </section>
+
+        {/* ── Logo bar ────────────────────────────────────── */}
+        <section className="border-b border-border">
+          <div className="mx-auto max-w-5xl px-4 sm:px-6 py-10">
+            <p className="text-xs text-muted-foreground text-center mb-6">
+              Trusted by creators and organisations across East Africa
+            </p>
+            <ul className="flex flex-wrap items-center justify-center gap-x-10 gap-y-4">
+              {LOGO_BAR_NAMES.map(({ name, cls }) => (
+                <li key={name} className={`text-sm text-muted-foreground ${cls}`}>
+                  {name}
+                </li>
+              ))}
+            </ul>
           </div>
         </section>
 
@@ -157,6 +301,59 @@ export default function LandingPage() {
           </div>
         </section>
 
+        {/* ── Testimonials ────────────────────────────────── */}
+        <section className="bg-surface border-t border-border">
+          <div className="mx-auto max-w-5xl px-4 sm:px-6 py-20">
+            <div className="text-center mb-14">
+              <h2 className="text-2xl sm:text-3xl font-semibold tracking-tight mb-3">
+                Quiet wins from real creators
+              </h2>
+              <p className="text-muted-foreground text-sm">Three early users, in their own words.</p>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
+              {TESTIMONIALS.map((t) => (
+                <figure key={t.handle} className="rounded-xl border border-border bg-background p-6 flex flex-col gap-4">
+                  <blockquote className="text-sm text-muted-foreground leading-relaxed flex-1">
+                    &ldquo;{t.quote}&rdquo;
+                  </blockquote>
+                  <figcaption className="flex items-center gap-3">
+                    <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground text-xs font-semibold">
+                      {t.initial}
+                    </span>
+                    <span className="flex flex-col">
+                      <span className="text-xs font-semibold">{t.name}</span>
+                      <span className="text-[10px] text-muted-foreground">
+                        <span className="font-mono">{t.handle}</span>
+                        {" · "}{t.role}
+                      </span>
+                    </span>
+                  </figcaption>
+                </figure>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* ── Pricing ─────────────────────────────────────── */}
+        <section id="pricing" className="mx-auto max-w-5xl px-4 sm:px-6 py-20">
+          <div className="text-center mb-14">
+            <h2 className="text-2xl sm:text-3xl font-semibold tracking-tight mb-3">
+              Simple pricing, in shillings
+            </h2>
+            <p className="text-muted-foreground text-sm max-w-md mx-auto">
+              Start free. Upgrade when you outgrow it — we lower the donation fee on every paid plan.
+            </p>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {TIERS.map((tier) => (
+              <PricingCard key={tier.id} tier={tier} />
+            ))}
+          </div>
+          <p className="mt-8 text-center text-[11px] text-muted-foreground font-mono">
+            All prices in UGX. Cancel any time. Donation fees are on top — Sub-tree never holds your money.
+          </p>
+        </section>
+
         {/* ── CTA banner ──────────────────────────────────── */}
         <section className="border-t border-border">
           <div className="mx-auto max-w-5xl px-4 sm:px-6 py-20 text-center">
@@ -203,6 +400,26 @@ export default function LandingPage() {
 
 /* ── Sub-components ─────────────────────────────────────── */
 
+function OrbitRing() {
+  return (
+    <div
+      className="absolute top-1/2 left-1/2 w-[380px] h-[380px] -translate-x-1/2 -translate-y-1/2 pointer-events-none z-0"
+      aria-hidden="true"
+    >
+      <div className="absolute inset-0 rounded-full border border-dashed border-border opacity-85" />
+      {ORBIT_PLATFORMS.map((platform, i) => (
+        <span
+          key={platform}
+          className="orbit-icon absolute top-1/2 left-1/2 w-[34px] h-[34px] -mt-[17px] -ml-[17px] bg-background border border-border rounded-full flex items-center justify-center text-foreground shadow-[0_1px_2px_0_rgb(0_0_0/0.04)]"
+          style={{ animationDelay: `${-i * (ORBIT_PERIOD / ORBIT_PLATFORMS.length)}s` }}
+        >
+          <PlatformIcon platform={platform} className="h-[18px] w-[18px]" />
+        </span>
+      ))}
+    </div>
+  )
+}
+
 function StatItem({ value, label }: { value: string; label: string }) {
   return (
     <div>
@@ -247,7 +464,6 @@ function Step({
 }) {
   return (
     <div className="relative flex flex-col gap-3 px-0 sm:px-6 pb-10 sm:pb-0 first:pl-0">
-      {/* horizontal connector line on desktop */}
       {connector && (
         <span className="hidden sm:block absolute top-4 left-[calc(50%+1.5rem)] right-0 h-px bg-border" />
       )}
@@ -260,13 +476,70 @@ function Step({
   )
 }
 
+function PricingCard({ tier }: { tier: Tier }) {
+  return (
+    <div
+      className={[
+        "rounded-xl border bg-background p-5 flex flex-col",
+        tier.highlight ? "border-foreground shadow-[0_0_0_1px_#111827]" : "border-border",
+      ].join(" ")}
+    >
+      {tier.highlight && (
+        <span className="self-start text-[10px] font-bold tracking-[0.08em] uppercase rounded-full bg-primary text-primary-foreground px-2 py-0.5 mb-3">
+          Most popular
+        </span>
+      )}
+      <p className="text-sm font-semibold">{tier.name}</p>
+      <div className="flex items-baseline gap-1 mt-2 mb-1">
+        {tier.price === null ? (
+          <span className="text-xl font-semibold tracking-tight">Free</span>
+        ) : (
+          <>
+            <span className="text-xl font-semibold tracking-tight font-mono">
+              UGX {tier.price.toLocaleString("en-UG")}
+            </span>
+            <span className="text-[11px] text-muted-foreground">/month</span>
+          </>
+        )}
+      </div>
+      <p className="text-xs text-muted-foreground leading-relaxed mb-4">{tier.blurb}</p>
+      <Link
+        href="/sign-up"
+        className={[
+          "w-full rounded-lg px-4 py-2 text-xs font-medium text-center transition-colors duration-150 mb-5",
+          tier.highlight
+            ? "bg-primary text-primary-foreground hover:bg-accent-dark"
+            : "border border-border hover:bg-surface",
+        ].join(" ")}
+      >
+        {tier.cta}
+      </Link>
+      <ul className="border-t border-border pt-4 flex flex-col gap-2.5">
+        {tier.features.map(({ label, value }) => (
+          <li key={label} className="flex items-start gap-2 text-xs">
+            {value === false ? (
+              <Minus className="h-3.5 w-3.5 shrink-0 mt-0.5 text-muted-foreground" strokeWidth={2} />
+            ) : (
+              <Check className="h-3.5 w-3.5 shrink-0 mt-0.5 text-foreground" strokeWidth={2.5} />
+            )}
+            <span className={value === false ? "text-muted-foreground" : ""}>
+              {label}
+              {typeof value === "string" && (
+                <span className="ml-1 font-mono text-muted-foreground text-[10px]">· {value}</span>
+              )}
+            </span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  )
+}
+
 function ProfileMockup() {
   return (
     <div className="w-full max-w-[260px] rounded-2xl border border-border bg-background shadow-sm overflow-hidden">
-      {/* header bar */}
       <div className="h-2 bg-surface border-b border-border" />
       <div className="px-5 py-6 space-y-4">
-        {/* avatar + name */}
         <div className="flex flex-col items-center gap-2 text-center">
           <div className="h-14 w-14 rounded-full bg-primary flex items-center justify-center text-primary-foreground text-lg font-semibold">
             A
@@ -277,8 +550,6 @@ function ProfileMockup() {
             <p className="text-[10px] text-muted-foreground mt-0.5">Content creator · Kampala</p>
           </div>
         </div>
-
-        {/* links */}
         <div className="space-y-2">
           {["YouTube Channel", "Instagram", "WhatsApp"].map((label) => (
             <div
@@ -289,13 +560,9 @@ function ProfileMockup() {
             </div>
           ))}
         </div>
-
-        {/* donate button */}
         <div className="w-full rounded-lg bg-primary text-primary-foreground px-3 py-2 text-xs font-medium text-center">
-          Support Amara
+          Support Amara 💛
         </div>
-
-        {/* powered by */}
         <p className="text-center text-[9px] text-muted-foreground">
           Powered by Sub-tree
         </p>
