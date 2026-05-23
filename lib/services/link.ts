@@ -1,6 +1,7 @@
 import { Prisma } from "@prisma/client"
 import { prisma } from "@/lib/db"
 import { addLinkSchema, updateLinkSchema, reorderLinkSchema } from "@/lib/validators/link"
+import { detectSmartPlatform, fetchSmartCardMeta } from "@/lib/services/smart-links"
 
 export class LinkError extends Error {
   constructor(
@@ -33,6 +34,10 @@ export async function listLinks(clerkUserId: string) {
       is_enabled: true,
       position: true,
       clicks: true,
+      link_type: true,
+      smart_card_meta: true,
+      smart_card_fetched_at: true,
+      render_as_plain: true,
       created_at: true,
     },
   })
@@ -55,12 +60,38 @@ export async function addLink(clerkUserId: string, input: unknown): Promise<void
     _max: { position: true },
   })
 
+  // Try to fetch OG metadata — never blocks creation on failure
+  const platform = detectSmartPlatform(parsed.data.url)
+  const meta = await fetchSmartCardMeta(parsed.data.url).catch(() => null)
+
   await prisma.link.create({
     data: {
       user_id: user.id,
       url: parsed.data.url,
       label: parsed.data.label,
       position: (maxPosition._max.position ?? -1) + 1,
+      link_type: meta ? "SMART_CARD" : platform ? "SMART_CARD" : "URL",
+      smart_card_meta: meta ? JSON.parse(JSON.stringify(meta)) : undefined,
+      smart_card_fetched_at: meta ? new Date() : undefined,
+    },
+  })
+}
+
+export async function refreshLinkMeta(clerkUserId: string, linkId: number): Promise<void> {
+  const link = await prisma.link.findUnique({
+    where: { id: linkId },
+    select: { url: true, user: { select: { clerk_user_id: true } } },
+  })
+  if (!link) throw new LinkError("LINK_NOT_FOUND", "Link not found")
+  if (link.user.clerk_user_id !== clerkUserId) throw new LinkError("FORBIDDEN", "Not your link")
+
+  const meta = await fetchSmartCardMeta(link.url).catch(() => null)
+  await prisma.link.update({
+    where: { id: linkId },
+    data: {
+      link_type: meta ? "SMART_CARD" : "URL",
+      smart_card_meta: meta ? JSON.parse(JSON.stringify(meta)) : Prisma.JsonNull,
+      smart_card_fetched_at: new Date(),
     },
   })
 }

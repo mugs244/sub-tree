@@ -36,6 +36,9 @@ export function LinksManager({ initialLinks }: LinksManagerProps) {
       is_enabled: true,
       position: links.length,
       clicks: 0,
+      link_type: "URL",
+      smart_card_meta: null,
+      render_as_plain: false,
     }
 
     setLinks((cur) => [...cur, tempLink])
@@ -70,7 +73,7 @@ export function LinksManager({ initialLinks }: LinksManagerProps) {
     }
   }
 
-  async function handleUpdate(id: number, data: Partial<Pick<LinkItem, "url" | "label" | "is_enabled">>) {
+  async function handleUpdate(id: number, data: Partial<Pick<LinkItem, "url" | "label" | "is_enabled" | "render_as_plain">>) {
     const snapshot = links.find((l) => l.id === id)
     setLinks((cur) => cur.map((l) => (l.id === id ? { ...l, ...data } : l)))
     const res = await fetch(`/api/links/${id}`, {

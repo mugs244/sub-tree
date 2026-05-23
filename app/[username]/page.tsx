@@ -5,7 +5,9 @@ import { TrackedLink } from "@/components/TrackedLink"
 import { PageViewTracker } from "@/components/PageViewTracker"
 import { PlatformIcon } from "@/components/PlatformIcon"
 import { ReferrerTracker } from "@/components/ReferrerTracker"
+import { SmartLinkCard } from "@/components/SmartLinkCard"
 import { detectPlatform } from "@/lib/utils/platform"
+import type { SmartCardMeta } from "@/lib/services/smart-links"
 
 type Props = { params: Promise<{ username: string }> }
 
@@ -70,6 +72,7 @@ export default async function PublicProfilePage({ params }: Props) {
     where: { username },
     select: {
       deleted_at: true,
+      tier: true,
       profile: {
         select: {
           display_name: true,
@@ -77,12 +80,20 @@ export default async function PublicProfilePage({ params }: Props) {
           avatar_url: true,
           theme_preset: true,
           button_style: true,
+          theme_bg_color: true,
+          theme_accent_color: true,
+          theme_button_color: true,
+          theme_button_text: true,
+          theme_card_bg: true,
+          theme_card_text: true,
+          theme_font: true,
+          hide_branding: true,
         },
       },
       links: {
         where: { is_enabled: true },
         orderBy: { position: "asc" },
-        select: { id: true, url: true, label: true },
+        select: { id: true, url: true, label: true, link_type: true, smart_card_meta: true, render_as_plain: true },
       },
     },
   })
@@ -96,7 +107,19 @@ export default async function PublicProfilePage({ params }: Props) {
       ? "rounded-full"
       : "rounded-lg"
 
-  const themeStyle = THEME_VARS[profile.theme_preset] ?? {}
+  const presetStyle = THEME_VARS[profile.theme_preset] ?? {}
+
+  // CSS custom properties need a plain object with string index — cast once here
+  const customOverrides: Record<string, string> = {}
+  if (profile.theme_bg_color)     customOverrides["--bg-base"]        = profile.theme_bg_color
+  if (profile.theme_accent_color) customOverrides["--accent-primary"] = profile.theme_accent_color
+  if (profile.theme_button_color) customOverrides["--bg-surface"]     = profile.theme_button_color
+  if (profile.theme_card_bg)      customOverrides["--bg-raised"]      = profile.theme_card_bg
+
+  const themeStyle = { ...presetStyle, ...customOverrides } as React.CSSProperties
+
+  const isPro = (["PRO", "BUSINESS", "CONTENT_HOUSE"] as string[]).includes(user.tier)
+  const showBranding = !isPro || !profile.hide_branding
 
   return (
     <main
@@ -126,20 +149,34 @@ export default async function PublicProfilePage({ params }: Props) {
 
         {links.length > 0 ? (
           <div className="space-y-3">
-            {links.map((link) => (
-              <TrackedLink
-                key={link.id}
-                href={link.url}
-                linkId={link.id}
-                className={[
-                  "flex items-center justify-center gap-2.5 w-full px-4 py-3 text-sm font-medium border border-border bg-background hover:bg-surface transition-colors duration-150",
-                  buttonClass,
-                ].join(" ")}
-              >
-                <PlatformIcon platform={detectPlatform(link.url)} className="h-4 w-4 shrink-0" />
-                {link.label}
-              </TrackedLink>
-            ))}
+            {links.map((link) => {
+              const showRich = link.link_type === "SMART_CARD" && !link.render_as_plain && link.smart_card_meta
+              if (showRich) {
+                return (
+                  <SmartLinkCard
+                    key={link.id}
+                    href={link.url}
+                    linkId={link.id}
+                    meta={link.smart_card_meta as unknown as SmartCardMeta}
+                    buttonClass={buttonClass}
+                  />
+                )
+              }
+              return (
+                <TrackedLink
+                  key={link.id}
+                  href={link.url}
+                  linkId={link.id}
+                  className={[
+                    "flex items-center justify-center gap-2.5 w-full px-4 py-3 text-sm font-medium border border-border bg-background hover:bg-surface transition-colors duration-150",
+                    buttonClass,
+                  ].join(" ")}
+                >
+                  <PlatformIcon platform={detectPlatform(link.url)} className="h-4 w-4 shrink-0" />
+                  {link.label}
+                </TrackedLink>
+              )
+            })}
           </div>
         ) : (
           <p className="text-center text-sm text-muted-foreground">No links yet.</p>
@@ -157,9 +194,11 @@ export default async function PublicProfilePage({ params }: Props) {
           </a>
         </div>
 
-        <p className="text-center text-xs text-muted-foreground pt-4">
-          <a href="/" className="hover:underline">Powered by Sub-tree</a>
-        </p>
+        {showBranding && (
+          <p className="text-center text-xs text-muted-foreground pt-4">
+            <a href="/" className="hover:underline">Powered by Sub-tree</a>
+          </p>
+        )}
       </div>
     </main>
   )
