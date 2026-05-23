@@ -55,6 +55,7 @@ interface Tier {
   blurb: string
   price: number | null
   cta: string
+  href: string
   highlight: boolean
   features: { label: string; value: FeatureValue }[]
 }
@@ -66,6 +67,7 @@ const TIERS: Tier[] = [
     blurb: "All your links, one page.",
     price: null,
     cta: "Get started",
+    href: "/sign-up",
     highlight: false,
     features: [
       { label: "Donation fee",         value: "5%" },
@@ -81,7 +83,8 @@ const TIERS: Tier[] = [
     name: "Pro",
     blurb: "Customise everything. Run campaigns.",
     price: 15000,
-    cta: "Start Pro trial",
+    cta: "Get Pro",
+    href: "/api/plan-redirect?plan=pro",
     highlight: true,
     features: [
       { label: "Donation fee",         value: "3%" },
@@ -97,7 +100,8 @@ const TIERS: Tier[] = [
     name: "Business",
     blurb: "Sell, not just collect.",
     price: 40000,
-    cta: "Start Business trial",
+    cta: "Start free trial",
+    href: "/api/plan-redirect?plan=business",
     highlight: false,
     features: [
       { label: "Donation fee",         value: "3%" },
@@ -114,6 +118,7 @@ const TIERS: Tier[] = [
     blurb: "For groups, labels and small teams.",
     price: 80000,
     cta: "Talk to us",
+    href: "/content-house",
     highlight: false,
     features: [
       { label: "Donation fee",         value: "3%" },
@@ -504,7 +509,7 @@ function PricingCard({ tier }: { tier: Tier }) {
       </div>
       <p className="text-xs text-muted-foreground leading-relaxed mb-4">{tier.blurb}</p>
       <Link
-        href="/sign-up"
+        href={tier.href}
         className={[
           "w-full rounded-lg px-4 py-2 text-xs font-medium text-center transition-colors duration-150 mb-5",
           tier.highlight

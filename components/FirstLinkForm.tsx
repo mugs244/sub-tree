@@ -17,7 +17,7 @@ export function FirstLinkForm() {
   const [submitting, setSubmitting] = useState(false)
   const [serverError, setServerError] = useState<string | null>(null)
 
-  async function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
     setErrors({})
     setServerError(null)
@@ -44,7 +44,7 @@ export function FirstLinkForm() {
         return
       }
 
-      router.push("/dashboard")
+      router.push("/onboarding/plan")
     } catch {
       setServerError("Could not add link — please try again")
     } finally {
@@ -112,7 +112,7 @@ export function FirstLinkForm() {
           variant="ghost"
           className="w-full text-[color:var(--text-muted)]"
           disabled={submitting}
-          onClick={() => router.push("/dashboard")}
+          onClick={() => router.push("/onboarding/plan")}
         >
           Skip for now
         </Button>

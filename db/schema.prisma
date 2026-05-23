@@ -24,6 +24,7 @@ model User {
   profile           Profile?
   links             Link[]
   donations         Donation[]
+  subscription      Subscription?
 
   @@index([clerk_user_id])
 }
@@ -88,6 +89,69 @@ model UsernameClaim {
   @@index([status])
 }
 
+model Subscription {
+  id                  Int                @id @default(autoincrement())
+  user_id             Int                @unique
+  tier                Tier
+  status              SubscriptionStatus @default(TRIALING)
+  trial_ends_at       DateTime?
+  current_period_end  DateTime
+  idempotency_key     String             @unique
+  provider_ref        String?
+  created_at          DateTime           @default(now())
+  updated_at          DateTime           @updatedAt
+
+  user                User               @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  events              SubscriptionEvent[]
+
+  @@index([status])
+  @@index([current_period_end])
+  @@index([trial_ends_at])
+}
+
+model SubscriptionEvent {
+  id              Int          @id @default(autoincrement())
+  subscription_id Int
+  event_type      String
+  payload         Json
+  created_at      DateTime     @default(now())
+
+  subscription    Subscription @relation(fields: [subscription_id], references: [id], onDelete: Cascade)
+
+  @@index([subscription_id])
+}
+
+model ContentHouseRequest {
+  id                  Int                       @id @default(autoincrement())
+  status              ContentHouseRequestStatus @default(PENDING)
+  company_email       String
+  social_platforms    String[]
+  features_requested  String[]
+  notes               String?
+  reviewed_by         String?
+  reviewed_at         DateTime?
+  created_at          DateTime                  @default(now())
+  updated_at          DateTime                  @updatedAt
+
+  members             ContentHouseMember[]
+
+  @@index([status])
+  @@index([created_at])
+}
+
+model ContentHouseMember {
+  id          Int                 @id @default(autoincrement())
+  request_id  Int
+  name        String
+  phone       String
+  email       String
+  share_rate  Decimal             @db.Decimal(5, 2)
+
+  request     ContentHouseRequest @relation(fields: [request_id], references: [id], onDelete: Cascade)
+
+  @@index([request_id])
+}
+
 enum AccountType {
   INDIVIDUAL
   BUSINESS
@@ -97,6 +161,22 @@ enum AccountType {
 enum Tier {
   FREE
   PRO
+  BUSINESS
+  CONTENT_HOUSE
+}
+
+enum SubscriptionStatus {
+  TRIALING
+  ACTIVE
+  PAST_DUE
+  CANCELLED
+}
+
+enum ContentHouseRequestStatus {
+  PENDING
+  REVIEWING
+  APPROVED
+  REJECTED
 }
 
 enum ClaimStatus {
