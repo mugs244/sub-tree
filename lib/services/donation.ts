@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/db"
 import { sendSms } from "@/lib/sms"
+import { incrementRaisedAmount } from "@/lib/services/fundraiser"
 import type { MomoCallbackPayload } from "./momo/types"
 
 export async function handleMomoCallback(
@@ -10,27 +11,28 @@ export async function handleMomoCallback(
 
   const donation = await prisma.donation.findUnique({
     where: { idempotency_key: referenceId },
-    select: { id: true, status: true },
+    select: { id: true, status: true, fundraiser_id: true },
   })
 
   // Unknown referenceId — ignore silently (prevents noisy logs on test pings)
   if (!donation) return
 
-  // Already settled — idempotent return
+  // Already settled — idempotent return (dedup guard also skips raised_amount increment)
   if (donation.status === "COMPLETED" || donation.status === "FAILED") return
 
   const newStatus = status === "SUCCESSFUL" ? "COMPLETED" : "FAILED"
 
-  const [updatedDonation] = await prisma.$transaction([
-    prisma.donation.update({
+  const updatedDonation = await prisma.$transaction(async (tx) => {
+    const updated = await tx.donation.update({
       where: { id: donation.id },
       data: {
         status: newStatus,
         ...(providerTxId ? { provider_tx_id: providerTxId } : {}),
       },
       select: { amount: true, donor_name: true, user_id: true },
-    }),
-    prisma.donationEvent.create({
+    })
+
+    await tx.donationEvent.create({
       data: {
         donation_id: donation.id,
         event_type: newStatus === "COMPLETED" ? "PAYMENT_COMPLETED" : "PAYMENT_FAILED",
@@ -40,8 +42,14 @@ export async function handleMomoCallback(
           raw: rawBody,
         },
       },
-    }),
-  ])
+    })
+
+    if (newStatus === "COMPLETED" && donation.fundraiser_id) {
+      await incrementRaisedAmount(donation.fundraiser_id, updated.amount, tx)
+    }
+
+    return updated
+  })
 
   if (newStatus === "COMPLETED") {
     const creator = await prisma.user.findUnique({

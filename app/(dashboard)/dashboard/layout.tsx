@@ -15,6 +15,7 @@ export default async function DashboardRootLayout({
     where: { clerk_user_id: userId },
     select: {
       username: true,
+      tier: true,
       profile: { select: { id: true } },
     },
   })
@@ -23,5 +24,9 @@ export default async function DashboardRootLayout({
   if (!user.username) redirect("/onboarding/username")
   if (!user.profile) redirect("/onboarding/profile")
 
-  return <DashboardLayout username={user.username}>{children}</DashboardLayout>
+  return (
+    <DashboardLayout username={user.username} tier={user.tier}>
+      {children}
+    </DashboardLayout>
+  )
 }

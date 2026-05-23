@@ -3,29 +3,25 @@
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { SignOutButton } from "@clerk/nextjs"
-import { Home, Link2, Heart, Palette, Settings, ExternalLink, LogOut } from "lucide-react"
+import { Home, Link2, Heart, Palette, Settings, ExternalLink, LogOut, Target } from "lucide-react"
 import { Logo } from "@/components/brand/Logo"
+
+const PRO_TIERS = ["PRO", "BUSINESS", "CONTENT_HOUSE"]
 
 interface NavItem {
   label: string
   href: string
   icon: React.ElementType
+  tiers?: string[]
 }
 
-const sidebarNav: NavItem[] = [
-  { label: "Home", href: "/dashboard", icon: Home },
-  { label: "Links", href: "/dashboard/links", icon: Link2 },
-  { label: "Donations", href: "/dashboard/donations", icon: Heart },
-  { label: "Appearance", href: "/dashboard/appearance", icon: Palette },
-  { label: "Settings", href: "/dashboard/settings", icon: Settings },
-]
-
-const mobileNav: NavItem[] = [
-  { label: "Home", href: "/dashboard", icon: Home },
-  { label: "Links", href: "/dashboard/links", icon: Link2 },
-  { label: "Donations", href: "/dashboard/donations", icon: Heart },
-  { label: "Appearance", href: "/dashboard/appearance", icon: Palette },
-  { label: "Settings", href: "/dashboard/settings", icon: Settings },
+const NAV_ITEMS: NavItem[] = [
+  { label: "Home",        href: "/dashboard",             icon: Home },
+  { label: "Links",       href: "/dashboard/links",       icon: Link2 },
+  { label: "Donations",   href: "/dashboard/donations",   icon: Heart },
+  { label: "Fundraisers", href: "/dashboard/fundraisers", icon: Target, tiers: PRO_TIERS },
+  { label: "Appearance",  href: "/dashboard/appearance",  icon: Palette },
+  { label: "Settings",    href: "/dashboard/settings",    icon: Settings },
 ]
 
 function isActive(pathname: string, href: string) {
@@ -36,10 +32,12 @@ function isActive(pathname: string, href: string) {
 interface DashboardLayoutProps {
   children: React.ReactNode
   username: string
+  tier: string
 }
 
-export function DashboardLayout({ children, username }: DashboardLayoutProps) {
+export function DashboardLayout({ children, username, tier }: DashboardLayoutProps) {
   const pathname = usePathname()
+  const visibleNav = NAV_ITEMS.filter((item) => !item.tiers || item.tiers.includes(tier))
 
   return (
     <div className="min-h-screen flex bg-background">
@@ -52,7 +50,7 @@ export function DashboardLayout({ children, username }: DashboardLayoutProps) {
         </div>
 
         <nav className="flex-1 px-3 py-4 space-y-0.5" aria-label="Main navigation">
-          {sidebarNav.map(({ label, href, icon: Icon }) => {
+          {visibleNav.map(({ label, href, icon: Icon }) => {
             const active = isActive(pathname, href)
             return (
               <Link
@@ -116,10 +114,11 @@ export function DashboardLayout({ children, username }: DashboardLayoutProps) {
 
       {/* ── Mobile bottom tab bar ─────────────────────────── */}
       <nav
-        className="md:hidden fixed bottom-0 left-0 right-0 h-16 border-t border-border bg-background grid grid-cols-5 z-20"
+        className={`md:hidden fixed bottom-0 left-0 right-0 h-16 border-t border-border bg-background grid z-20`}
+        style={{ gridTemplateColumns: `repeat(${visibleNav.length}, minmax(0, 1fr))` }}
         aria-label="Mobile navigation"
       >
-        {mobileNav.map(({ label, href, icon: Icon }) => {
+        {visibleNav.map(({ label, href, icon: Icon }) => {
           const active = isActive(pathname, href)
           return (
             <Link

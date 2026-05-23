@@ -20,11 +20,13 @@ model User {
   updated_at        DateTime        @updatedAt
   deleted_at        DateTime?
 
-  username_claims   UsernameClaim[]
-  profile           Profile?
-  links             Link[]
-  donations         Donation[]
-  subscription      Subscription?
+  username_claims    UsernameClaim[]
+  profile            Profile?
+  links              Link[]
+  donations          Donation[]
+  subscription       Subscription?
+  fundraisers        Fundraiser[]    @relation("user_fundraisers")
+  charity_campaigns  Fundraiser[]    @relation("charity_fundraisers")
 
   @@index([clerk_user_id])
 }
@@ -220,15 +222,71 @@ model Donation {
   idempotency_key String         @unique
   note             String?
   referrer_source  String?
+  fundraiser_id    Int?
   created_at       DateTime       @default(now())
   updated_at       DateTime       @updatedAt
 
   user            User           @relation(fields: [user_id], references: [id], onDelete: Restrict)
+  fundraiser      Fundraiser?    @relation(fields: [fundraiser_id], references: [id], onDelete: SetNull)
   events          DonationEvent[]
 
   @@index([user_id])
   @@index([status])
   @@index([user_id, status])
+  @@index([fundraiser_id])
+}
+
+model Fundraiser {
+  id              Int               @id @default(autoincrement())
+  user_id         Int
+  fundraiser_type FundraiserType    @default(PERSONAL)
+  title           String
+  description     String            @db.Text
+  goal_amount     BigInt
+  raised_amount   BigInt            @default(0)
+  deadline        DateTime?
+  cover_image_url String?
+  show_progress   Boolean           @default(true)
+  status          FundraiserStatus  @default(DRAFT)
+
+  charity_user_id           Int?
+  charity_approval_status   CharityApprovalStatus?
+  charity_split_creator_pct Int?
+  charity_split_charity_pct Int?
+  charity_approved_at       DateTime?
+  charity_rejected_at       DateTime?
+  charity_rejection_reason  String?
+
+  created_at      DateTime          @default(now())
+  updated_at      DateTime          @updatedAt
+
+  user            User              @relation("user_fundraisers", fields: [user_id], references: [id], onDelete: Cascade)
+  charity_user    User?             @relation("charity_fundraisers", fields: [charity_user_id], references: [id])
+  donations       Donation[]
+
+  @@index([user_id])
+  @@index([charity_user_id])
+  @@index([status])
+}
+
+enum FundraiserType {
+  PERSONAL
+  CHARITY
+}
+
+enum FundraiserStatus {
+  DRAFT
+  ACTIVE
+  CLOSED
+  COMPLETED
+  EXPIRED
+}
+
+enum CharityApprovalStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  SUSPENDED
 }
 
 model DonationEvent {

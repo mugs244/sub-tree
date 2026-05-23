@@ -6,6 +6,8 @@ import { PageViewTracker } from "@/components/PageViewTracker"
 import { PlatformIcon } from "@/components/PlatformIcon"
 import { ReferrerTracker } from "@/components/ReferrerTracker"
 import { SmartLinkCard } from "@/components/SmartLinkCard"
+import { PublicFundraiserCard } from "@/components/PublicFundraiserCard"
+import { getActiveFundraiser } from "@/lib/services/fundraiser"
 import { detectPlatform } from "@/lib/utils/platform"
 import type { SmartCardMeta } from "@/lib/services/smart-links"
 
@@ -71,6 +73,7 @@ export default async function PublicProfilePage({ params }: Props) {
   const user = await prisma.user.findUnique({
     where: { username },
     select: {
+      id: true,
       deleted_at: true,
       tier: true,
       profile: {
@@ -101,6 +104,8 @@ export default async function PublicProfilePage({ params }: Props) {
   if (!user || user.deleted_at || !user.profile) notFound()
 
   const { profile, links } = user
+
+  const activeFundraiser = await getActiveFundraiser(user.id)
   const buttonClass = profile.button_style === "sharp"
     ? "rounded-none"
     : profile.button_style === "pill"
@@ -146,6 +151,10 @@ export default async function PublicProfilePage({ params }: Props) {
             <p className="text-sm text-muted-foreground leading-relaxed pt-1">{profile.bio}</p>
           )}
         </div>
+
+        {activeFundraiser && (
+          <PublicFundraiserCard fundraiser={activeFundraiser} username={username} />
+        )}
 
         {links.length > 0 ? (
           <div className="space-y-3">

@@ -1,9 +1,8 @@
 "use client"
 
 import { useState, useEffect, useRef, useCallback } from "react"
-import { Check, Loader2, ExternalLink, Lock } from "lucide-react"
+import { Check, Loader2, ExternalLink } from "lucide-react"
 import { Label } from "@/components/ui/label"
-import Link from "next/link"
 
 const FREE_PRESETS = [
   { value: "default", label: "Default",  vars: { bg: "#ffffff", surface: "#f9fafb", text: "#111827", muted: "#6b7280", border: "#e5e7eb", accent: "#111827", accentFg: "#ffffff" } },
@@ -182,23 +181,22 @@ export function AppearanceForm({
           </div>
         </div>
 
-        {/* Pro presets */}
-        <div className="space-y-3">
-          <div className="flex items-center gap-2">
+        {/* Pro presets — only shown to Pro+ users */}
+        {isPro && (
+          <div className="space-y-3">
             <Label className="text-sm font-medium">Pro themes</Label>
-            {!isPro && <ProBadge />}
+            <div className="grid grid-cols-4 gap-2">
+              {PRO_PRESETS.map((preset) => (
+                <PresetSwatch
+                  key={preset.value}
+                  preset={preset}
+                  active={theme === preset.value}
+                  onClick={() => { navigator?.vibrate?.(20); setTheme(preset.value) }}
+                />
+              ))}
+            </div>
           </div>
-          <div className={["grid grid-cols-4 gap-2", !isPro ? "opacity-50 pointer-events-none select-none" : ""].join(" ")}>
-            {PRO_PRESETS.map((preset) => (
-              <PresetSwatch
-                key={preset.value}
-                preset={preset}
-                active={theme === preset.value}
-                onClick={() => { navigator?.vibrate?.(20); setTheme(preset.value) }}
-              />
-            ))}
-          </div>
-        </div>
+        )}
 
         {/* Button style */}
         <div className="space-y-3">
@@ -225,14 +223,11 @@ export function AppearanceForm({
           </div>
         </div>
 
-        {/* ── Pro section ─────────────────────────────────── */}
-        <div className={["space-y-6 rounded-xl border p-5", isPro ? "border-[color:var(--border-default)]" : "border-dashed border-[color:var(--border-default)] bg-[color:var(--bg-raised)]"].join(" ")}>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
+        {/* ── Pro custom colors section — only shown to Pro+ users ── */}
+        {isPro && (
+          <div className="space-y-6 rounded-xl border border-[color:var(--border-default)] p-5">
+            <div className="flex items-center justify-between">
               <Label className="text-sm font-semibold">Custom colors</Label>
-              {!isPro && <ProBadge />}
-            </div>
-            {isPro && (
               <button
                 type="button"
                 onClick={resetProColors}
@@ -240,98 +235,87 @@ export function AppearanceForm({
               >
                 Reset to preset
               </button>
-            )}
-          </div>
+            </div>
 
-          {!isPro ? (
-            <p className="text-[13px] text-[color:var(--text-secondary)]">
-              Custom colors, fonts, and branding controls are unlocked on the Pro plan.{" "}
-              <Link href="/onboarding/plan" className="underline underline-offset-2">
-                Upgrade to Pro
-              </Link>
-            </p>
-          ) : (
-            <>
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-                {COLOR_ROLES.map(({ key, label }) => (
-                  <div key={key} className="space-y-1.5">
-                    <label className="text-[12px] text-[color:var(--text-secondary)]">{label}</label>
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="color"
-                        value={proTheme[key] ?? activePreset.vars.bg}
-                        onChange={(e) => setColor(key, e.target.value)}
-                        className="h-8 w-8 rounded cursor-pointer border border-[color:var(--border-default)] p-0.5 bg-transparent"
-                      />
-                      <input
-                        type="text"
-                        value={proTheme[key] ?? ""}
-                        placeholder={activePreset.vars.bg}
-                        onChange={(e) => {
-                          const v = e.target.value
-                          if (/^#[0-9a-fA-F]{0,6}$/.test(v)) {
-                            setProTheme((prev) => ({ ...prev, [key]: v.length === 7 ? v : null }))
-                          }
-                        }}
-                        className="flex-1 min-w-0 text-[12px] font-mono rounded border border-[color:var(--border-default)] bg-[color:var(--bg-surface)] px-2 py-1.5 placeholder:text-[color:var(--text-muted)] focus:outline-none focus:ring-1 focus:ring-[color:var(--accent)]"
-                        maxLength={7}
-                      />
-                    </div>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+              {COLOR_ROLES.map(({ key, label }) => (
+                <div key={key} className="space-y-1.5">
+                  <label className="text-[12px] text-[color:var(--text-secondary)]">{label}</label>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="color"
+                      value={proTheme[key] ?? activePreset.vars.bg}
+                      onChange={(e) => setColor(key, e.target.value)}
+                      className="h-8 w-8 rounded cursor-pointer border border-[color:var(--border-default)] p-0.5 bg-transparent"
+                    />
+                    <input
+                      type="text"
+                      value={proTheme[key] ?? ""}
+                      placeholder={activePreset.vars.bg}
+                      onChange={(e) => {
+                        const v = e.target.value
+                        if (/^#[0-9a-fA-F]{0,6}$/.test(v)) {
+                          setProTheme((prev) => ({ ...prev, [key]: v.length === 7 ? v : null }))
+                        }
+                      }}
+                      className="flex-1 min-w-0 text-[12px] font-mono rounded border border-[color:var(--border-default)] bg-[color:var(--bg-surface)] px-2 py-1.5 placeholder:text-[color:var(--text-muted)] focus:outline-none focus:ring-1 focus:ring-[color:var(--accent)]"
+                      maxLength={7}
+                    />
                   </div>
-                ))}
-              </div>
-
-              {/* Font selector */}
-              <div className="space-y-2">
-                <Label className="text-[12px] text-[color:var(--text-secondary)]">Font</Label>
-                <div className="grid grid-cols-2 gap-2">
-                  {FONTS.map((f) => {
-                    const active = (proTheme.theme_font ?? "geist") === f.value
-                    return (
-                      <button
-                        key={f.value}
-                        type="button"
-                        onClick={() => setProTheme((prev) => ({ ...prev, theme_font: f.value }))}
-                        className={[
-                          "flex items-center gap-2 px-3 py-2.5 rounded-lg border text-left transition-all",
-                          active ? "border-[color:var(--accent)] bg-[color:var(--accent)]/5" : "border-[color:var(--border-default)] hover:border-[color:var(--border-strong)]",
-                        ].join(" ")}
-                      >
-                        <span className="text-base leading-none" style={f.style}>Aa</span>
-                        <span className="text-[12px] font-medium">{f.label}</span>
-                      </button>
-                    )
-                  })}
                 </div>
-              </div>
+              ))}
+            </div>
 
-              {/* Hide branding */}
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-[13px] font-medium">Remove Sub-tree branding</p>
-                  <p className="text-[12px] text-[color:var(--text-muted)]">Hides "Powered by Sub-tree" on your public page</p>
-                </div>
-                <button
-                  type="button"
-                  role="switch"
-                  aria-checked={proTheme.hide_branding}
-                  onClick={() => setProTheme((prev) => ({ ...prev, hide_branding: !prev.hide_branding }))}
+            {/* Font selector */}
+            <div className="space-y-2">
+              <Label className="text-[12px] text-[color:var(--text-secondary)]">Font</Label>
+              <div className="grid grid-cols-2 gap-2">
+                {FONTS.map((f) => {
+                  const active = (proTheme.theme_font ?? "geist") === f.value
+                  return (
+                    <button
+                      key={f.value}
+                      type="button"
+                      onClick={() => setProTheme((prev) => ({ ...prev, theme_font: f.value }))}
+                      className={[
+                        "flex items-center gap-2 px-3 py-2.5 rounded-lg border text-left transition-all",
+                        active ? "border-[color:var(--accent)] bg-[color:var(--accent)]/5" : "border-[color:var(--border-default)] hover:border-[color:var(--border-strong)]",
+                      ].join(" ")}
+                    >
+                      <span className="text-base leading-none" style={f.style}>Aa</span>
+                      <span className="text-[12px] font-medium">{f.label}</span>
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+
+            {/* Hide branding */}
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-[13px] font-medium">Remove Sub-tree branding</p>
+                <p className="text-[12px] text-[color:var(--text-muted)]">Hides "Powered by Sub-tree" on your public page</p>
+              </div>
+              <button
+                type="button"
+                role="switch"
+                aria-checked={proTheme.hide_branding}
+                onClick={() => setProTheme((prev) => ({ ...prev, hide_branding: !prev.hide_branding }))}
+                className={[
+                  "relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2",
+                  proTheme.hide_branding ? "bg-[color:var(--accent)]" : "bg-[color:var(--border-default)]",
+                ].join(" ")}
+              >
+                <span
                   className={[
-                    "relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2",
-                    proTheme.hide_branding ? "bg-[color:var(--accent)]" : "bg-[color:var(--border-default)]",
+                    "inline-block h-3.5 w-3.5 rounded-full bg-white shadow transition-transform",
+                    proTheme.hide_branding ? "translate-x-4" : "translate-x-0.5",
                   ].join(" ")}
-                >
-                  <span
-                    className={[
-                      "inline-block h-3.5 w-3.5 rounded-full bg-white shadow transition-transform",
-                      proTheme.hide_branding ? "translate-x-4" : "translate-x-0.5",
-                    ].join(" ")}
-                  />
-                </button>
-              </div>
-            </>
-          )}
-        </div>
+                />
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* View live */}
         <a
@@ -446,15 +430,6 @@ function PresetSwatch({
         </span>
       )}
     </button>
-  )
-}
-
-function ProBadge() {
-  return (
-    <span className="inline-flex items-center gap-0.5 text-[10px] font-medium px-1.5 py-0.5 rounded bg-[color:var(--accent)]/10 text-[color:var(--accent)]">
-      <Lock className="h-2.5 w-2.5" />
-      Pro
-    </span>
   )
 }
 

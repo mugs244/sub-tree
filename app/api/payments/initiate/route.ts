@@ -16,6 +16,7 @@ const initiateSchema = z.object({
   donor_name: z.string().max(100).optional(),
   note: z.string().max(120).optional(),
   referrer_source: z.string().max(50).optional(),
+  fundraiser_id: z.number().int().positive().optional(),
 })
 
 export async function POST(req: Request): Promise<NextResponse> {
@@ -34,7 +35,7 @@ export async function POST(req: Request): Promise<NextResponse> {
     )
   }
 
-  const { username, amount, phone, donor_name, note, referrer_source } = parsed.data
+  const { username, amount, phone, donor_name, note, referrer_source, fundraiser_id } = parsed.data
 
   const user = await prisma.user.findUnique({
     where: { username },
@@ -87,6 +88,7 @@ export async function POST(req: Request): Promise<NextResponse> {
         idempotency_key: idempotencyKey,
         note: note ?? null,
         referrer_source: referrer_source ?? null,
+        fundraiser_id: fundraiser_id ?? null,
       },
     })
   } catch (err) {

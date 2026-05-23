@@ -11,11 +11,12 @@ const AMOUNTS = [2000, 5000, 10000, 20000, 50000]
 interface DonateFormProps {
   username: string
   displayName: string
+  fundraiserId?: number
 }
 
 type Step = "amount" | "pending" | "success" | "failed"
 
-export function DonateForm({ username, displayName }: DonateFormProps) {
+export function DonateForm({ username, displayName, fundraiserId }: DonateFormProps) {
   const [amount, setAmount] = useState<number | "">("")
   const [customAmount, setCustomAmount] = useState("")
   const [phone, setPhone] = useState("")
@@ -47,6 +48,7 @@ export function DonateForm({ username, displayName }: DonateFormProps) {
           donor_name: donorName.trim() || undefined,
           note: note.trim() || undefined,
           referrer_source: referrerSource,
+          fundraiser_id: fundraiserId,
         }),
       })
 
