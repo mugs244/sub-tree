@@ -27,6 +27,12 @@ model User {
   subscription       Subscription?
   fundraisers        Fundraiser[]    @relation("user_fundraisers")
   charity_campaigns  Fundraiser[]    @relation("charity_fundraisers")
+  products           Product[]       @relation("seller_products")
+  seller_orders      Order[]         @relation("seller_orders")
+  affiliate_orders   Order[]         @relation("affiliate_orders")
+  shop_affiliates    AffiliateRelationship[] @relation("shop_affiliates")
+  my_affiliates      AffiliateRelationship[] @relation("my_affiliates")
+  affiliate_payouts  AffiliatePayoutRecord[]
 
   @@index([clerk_user_id])
 }
@@ -287,6 +293,177 @@ enum CharityApprovalStatus {
   APPROVED
   REJECTED
   SUSPENDED
+}
+
+model Product {
+  id                Int             @id @default(autoincrement())
+  user_id           Int
+  name              String
+  description       String          @db.Text
+  price             BigInt
+  product_type      ProductType
+  cover_image_url   String?
+  file_url          String?
+  file_size_bytes   BigInt?
+  shipping_info     String?
+  stock             Int?
+  auto_release_days Int             @default(7)
+  affiliate_rate    Decimal         @default(0) @db.Decimal(5, 4)
+  affiliate_open    Boolean         @default(false)
+  status            ProductStatus   @default(ACTIVE)
+  created_at        DateTime        @default(now())
+  updated_at        DateTime        @updatedAt
+
+  user              User            @relation("seller_products", fields: [user_id], references: [id], onDelete: Restrict)
+  orders            Order[]
+  affiliate_grants  AffiliateProductGrant[]
+
+  @@index([user_id])
+  @@index([status])
+}
+
+model Order {
+  id                  Int             @id @default(autoincrement())
+  product_id          Int
+  seller_user_id      Int
+  affiliate_user_id   Int?
+  buyer_phone         String
+  buyer_name          String
+  buyer_email         String?
+  amount_paid         BigInt
+  platform_fee        BigInt
+  seller_amount       BigInt
+  affiliate_amount    BigInt?
+  idempotency_key     String          @unique
+  pesapal_txn_id      String?         @unique
+  pesapal_provider    String
+  payment_confirmed   Boolean         @default(false)
+  escrow_status       EscrowStatus    @default(HELD)
+  escrow_release_at   DateTime?
+  dispute_raised_at   DateTime?
+  released_at         DateTime?
+  download_token      String?         @unique
+  download_expires_at DateTime?
+  download_count      Int             @default(0)
+  affiliate_paid_at   DateTime?
+  created_at          DateTime        @default(now())
+  updated_at          DateTime        @updatedAt
+
+  product             Product         @relation(fields: [product_id], references: [id], onDelete: Restrict)
+  seller              User            @relation("seller_orders", fields: [seller_user_id], references: [id], onDelete: Restrict)
+  affiliate           User?           @relation("affiliate_orders", fields: [affiliate_user_id], references: [id], onDelete: SetNull)
+  events              OrderEvent[]
+
+  @@index([seller_user_id])
+  @@index([affiliate_user_id])
+  @@index([escrow_status])
+  @@index([escrow_release_at])
+  @@index([idempotency_key])
+}
+
+model OrderEvent {
+  id          Int       @id @default(autoincrement())
+  order_id    Int
+  event_type  String
+  actor_id    Int?
+  metadata    Json?
+  created_at  DateTime  @default(now())
+
+  order       Order     @relation(fields: [order_id], references: [id], onDelete: Restrict)
+
+  @@index([order_id])
+}
+
+enum ProductType {
+  DIGITAL
+  PHYSICAL
+}
+
+enum ProductStatus {
+  ACTIVE
+  INACTIVE
+  SOLD_OUT
+}
+
+enum EscrowStatus {
+  HELD
+  RELEASED
+  DISPUTED
+  REFUNDED
+}
+
+model AffiliateRelationship {
+  id                Int                     @id @default(autoincrement())
+  shop_user_id      Int
+  affiliate_user_id Int
+  initiated_by      AffiliateInitiator
+  status            AffiliateStatus         @default(PENDING)
+  requested_at      DateTime                @default(now())
+  reviewed_at       DateTime?
+  rejected_reason   String?
+  created_at        DateTime                @default(now())
+
+  shop_user         User                    @relation("shop_affiliates", fields: [shop_user_id], references: [id], onDelete: Restrict)
+  affiliate_user    User                    @relation("my_affiliates", fields: [affiliate_user_id], references: [id], onDelete: Restrict)
+  product_grants    AffiliateProductGrant[]
+
+  @@unique([shop_user_id, affiliate_user_id])
+  @@index([shop_user_id])
+  @@index([affiliate_user_id])
+  @@index([status])
+}
+
+model AffiliateProductGrant {
+  id              Int       @id @default(autoincrement())
+  relationship_id Int
+  product_id      Int
+  granted_at      DateTime  @default(now())
+  revoked_at      DateTime?
+
+  relationship    AffiliateRelationship @relation(fields: [relationship_id], references: [id], onDelete: Cascade)
+  product         Product               @relation(fields: [product_id], references: [id], onDelete: Restrict)
+
+  @@unique([relationship_id, product_id])
+  @@index([relationship_id])
+  @@index([product_id])
+}
+
+model AffiliatePayoutRecord {
+  id                Int          @id @default(autoincrement())
+  affiliate_user_id Int
+  period_start      DateTime
+  period_end        DateTime
+  total_amount      BigInt
+  order_count       Int
+  pesapal_txn_id    String?      @unique
+  status            PayoutStatus @default(PENDING)
+  created_at        DateTime     @default(now())
+  paid_at           DateTime?
+  failure_reason    String?
+
+  affiliate         User         @relation(fields: [affiliate_user_id], references: [id], onDelete: Restrict)
+
+  @@index([affiliate_user_id])
+  @@index([status])
+}
+
+enum AffiliateInitiator {
+  CREATOR_REQUEST
+  MERCHANT_INVITE
+}
+
+enum AffiliateStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  SUSPENDED
+}
+
+enum PayoutStatus {
+  PENDING
+  PROCESSING
+  PAID
+  FAILED
 }
 
 model DonationEvent {
