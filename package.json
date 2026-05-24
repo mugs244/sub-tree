@@ -7,7 +7,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "seed": "tsx db/seed.ts",
+    "seed:test": "tsx db/seed-test.ts"
   },
   "dependencies": {
     "@clerk/nextjs": "^7.3.7",
