@@ -1,12 +1,19 @@
 import { auth } from "@clerk/nextjs/server"
 import { redirect } from "next/navigation"
 import { prisma } from "@/lib/db"
-import { listMyShops, getEarnings } from "@/lib/services/affiliate"
-import Link from "next/link"
-import { Copy } from "lucide-react"
+import {
+  listInboundRequests,
+  listAllAffiliates,
+  listOldAffiliates,
+  listMyShops,
+  getEarnings,
+} from "@/lib/services/affiliate"
+import { AffiliatePanel } from "@/components/AffiliatePanel"
+import { AffiliateTabs } from "@/components/AffiliateTabs"
 import { CopyButton } from "@/components/CopyButton"
 
-const PRO_TIERS = ["PRO", "BUSINESS", "CONTENT_HOUSE"]
+const PRO_TIERS      = ["PRO", "BUSINESS", "CONTENT_HOUSE"]
+const MERCHANT_TIERS = ["BUSINESS", "CONTENT_HOUSE"]
 
 function formatUGX(n: bigint) {
   return new Intl.NumberFormat("en-UG", { style: "currency", currency: "UGX", maximumFractionDigits: 0 }).format(Number(n))
@@ -22,21 +29,30 @@ export default async function AffiliatesPage() {
   })
   if (!user || !PRO_TIERS.includes(user.tier)) redirect("/dashboard")
 
-  const [shops, earnings] = await Promise.all([
-    listMyShops(userId),
-    getEarnings(userId),
-  ])
-
+  const isMerchant = MERCHANT_TIERS.includes(user.tier)
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://sub-tree.com"
 
-  return (
-    <div className="max-w-2xl mx-auto px-4 py-8 space-y-6">
-      <div>
-        <h1 className="text-lg font-semibold">My Affiliates</h1>
-        <p className="text-sm text-muted-foreground mt-0.5">Shops you promote and your commissions</p>
-      </div>
+  const [shops, earnings] = await Promise.all([listMyShops(userId), getEarnings(userId)])
 
-      {/* Earnings summary */}
+  let inbound:       Awaited<ReturnType<typeof listInboundRequests>> = []
+  let affiliates:    Awaited<ReturnType<typeof listAllAffiliates>>   = []
+  let oldAffiliates: Awaited<ReturnType<typeof listOldAffiliates>>   = []
+  let openProducts:  { id: number; name: string }[]                  = []
+
+  if (isMerchant) {
+    ;[inbound, affiliates, oldAffiliates, openProducts] = await Promise.all([
+      listInboundRequests(userId),
+      listAllAffiliates(userId),
+      listOldAffiliates(userId),
+      prisma.product.findMany({
+        where: { user_id: user.id, status: "ACTIVE", affiliate_open: true },
+        select: { id: true, name: true },
+      }),
+    ])
+  }
+
+  const promoterSection = (
+    <div className="space-y-5">
       <div className="bg-background border border-border rounded-xl p-4">
         <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-3">Earnings</p>
         <div className="grid grid-cols-2 gap-4 text-center">
@@ -54,13 +70,10 @@ export default async function AffiliatesPage() {
         </p>
       </div>
 
-      {/* Approved shops */}
       {shops.length === 0 ? (
-        <div className="py-12 text-center">
-          <p className="text-sm text-muted-foreground">You have no approved affiliate relationships.</p>
-          <p className="text-xs text-muted-foreground mt-1">
-            Visit a Business creator&apos;s shop and apply to become an affiliate.
-          </p>
+        <div className="py-10 text-center">
+          <p className="text-sm text-muted-foreground">No approved affiliate relationships yet.</p>
+          <p className="text-xs text-muted-foreground mt-1">Visit a Business shop and apply to become an affiliate.</p>
         </div>
       ) : (
         <div className="space-y-4">
@@ -71,13 +84,10 @@ export default async function AffiliatesPage() {
                   <img src={shop.shop_user.profile.avatar_url} alt="" className="h-8 w-8 rounded-full object-cover" />
                 )}
                 <div>
-                  <p className="text-sm font-medium">
-                    {shop.shop_user.profile?.display_name ?? shop.shop_user.username}
-                  </p>
+                  <p className="text-sm font-medium">{shop.shop_user.profile?.display_name ?? shop.shop_user.username}</p>
                   <p className="text-xs text-muted-foreground">@{shop.shop_user.username}</p>
                 </div>
               </div>
-
               {shop.product_grants.length === 0 ? (
                 <p className="text-xs text-muted-foreground">No products granted yet.</p>
               ) : (
@@ -102,6 +112,34 @@ export default async function AffiliatesPage() {
           ))}
         </div>
       )}
+    </div>
+  )
+
+  if (!isMerchant) {
+    return (
+      <div className="max-w-2xl mx-auto px-4 py-8 space-y-6">
+        <div>
+          <h1 className="text-lg font-semibold">My Commissions</h1>
+          <p className="text-sm text-muted-foreground mt-0.5">Shops you promote and your earnings</p>
+        </div>
+        {promoterSection}
+      </div>
+    )
+  }
+
+  const merchantSection = (
+    <AffiliatePanel
+      inbound={inbound}
+      affiliates={affiliates}
+      old={oldAffiliates}
+      openProducts={openProducts}
+    />
+  )
+
+  return (
+    <div className="max-w-2xl mx-auto px-4 py-8 space-y-6">
+      <h1 className="text-lg font-semibold">Affiliates</h1>
+      <AffiliateTabs programContent={merchantSection} commissionsContent={promoterSection} />
     </div>
   )
 }

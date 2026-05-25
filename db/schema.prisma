@@ -434,6 +434,7 @@ model AffiliateProductGrant {
   product_id      Int
   granted_at      DateTime  @default(now())
   revoked_at      DateTime?
+  auto_link_id    Int?      // Link row auto-created on promoter's profile; null if deleted
 
   relationship    AffiliateRelationship @relation(fields: [relationship_id], references: [id], onDelete: Cascade)
   product         Product               @relation(fields: [product_id], references: [id], onDelete: Restrict)

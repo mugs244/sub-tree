@@ -135,6 +135,7 @@ export async function getPublicShop(username: string) {
     select: {
       id: true, name: true, price: true, cover_image_url: true,
       product_type: true, stock: true,
+      category: { select: { key: true, label: true } },
     },
   })
 }

@@ -93,6 +93,20 @@ export async function listAllAffiliates(clerkUserId: string) {
   })
 }
 
+export async function listOldAffiliates(clerkUserId: string) {
+  const user = await resolveUser(clerkUserId)
+  return prisma.affiliateRelationship.findMany({
+    where: { shop_user_id: user.id, status: { in: ["REJECTED", "SUSPENDED"] } },
+    orderBy: { reviewed_at: "desc" },
+    select: {
+      id: true, status: true, reviewed_at: true, rejected_reason: true,
+      affiliate_user: {
+        select: { username: true, profile: { select: { display_name: true, avatar_url: true } } },
+      },
+    },
+  })
+}
+
 export async function approveRequest(clerkUserId: string, relationshipId: number, input: unknown) {
   const parsed = approveRequestSchema.safeParse(input)
   if (!parsed.success) {
@@ -108,19 +122,52 @@ export async function approveRequest(clerkUserId: string, relationshipId: number
   // Verify all product_ids belong to this merchant and are affiliate_open
   const products = await prisma.product.findMany({
     where: { id: { in: parsed.data.product_ids }, user_id: user.id, affiliate_open: true },
-    select: { id: true },
+    select: { id: true, name: true },
   })
-  const validIds = products.map((p) => p.id)
+  const validProducts = products
+
+  // Fetch promoter's user record (needed for Link creation and username)
+  const promoter = await prisma.user.findUnique({
+    where: { id: rel.affiliate_user_id },
+    select: { id: true, username: true },
+  })
+  const merchantUser = await prisma.user.findUnique({
+    where: { id: rel.shop_user_id },
+    select: { username: true },
+  })
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://sub-tree.com"
 
   await prisma.$transaction(async (tx) => {
     await tx.affiliateRelationship.update({
       where: { id: relationshipId },
       data: { status: "APPROVED", reviewed_at: new Date() },
     })
-    await tx.affiliateProductGrant.createMany({
-      data: validIds.map((product_id) => ({ relationship_id: relationshipId, product_id })),
-      skipDuplicates: true,
-    })
+
+    for (const product of validProducts) {
+      const affiliateUrl = promoter?.username && merchantUser?.username
+        ? `${baseUrl}/${merchantUser.username}/shop/${product.id}?ref=${promoter.username}`
+        : null
+
+      let autoLinkId: number | null = null
+      if (affiliateUrl && promoter) {
+        const link = await tx.link.create({
+          data: {
+            user_id: promoter.id,
+            url: affiliateUrl,
+            label: `${product.name} — @${merchantUser?.username}`,
+            link_type: "AFFILIATE",
+          },
+          select: { id: true },
+        })
+        autoLinkId = link.id
+      }
+
+      await tx.affiliateProductGrant.upsert({
+        where: { relationship_id_product_id: { relationship_id: relationshipId, product_id: product.id } },
+        create: { relationship_id: relationshipId, product_id: product.id, auto_link_id: autoLinkId },
+        update: { revoked_at: null, auto_link_id: autoLinkId },
+      })
+    }
   })
 }
 
