@@ -1,17 +1,29 @@
 import { NextResponse } from "next/server"
 import { z } from "zod"
+import { auth } from "@clerk/nextjs/server"
+import { prisma } from "@/lib/db"
 import { handleMomoCallback } from "@/lib/services/donation"
 import { confirmOrderPayment } from "@/lib/services/shop"
 
 const BYPASS_KEY = process.env.BYPASS_PAYMENTS_KEY
 
-const schema = z.object({
-  type: z.enum(["donation", "order"]),
-  idempotency_key: z.string().uuid("Must be a valid UUID"),
-})
+const schema = z.discriminatedUnion("type", [
+  z.object({
+    type: z.literal("donation"),
+    idempotency_key: z.uuid(),
+  }),
+  z.object({
+    type: z.literal("order"),
+    idempotency_key: z.uuid(),
+  }),
+  // TODO: remove before launch — dev-only tier override
+  z.object({
+    type: z.literal("tier"),
+    tier: z.enum(["FREE", "PRO", "BUSINESS", "CONTENT_HOUSE"]),
+  }),
+])
 
 export async function POST(req: Request): Promise<NextResponse> {
-  // Route is disabled if BYPASS_PAYMENTS_KEY is not set
   if (!BYPASS_KEY) {
     return NextResponse.json({ error: "NOT_FOUND" }, { status: 404 })
   }
@@ -36,24 +48,22 @@ export async function POST(req: Request): Promise<NextResponse> {
     )
   }
 
-  const { type, idempotency_key } = parsed.data
-
-  if (type === "donation") {
+  if (parsed.data.type === "donation") {
     await handleMomoCallback(
       {
-        referenceId: idempotency_key,
+        referenceId: parsed.data.idempotency_key,
         status: "SUCCESSFUL",
-        providerTxId: `bypass_${idempotency_key.slice(0, 8)}`,
+        providerTxId: `bypass_${parsed.data.idempotency_key.slice(0, 8)}`,
       },
       JSON.stringify({ bypass: true }),
     )
-    return NextResponse.json({ data: { ok: true, type: "donation", idempotency_key } })
+    return NextResponse.json({ data: { ok: true, type: "donation" } })
   }
 
-  if (type === "order") {
+  if (parsed.data.type === "order") {
     const result = await confirmOrderPayment(
-      idempotency_key,
-      `bypass_${idempotency_key.slice(0, 8)}`,
+      parsed.data.idempotency_key,
+      `bypass_${parsed.data.idempotency_key.slice(0, 8)}`,
     )
     if (!result) {
       return NextResponse.json(
@@ -61,7 +71,23 @@ export async function POST(req: Request): Promise<NextResponse> {
         { status: 404 },
       )
     }
-    return NextResponse.json({ data: { ok: true, type: "order", idempotency_key } })
+    return NextResponse.json({ data: { ok: true, type: "order" } })
+  }
+
+  if (parsed.data.type === "tier") {
+    // TODO: remove before launch — directly sets tier without payment
+    const { userId: clerkId } = await auth()
+    if (!clerkId) {
+      return NextResponse.json({ error: "UNAUTHORIZED", message: "Must be signed in" }, { status: 401 })
+    }
+
+    const user = await prisma.user.update({
+      where: { clerk_user_id: clerkId },
+      data: { tier: parsed.data.tier },
+      select: { id: true, username: true, tier: true },
+    })
+
+    return NextResponse.json({ data: { ok: true, type: "tier", user } })
   }
 
   return NextResponse.json({ error: "INTERNAL_ERROR" }, { status: 500 })
