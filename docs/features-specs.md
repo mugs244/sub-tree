@@ -65,7 +65,7 @@ When a new feature is proposed, it gets a number and a row in this table. When a
 | 21  | Rate Limiting & Fraud Rails          | Shipped     | Phase 4  | 03, 15           | `docs/features/21-fraud-rails.md`                 |
 | 22  | OG Image Generation for Profiles     | Shipped     | Phase 4  | 10               | `docs/features/22-og-images.md`                   |
 | 23  | Account Settings & Deletion          | Shipped     | Phase 4  | 03               | `docs/features/23-account-settings.md`            |
-| 36  | Payment Aggregators (Pesapal + OpenFloat) | Greenlit | Phase 3  | 13, 14, 16      | `docs/features/36-payment-aggregators.md`         |
+| 36  | Payment Aggregators (Pesapal + OpenFloat) | Shipped  | Phase 3  | 13, 14, 16      | `docs/features/36-payment-aggregators.md`         |
 | 24  | Business / NGO KYB Upgrade           | Deferred    | Phase 5  | 03, 12           | `docs/features/24-business-ngo-kyb.md`            |
 | 25  | Custom Domains for Pro               | Deferred    | Phase 5  | 10, 20           | `docs/features/25-custom-domains.md`              |
 | 26  | Kenya M-Pesa Integration             | Deferred    | Phase 5  | 13               | `docs/features/26-mpesa-integration.md`           |

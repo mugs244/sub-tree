@@ -1,7 +1,7 @@
 # Feature 63 — Platform Settings & Admin Fee Configuration
 
 ## Status
-**Greenlit** — build before any v3 monetization features and backfill into v1/v2.
+**Shipped** — 2026-05-25. Migration applied, service live, admin UI at `/admin/settings`, 21 default settings seeded. Hardcoded fee constants backfilled in `lib/services/shop.ts` and `lib/services/affiliate.ts`.
 
 ## Date
 2026-05-25

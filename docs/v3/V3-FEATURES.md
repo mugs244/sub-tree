@@ -46,15 +46,15 @@ All three feature sets are active and inherited. v3 does not replace v1 or v2.
 | 60 | EFRIS Tax Receipts | Business+ | Deferred | v2 Feature 38 (Fundraiser) | `docs/v3/features/60-efris.md` |
 | 61 | Creator Posts | Creator tiers | Proposed | Feature 43 | `docs/v3/features/61-creator-posts.md` |
 | 62 | Chat System (Creator DMs) | Creator tiers | Proposed | Feature 43 | `docs/v3/features/62-chat-system.md` |
-| 63 | Platform Settings & Admin Fees | Admin | **Greenlit** | v1 live | `docs/v3/features/63-platform-settings.md` |
+| 63 | Platform Settings & Admin Fees | Admin | **Shipped** | v1 live | `docs/v3/features/63-platform-settings.md` |
 
 ## Build Order
 
 ### Phase 1 — Foundation (build before anything else)
 
-**Feature 63 — Platform Settings** must be the first v3 task. It should also be
-backfilled into v1/v2 before v3 starts — replace all hardcoded fee constants in
-`lib/services/donation.ts` and future shop/affiliate code with `getSetting()` calls.
+**Feature 63 — Platform Settings** ✅ Shipped. Backfill complete — `lib/services/shop.ts`
+and `lib/services/affiliate.ts` now use `getFeeRate()` / `getSettingAsNumber()`. Admin
+UI at `/admin/settings`. The next v3 task is Feature 43 — Fan Accounts.
 
 ### Phase 2 — Fan Identity (everything else depends on this)
 

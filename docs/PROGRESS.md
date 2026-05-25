@@ -4,7 +4,7 @@ Update this file after every meaningful implementation change. Treat it as the r
 
 ## Current Phase
 
-Production deployment live at `sub-tree.vercel.app` on `feature/03-clerk-auth` branch. v1 architecture is essentially complete — Clerk auth, dashboard, link manager, public profile, donation flow, webhook handlers, analytics, OG images, account deletion all shipped. Final blockers to live money flow: payment aggregator integration (Pesapal + OpenFloat per `docs/features/36-payment-aggregators.md`), Africa's Talking SMS wiring (Feature 17), and Vercel Pro for avatar uploads.
+v1 and v2 are complete and shipped. v3 foundation (Feature 63 — Platform Settings) is live. Next focus: **Feature 43 — Fan Accounts & Two-Sided Platform** (the prerequisite for the entire v3 fan side). All fee rates are now driven by `PlatformSetting` table — no hardcoded constants in the payment services layer.
 
 ## Completed
 
@@ -66,19 +66,29 @@ Production deployment live at `sub-tree.vercel.app` on `feature/03-clerk-auth` b
 - **Feature 36 — Pesapal + OpenFloat aggregator integration shipped:** `lib/services/payments/pesapal.ts` — Pesapal v3 Collections client: `getToken` (OAuth2 consumer key/secret), `requestToPay` (SubmitOrderRequest → STK push to phone), `getTransactionStatus` (called by IPN handler to confirm status). `lib/services/payments/openfloat.ts` — OpenFloat client: API key auth, `requestToPay`, HMAC-SHA256 `verifyCallback`. `app/api/webhooks/payments/pesapal/route.ts` — GET handler (Pesapal IPN is a GET), reads `orderTrackingId` from query params, calls `getTransactionStatus`, delegates to `handleMomoCallback`. `app/api/webhooks/payments/openfloat/route.ts` — POST handler, verifies signature, delegates to `handleMomoCallback`. `/api/payments/initiate` updated with aggregator-first fallback chain: Pesapal → OpenFloat → direct MTN/Airtel; each leg skipped if its env vars are absent; all failures leave donation in PENDING for manual review.
 - **Feature 17 — Africa's Talking SMS notifications shipped:** `lib/sms.ts` — `sendSms(to, message)` using Africa's Talking REST API (no SDK — avoids CommonJS interop). Sandbox URL auto-selected when `AFRICASTALKING_USERNAME === "sandbox"`. Phone normalised to international format. Errors swallowed so SMS failure never crashes the payment flow. Wired into `lib/services/donation.ts`: after `COMPLETED` status is written, fetches creator's `User.phone` and sends "X just donated UGX Y to you on Sub-tree." SMS failures are logged and silently swallowed.
 
+- **v2 Feature 37 — Pro Themes & Extended Colors shipped:** Pro-tier theme presets and extended color options wired through `Profile.theme_preset`. Tier-gated in dashboard — non-Pro creators see a "Upgrade to Pro" prompt.
+- **v2 Feature 42 — Smart Link Types shipped:** Link type detection (social, music, video, event, etc.) surfaces relevant icons and metadata. `LinkType` enum added. Metadata auto-refresh via `/api/links/[id]/refresh-metadata`.
+- **v2 Feature 38 — Fundraiser shipped:** Full fundraiser lifecycle: create → publish → accept donations → charity verification request → close. `Fundraiser` + `FundraiserDonation` + `CharityVerificationRequest` Prisma models. Escrow and charity verification admin routes. Fundraiser page at `[username]/fundraiser/[id]`.
+- **v2 Feature 39 — Shop (Digital + Physical) shipped:** `Product`, `Order`, `DigitalDownload`, `EscrowRelease`, `Dispute` Prisma models. Full shop lifecycle: list → buy → MoMo payment → escrow → download or ship → release. Auto-release cron at `/api/cron/escrow-release`. Dispute management at `/admin/disputes`. Shop storefront at `[username]/shop`.
+- **v2 Feature 40 — Affiliate Network shipped:** `AffiliateRelationship`, `AffiliateGrant`, `AffiliatePayoutRecord` models. Merchant invite + affiliate apply flows, grant tracking per product, weekly payout cron at `/api/cron/affiliate-payouts`. Affiliate dashboard at `/dashboard/affiliates`.
+- **Test-data seed (`db/seed-test.ts`):** Creates four tier-representative accounts (FREE, PRO, BUSINESS, CONTENT_HOUSE) with realistic Clerk IDs, products, subscriptions, and affiliate relationships for local/staging testing.
+- **v3 Feature 63 — Platform Settings & Admin Fee Configuration shipped (2026-05-25):** `PlatformSetting` + `PlatformSettingAuditLog` Prisma models, migration applied. `lib/services/platform-settings.ts` — `getSetting()`, `getFeeRate()`, `getSettingAsNumber()`, `getSettingAsBool()` backed by 5-minute in-memory cache. 21 default settings seeded. Admin API at `GET/PATCH /api/admin/settings`, `GET /api/admin/settings/audit`. Admin UI at `/admin/settings` — inline edit, fee confirmation modal, audit log tab. Backfill complete: `PLATFORM_FEE_RATE` in `lib/services/shop.ts` and `MIN_PAYOUT_UGX` in `lib/services/affiliate.ts` replaced with `getFeeRate()` / `getSettingAsNumber()` calls. v3 Invariant 6 enforced — no hardcoded fee constants anywhere in the payment layer.
+- **v3 planning docs added (`docs/v3/`):** V3-OVERVIEW.md, V3-ARCHITECTURE.md, V3-FEATURES.md, and feature specs for Features 43, 45, 48, 49, 51, 52, 55, 61, 62, 63. Fan portal mockup at `components/mockups/FanPortal.jsx`.
+
 ## In Progress
 
 Nothing.
 
 ## Next Up
 
-1. **Register webhook URLs with Pesapal + OpenFloat** in their respective dashboards once merchant onboarding completes:
+1. **Feature 43 — Fan Accounts & Two-Sided Platform.** This is the prerequisite for the entire v3 fan side. Adds `FanProfile`, `Follow` models, `account_type` field on User, signup default to FAN, "Become a creator" upgrade path. See `docs/v3/features/43-fan-accounts.md`.
+2. **Register webhook URLs with Pesapal + OpenFloat** in their respective dashboards once merchant onboarding completes:
    - `https://sub-tree.vercel.app/api/webhooks/payments/pesapal` (GET IPN)
    - `https://sub-tree.vercel.app/api/webhooks/payments/openfloat` (POST)
    - Add `PESAPAL_CONSUMER_KEY`, `PESAPAL_CONSUMER_SECRET`, `PESAPAL_IPN_ID`, `PESAPAL_ENVIRONMENT`, `PESAPAL_CALLBACK_URL`, `OPENFLOAT_API_KEY`, `OPENFLOAT_WEBHOOK_SECRET` to Vercel env vars.
-2. **Profile picture upload — Vercel Blob.** Requires Vercel Pro. Add `@vercel/blob`, replace avatar URL text field with file picker in `EditProfileForm` and onboarding `ProfileForm`. Set `BLOB_READ_WRITE_TOKEN`.
-3. **Merge `feature/03-clerk-auth` → `main` and set `main` as Vercel production branch.** Five-minute task. Resolves technical debt called out in ARCHITECTURE.md.
-4. **Register `sub-tree.com`** via Cloudflare Registrar. Currently running on `sub-tree.vercel.app`.
+3. **Profile picture upload — Vercel Blob.** Requires Vercel Pro. Add `@vercel/blob`, replace avatar URL text field with file picker in `EditProfileForm` and onboarding `ProfileForm`. Set `BLOB_READ_WRITE_TOKEN`.
+4. **Merge `feature/03-clerk-auth` → `main` and set `main` as Vercel production branch.**
+5. **Register `sub-tree.com`** via Cloudflare Registrar. Currently running on `sub-tree.vercel.app`.
 
 ## Open Questions
 
