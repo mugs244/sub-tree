@@ -14,7 +14,7 @@ export async function POST() {
   if (!user) return new NextResponse("User not found", { status: 404 })
 
   const cookieStore = await cookies()
-  const fanRedirect = cookieStore.get("fan_redirect")?.value ?? "/"
+  const fanRedirect = cookieStore.get("fan_redirect")?.value ?? "/fan/feed"
 
   await prisma.$transaction([
     prisma.user.update({
