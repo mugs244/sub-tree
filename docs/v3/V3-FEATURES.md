@@ -47,6 +47,8 @@ All three feature sets are active and inherited. v3 does not replace v1 or v2.
 | 61 | Creator Posts | Creator tiers | Proposed | Feature 43 | `docs/v3/features/61-creator-posts.md` |
 | 62 | Chat System (Creator DMs) | Creator tiers | Proposed | Feature 43 | `docs/v3/features/62-chat-system.md` |
 | 63 | Platform Settings & Admin Fees | Admin | **Shipped** | v1 live | `docs/v3/features/63-platform-settings.md` |
+| 64 | Product Categories & Shop Discovery | Business, CH | Greenlit | Feature 39, v3 Feature 43 | `docs/v3/features/64-product-categories.md` |
+| 65 | Media File Upload (Profiles, Products, Fundraisers) | All tiers | Greenlit | Feature 43 (Fan Accounts) | `docs/v3/features/65-media-file-upload.md` |
 
 ## Build Order
 
@@ -70,6 +72,11 @@ UI at `/admin/settings`. The next v3 task is Feature 43 — Fan Accounts.
 7. **52 — Membership Tiers** (builds on subscriptions)
 8. **62 — Chat System**
 9. **55 — Fan Discovery**
+
+### Phase 3b — Shop & Creator Tools (build alongside Phase 3)
+
+- **64 — Product Categories** (alongside or after Feature 43 — required before shop is publicly discoverable)
+- **65 — Media File Upload** (alongside Feature 43 — blocks shop file delivery and profile customisation from feeling complete)
 
 ### Phase 4 — Expansion (when v3 core is live)
 

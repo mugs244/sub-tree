@@ -21,9 +21,9 @@ Same as v1:
 | # | Feature | Tier | Status | Depends On | File |
 |---|---|---|---|---|---|
 | 37 | Pro Themes & Extended Colors | Pro | Shipped | v1: 11, 20 | `docs/v2/features/37-pro-themes.md` |
-| 38 | Fundraiser | Pro | Shipped | v1: 15, 16, 20 + v1 Feature 36 | `docs/v2/features/38-fundraiser.md` |
-| 39 | Shop (Digital + Physical) | Business | Shipped | v1: Feature 36 + v2 Pesapal escrow confirmation | `docs/v2/features/39-shop.md` |
-| 40 | Affiliate Network | Pro, Business, CH | Shipped | Feature 39 | `docs/v2/features/40-affiliate-network.md` |
+| 38 | Fundraiser | Pro | Shipped (Amended 2026-05-25) | v1: 15, 16, 20 + v1 Feature 36 | `docs/v2/features/38-fundraiser.md` |
+| 39 | Shop (Digital + Physical) | Business | Shipped (Amended 2026-05-25) | v1: Feature 36 + v2 Pesapal escrow confirmation | `docs/v2/features/39-shop.md` |
+| 40 | Affiliate Network | Pro, Business, CH | Shipped (Amended 2026-05-25) | Feature 39 | `docs/v2/features/40-affiliate-network.md` |
 | 41 | Content Houses | Content House | Proposed | Features 37, 38, 39, 40 + Liveblocks integration | `docs/v2/features/41-content-houses.md` |
 | 42 | Smart Link Types | All tiers | Shipped | v1: 10 | `docs/v2/features/42-smart-link-types.md` |
 

@@ -235,7 +235,69 @@ The `Donation.fundraiser_id` column is nullable — zero risk to existing rows.
 
 ## Open Questions
 
-- Cover image upload: depends on Vercel Blob (pending dependency). At MVP, accept a URL instead and add upload later.
+- Cover image upload: depends on Vercel Blob (pending dependency). At MVP, accept a URL instead and add upload later. See Feature 65.
 - Charity Business verification: how do we decide which Business accounts qualify as charities? Recommend a manual approval flag (`user.is_verified_charity`) set by Sub-tree admin. Defer enforcement to after first charity partner onboards.
 - `raised_amount` consistency: if a webhook fires twice for the same donation (Pesapal retry), the counter double-increments. The webhook handler already deduplicates by `external_reference` — confirm that dedup guard also skips the `raised_amount` increment.
 - Fundraiser page SEO: the fundraiser page should have its own OG image (title, progress, goal). Low priority for MVP — add in a polish pass.
+
+---
+
+## Amendments (2026-05-25)
+
+### Business Must Approve All Fundraisers That Name Them
+
+When a creator runs a fundraiser that names or benefits a specific business or organisation on Sub-tree (charity or otherwise), that business **must approve** before the fundraiser goes live on the creator's public profile.
+
+**Rules:**
+- Every fundraiser must declare: "For myself" or "For a specific business on Sub-tree"
+- If "For a specific business": the creator searches for the business by handle. The fundraiser enters PENDING_APPROVAL state.
+- The business sees the request in **Dashboard → Fundraisers → Campaign Requests** (same tab that already exists for BUSINESS accounts)
+- The business can approve (fundraiser goes ACTIVE) or reject (fundraiser returns to DRAFT with rejection reason)
+- A rejected fundraiser can be edited and resubmitted
+- The fundraiser's public page shows the business name, logo, and their approval badge
+- **Personal fundraisers** ("For myself") go live immediately after the creator activates them — no approval needed
+
+**Affiliate section connection:**
+The Campaign Requests approval UI in the Business dashboard should live under the **Affiliates** section (not Fundraisers) to keep all "incoming approvals" in one place. Layout:
+- Affiliates tab → sub-tabs: "Affiliate Requests" | "Campaign Requests"
+- Both are approval queues for the business to manage
+
+### Business/Content House sees incoming campaign requests in the Affiliates approval area
+
+The Affiliates section for BUSINESS and CONTENT_HOUSE accounts has three approval queues:
+1. **Affiliate Requests** — creators who want to promote my products
+2. **Campaign Requests** — creators who want to fundraise for my business
+
+Both feed into the same "approvals inbox" pattern so the merchant has one place to act on all incoming requests.
+
+### Dual-Link System for Fundraisers (2026-05-25)
+
+Every approved charity fundraiser generates two distinct links:
+
+**Link 1 — Charity's public profile link (organic)**
+- The charity's public profile page shows a "Support us" card when they have approved fundraisers running
+- This is a static entry point that captures organic visitors browsing the charity's page
+- The charity controls whether this card is visible (see Kill Switch below)
+
+**Link 2 — Fundraiser's unique shareable link (driven traffic)**
+- `sub-tree.com/[creator-handle]/fundraiser/[id]?code=[unique-code]`
+- The `unique-code` is generated per fundraiser, used to attribute donations raised through this specific creator's campaign
+- When a creator shares this link on a live stream, YouTube video, TikTok, or social media, every donation made through it is attributed to that creator's campaign
+- The charity dashboard shows per-fundraiser analytics: creator name, unique code, donations raised, donor count, traffic volume
+- This gives the charity granular insight into which creators are most effective at driving donations
+
+**Analytics the charity sees per fundraiser:**
+- Unique code
+- Creator handle + link to their profile
+- Total donations raised via this link
+- Number of donors
+- Date range (start → active/closed)
+
+### Kill Switch — Charity can disable donations on their profile (2026-05-25)
+
+A BUSINESS or CONTENT_HOUSE account that is operating as a charity can toggle:
+- **"Show donation section on my profile"**: ON/OFF
+- When OFF: the "Support us" / donate card disappears from their public profile entirely
+- Existing fundraisers that link to them stay active (the creator's campaign page still works)
+- Only the charity's own public profile card is hidden
+- This gives the charity full privacy and brand control — they can go dark during non-campaign periods without affecting active creator-driven campaigns

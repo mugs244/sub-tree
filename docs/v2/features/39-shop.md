@@ -289,7 +289,7 @@ Download endpoint:
 - Sub-tree handling physical fulfillment in any way
 - Refund flow beyond admin dispute resolution
 - Discount codes, promotional pricing
-- Product categories, search, filtering
+- Product categories, search, filtering (moved to Feature 64)
 - Reviews or ratings
 - Recurring subscriptions for digital content
 - VAT/tax calculation (deferred to v1 Feature 30 — EFRIS)
@@ -329,3 +329,89 @@ Service-level rules:
 ## Migration Plan
 
 Net new feature. No existing data affected.
+
+---
+
+## Amendments (2026-05-25)
+
+### 1. File Upload — Device, Not URL
+
+**Current (wrong):** `cover_image_url` and `file_url` are text fields where creators paste an external URL.
+
+**Required:** Creators upload directly from their phone or desktop. Both cover images (for all products) and digital files must use Vercel Blob direct-upload. Physical products should allow uploading multiple photos and/or a short video.
+
+**Implementation:**
+- `POST /api/shop/products/[id]/upload?type=cover` — returns a Vercel Blob upload URL for the cover image
+- `POST /api/shop/products/[id]/upload?type=file` — returns a Vercel Blob upload URL for the digital file
+- `POST /api/shop/products/[id]/upload?type=photo&index=[0-4]` — returns upload URL for a physical product photo (up to 5 photos)
+- Client uses the signed upload URL to PUT the file directly to Vercel Blob
+- After upload, client confirms the URL back to the server via PATCH product
+
+Add to `Product`:
+```prisma
+cover_image_url   String?          // Vercel Blob URL (uploaded, not external)
+file_url          String?          // Vercel Blob URL — digital products only
+product_photos    ProductPhoto[]   // physical products: up to 5 photos or 1 video
+```
+
+```prisma
+model ProductPhoto {
+  id         Int      @id @default(autoincrement())
+  product_id Int
+  url        String   // Vercel Blob URL
+  media_type String   // "image" | "video"
+  position   Int      @default(0)
+  created_at DateTime @default(now())
+
+  product    Product  @relation(fields: [product_id], references: [id], onDelete: Cascade)
+
+  @@index([product_id])
+}
+```
+
+Same device-upload pattern applies to profile pictures and wallpapers — see Feature 65.
+
+### 2. Enhanced Shop Dashboard (Business + Content House)
+
+The shop dashboard must show, in addition to the product list:
+
+**Shop Overview tab:**
+- Total items sold (all time)
+- Revenue this month (sum of seller_amount on RELEASED orders)
+- Pending orders count (payment confirmed, escrow HELD)
+- Completed orders count (escrow RELEASED)
+- Most sold products (top 5 by order count)
+- Generate shop link button — copies `sub-tree.com/[username]/shop` to clipboard
+
+**Orders tab:**
+- Tabs: All | Pending | Completed | Disputed
+- Per order row: product name, buyer name, amount, status, date, action (release early / view dispute)
+- Filter by date range and product
+
+**Product Categories:**
+Products are tagged with a category when created. See Feature 64 for the full category system. The shop dashboard shows a category filter so the merchant can view all Shirts, all Movies, etc.
+
+### 4. Gated Shopping — Fan Account Required to Purchase (2026-05-25)
+
+**Rationale:** Requiring a Fan account before checkout builds a captive, retargetable user base. Every buyer becomes an identifiable fan with a profile, enabling future notifications, re-engagement, and analytics on who is buying from which creators.
+
+**Behaviour:**
+- Any visitor who taps "Buy" on a product is checked for a signed-in Fan session
+- If not signed in: redirect to `/sign-up?next=/[username]/shop/[product]&reason=purchase` — Fan sign-up page with copy: "Create a free account to complete your purchase"
+- After sign-up/sign-in: redirect back to the product page with the checkout pre-opened
+- The `next` param is preserved through the Clerk auth flow via `afterSignInUrl` / `afterSignUpUrl`
+- Anonymous browsing of the shop is still allowed — anyone can view products, prices, photos without logging in
+- Only the checkout step requires a Fan account
+
+**Why not block browsing too?** Browsing must remain public so affiliate links and shared product URLs work without friction. The gate is specifically at the "Buy" action.
+
+**Implementation note:** The buy button on the product detail page checks `useUser()` (Clerk). If no session, it redirects rather than opening the checkout modal. The server-side order initiation endpoint also enforces this: `POST /api/orders/initiate` now requires a valid Clerk session.
+
+### 3. API additions
+
+```
+GET    /api/shop/stats                       — totals: sold, revenue, pending, completed
+GET    /api/shop/products/[id]/upload        — get signed Vercel Blob upload URL
+POST   /api/shop/products/[id]/photos        — add a photo/video to a physical product
+DELETE /api/shop/products/[id]/photos/[pid]  — remove a photo
+```
