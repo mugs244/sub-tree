@@ -8,8 +8,11 @@ import {
   listMyShops,
   getEarnings,
 } from "@/lib/services/affiliate"
+import { listIncomingCampaignRequests } from "@/lib/services/fundraiser"
 import { AffiliatePanel } from "@/components/AffiliatePanel"
 import { AffiliateTabs } from "@/components/AffiliateTabs"
+import { ProgramTabs } from "@/components/ProgramTabs"
+import { CampaignRequestsPanel } from "@/components/CampaignRequestsPanel"
 import { CopyButton } from "@/components/CopyButton"
 
 const PRO_TIERS      = ["PRO", "BUSINESS", "CONTENT_HOUSE"]
@@ -34,13 +37,14 @@ export default async function AffiliatesPage() {
 
   const [shops, earnings] = await Promise.all([listMyShops(userId), getEarnings(userId)])
 
-  let inbound:       Awaited<ReturnType<typeof listInboundRequests>> = []
-  let affiliates:    Awaited<ReturnType<typeof listAllAffiliates>>   = []
-  let oldAffiliates: Awaited<ReturnType<typeof listOldAffiliates>>   = []
-  let openProducts:  { id: number; name: string }[]                  = []
+  let inbound:          Awaited<ReturnType<typeof listInboundRequests>>          = []
+  let affiliates:       Awaited<ReturnType<typeof listAllAffiliates>>            = []
+  let oldAffiliates:    Awaited<ReturnType<typeof listOldAffiliates>>            = []
+  let openProducts:     { id: number; name: string }[]                           = []
+  let campaignRequests: Awaited<ReturnType<typeof listIncomingCampaignRequests>> = []
 
   if (isMerchant) {
-    ;[inbound, affiliates, oldAffiliates, openProducts] = await Promise.all([
+    ;[inbound, affiliates, oldAffiliates, openProducts, campaignRequests] = await Promise.all([
       listInboundRequests(userId),
       listAllAffiliates(userId),
       listOldAffiliates(userId),
@@ -48,6 +52,7 @@ export default async function AffiliatesPage() {
         where: { user_id: user.id, status: "ACTIVE", affiliate_open: true },
         select: { id: true, name: true },
       }),
+      listIncomingCampaignRequests(userId),
     ])
   }
 
@@ -128,11 +133,19 @@ export default async function AffiliatesPage() {
   }
 
   const merchantSection = (
-    <AffiliatePanel
-      inbound={inbound}
-      affiliates={affiliates}
-      old={oldAffiliates}
-      openProducts={openProducts}
+    <ProgramTabs
+      campaignCount={campaignRequests.length}
+      affiliateContent={
+        <AffiliatePanel
+          inbound={inbound}
+          affiliates={affiliates}
+          old={oldAffiliates}
+          openProducts={openProducts}
+        />
+      }
+      campaignContent={
+        <CampaignRequestsPanel requests={campaignRequests} />
+      }
     />
   )
 

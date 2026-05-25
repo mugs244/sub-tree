@@ -72,6 +72,24 @@ async function resolveFundraiser(id: number, userId: number) {
 
 // ── Queries ───────────────────────────────────────────────────────────────────
 
+export async function listIncomingCampaignRequests(clerkUserId: string) {
+  const user = await resolveUser(clerkUserId)
+  return prisma.fundraiser.findMany({
+    where: { charity_user_id: user.id, charity_approval_status: "PENDING" },
+    orderBy: { created_at: "desc" },
+    select: {
+      id: true, title: true, description: true, goal_amount: true,
+      deadline: true, created_at: true,
+      user: {
+        select: {
+          username: true,
+          profile: { select: { display_name: true, avatar_url: true } },
+        },
+      },
+    },
+  })
+}
+
 export async function listFundraisers(clerkUserId: string) {
   const user = await resolveUser(clerkUserId)
   return prisma.fundraiser.findMany({
@@ -259,19 +277,6 @@ export async function reviewCharityRequest(clerkUserId: string, fundraiserId: nu
       charity_rejection_reason: rejection_reason ?? null,
       charity_split_creator_pct: creator_pct,
       charity_split_charity_pct: charity_pct,
-    },
-  })
-}
-
-export async function listIncomingCampaignRequests(clerkUserId: string) {
-  const user = await resolveUser(clerkUserId)
-  return prisma.fundraiser.findMany({
-    where: { charity_user_id: user.id, charity_approval_status: "PENDING" },
-    orderBy: { created_at: "desc" },
-    select: {
-      id: true, title: true, description: true, goal_amount: true,
-      fundraiser_type: true, charity_approval_status: true, created_at: true,
-      user: { select: { username: true, profile: { select: { display_name: true, avatar_url: true } } } },
     },
   })
 }
