@@ -17,7 +17,7 @@ type CheckState =
   | { state: "invalid"; reason: string }
   | { state: "error" }
 
-export function UsernameForm() {
+export function UsernameForm({ nextPath = "/onboarding/profile" }: { nextPath?: string }) {
   const router = useRouter()
   const [username, setUsername] = useState("")
   const [check, setCheck] = useState<CheckState>({ state: "idle" })
@@ -83,7 +83,7 @@ export function UsernameForm() {
         return
       }
 
-      router.push("/onboarding/profile")
+      router.push(nextPath)
     } catch {
       setCheck({ state: "error" })
     } finally {

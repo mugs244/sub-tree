@@ -18,7 +18,7 @@ export function FollowButton({ handle, initialIsFollowing, initialCount, isLogge
 
   async function toggle() {
     if (!isLoggedIn) {
-      router.push(`/sign-up?redirect=/${handle}`)
+      router.push(`/fan/join/${handle}`)
       return
     }
 

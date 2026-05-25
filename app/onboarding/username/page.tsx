@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation"
+import { cookies } from "next/headers"
 import { auth } from "@clerk/nextjs/server"
 import { prisma } from "@/lib/db"
 import { UsernameForm } from "@/components/UsernameForm"
@@ -21,12 +22,20 @@ export default async function UsernameOnboardingPage() {
   const { userId } = await auth()
   if (!userId) redirect("/sign-in")
 
+  const cookieStore = await cookies()
+  const isFan = !!cookieStore.get("fan_redirect")?.value
+
   const user = await waitForUserRecord(userId)
 
   if (user?.username) {
+    if (isFan) redirect("/onboarding/fan")
     if (!user.profile) redirect("/onboarding/profile")
     redirect("/dashboard")
   }
+
+  const subtitle = isFan
+    ? "Pick a handle for your fan profile. This is your permanent Sub-tree username."
+    : "This is your permanent Sub-tree handle. Choose carefully — it will be your public URL."
 
   return (
     <main className="min-h-screen flex items-center justify-center px-6 py-12 md:py-16">
@@ -36,13 +45,12 @@ export default async function UsernameOnboardingPage() {
             Pick your username
           </h1>
           <p className="text-[15px] leading-relaxed text-[color:var(--text-secondary)]">
-            This is your permanent Sub-tree handle. Choose carefully — it will be your
-            public URL.
+            {subtitle}
           </p>
         </div>
 
         <div className="bg-[color:var(--bg-raised)] border border-[color:var(--border-default)] rounded-xl p-6">
-          <UsernameForm />
+          <UsernameForm nextPath={isFan ? "/onboarding/fan" : "/onboarding/profile"} />
         </div>
       </div>
     </main>
