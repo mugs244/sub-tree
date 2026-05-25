@@ -1,0 +1,33 @@
+import { NextResponse } from "next/server"
+import { auth } from "@clerk/nextjs/server"
+import { createPost, listCreatorPosts, PostError } from "@/lib/services/posts"
+
+export async function GET() {
+  const { userId } = await auth()
+  if (!userId) return new NextResponse("Unauthorized", { status: 401 })
+
+  try {
+    const data = await listCreatorPosts(userId)
+    return NextResponse.json({ data })
+  } catch (err) {
+    if (err instanceof PostError) return NextResponse.json({ error: err.code }, { status: 400 })
+    throw err
+  }
+}
+
+export async function POST(req: Request) {
+  const { userId } = await auth()
+  if (!userId) return new NextResponse("Unauthorized", { status: 401 })
+
+  try {
+    const body = await req.json()
+    const data = await createPost(userId, body)
+    return NextResponse.json({ data }, { status: 201 })
+  } catch (err) {
+    if (err instanceof PostError) {
+      const status = err.code === "VALIDATION_ERROR" ? 422 : 400
+      return NextResponse.json({ error: err.code, message: err.message }, { status })
+    }
+    throw err
+  }
+}

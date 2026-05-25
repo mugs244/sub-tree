@@ -9,9 +9,11 @@ import { ReferrerTracker } from "@/components/ReferrerTracker"
 import { SmartLinkCard } from "@/components/SmartLinkCard"
 import { PublicFundraiserCard } from "@/components/PublicFundraiserCard"
 import { FollowButton } from "@/components/FollowButton"
+import { PublicProfileTabs } from "@/components/PublicProfileTabs"
 import { getActiveFundraiser } from "@/lib/services/fundraiser"
 import { getPublicShop } from "@/lib/services/shop"
 import { getCreatorFollowStats } from "@/lib/services/fan"
+import { getPublicPosts } from "@/lib/services/posts"
 import { detectPlatform } from "@/lib/utils/platform"
 import type { SmartCardMeta } from "@/lib/services/smart-links"
 
@@ -110,10 +112,11 @@ export default async function PublicProfilePage({ params }: Props) {
 
   const { profile, links } = user
 
-  const [activeFundraiser, shopProducts, followStats] = await Promise.all([
+  const [activeFundraiser, shopProducts, followStats, publicPosts] = await Promise.all([
     getActiveFundraiser(user.id),
     getPublicShop(username),
     getCreatorFollowStats(user.id, viewerClerkId),
+    getPublicPosts(username, viewerClerkId ?? null),
   ])
   const buttonClass = profile.button_style === "sharp"
     ? "rounded-none"
@@ -173,68 +176,75 @@ export default async function PublicProfilePage({ params }: Props) {
           <PublicFundraiserCard fundraiser={activeFundraiser} username={username} />
         )}
 
-        {shopProducts && shopProducts.length > 0 && (
-          <div className="space-y-2">
-            <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">Shop</p>
-            <div className="space-y-2">
-              {shopProducts.slice(0, 3).map((p) => (
-                <a
-                  key={p.id}
-                  href={`/${username}/shop/${p.id}`}
-                  className={[
-                    "flex items-center justify-between gap-3 w-full px-4 py-3 text-sm font-medium border border-border bg-background hover:bg-surface transition-colors duration-150",
-                    buttonClass,
-                  ].join(" ")}
-                >
-                  <span className="truncate">{p.name}</span>
-                  <span className="shrink-0 text-muted-foreground text-xs">
-                    {new Intl.NumberFormat("en-UG", { style: "currency", currency: "UGX", maximumFractionDigits: 0 }).format(Number(p.price))}
-                  </span>
-                </a>
-              ))}
+        <PublicProfileTabs
+          posts={publicPosts ?? []}
+          isLoggedIn={!!viewerClerkId}
+          linksContent={
+            <div className="space-y-4">
+              {shopProducts && shopProducts.length > 0 && (
+                <div className="space-y-2">
+                  <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">Shop</p>
+                  <div className="space-y-2">
+                    {shopProducts.slice(0, 3).map((p) => (
+                      <a
+                        key={p.id}
+                        href={`/${username}/shop/${p.id}`}
+                        className={[
+                          "flex items-center justify-between gap-3 w-full px-4 py-3 text-sm font-medium border border-border bg-background hover:bg-surface transition-colors duration-150",
+                          buttonClass,
+                        ].join(" ")}
+                      >
+                        <span className="truncate">{p.name}</span>
+                        <span className="shrink-0 text-muted-foreground text-xs">
+                          {new Intl.NumberFormat("en-UG", { style: "currency", currency: "UGX", maximumFractionDigits: 0 }).format(Number(p.price))}
+                        </span>
+                      </a>
+                    ))}
+                  </div>
+                  {shopProducts.length > 3 && (
+                    <a href={`/${username}/shop`} className="text-xs text-primary hover:underline block text-center">
+                      View all {shopProducts.length} products →
+                    </a>
+                  )}
+                </div>
+              )}
+              {links.length > 0 ? (
+                <div className="space-y-3">
+                  {links.map((link) => {
+                    const showRich = link.link_type === "SMART_CARD" && !link.render_as_plain && link.smart_card_meta
+                    if (showRich) {
+                      return (
+                        <SmartLinkCard
+                          key={link.id}
+                          href={link.url}
+                          linkId={link.id}
+                          meta={link.smart_card_meta as unknown as SmartCardMeta}
+                          buttonClass={buttonClass}
+                        />
+                      )
+                    }
+                    return (
+                      <TrackedLink
+                        key={link.id}
+                        href={link.url}
+                        linkId={link.id}
+                        className={[
+                          "flex items-center justify-center gap-2.5 w-full px-4 py-3 text-sm font-medium border border-border bg-background hover:bg-surface transition-colors duration-150",
+                          buttonClass,
+                        ].join(" ")}
+                      >
+                        <PlatformIcon platform={detectPlatform(link.url)} className="h-4 w-4 shrink-0" />
+                        {link.label}
+                      </TrackedLink>
+                    )
+                  })}
+                </div>
+              ) : (
+                <p className="text-center text-sm text-muted-foreground">No links yet.</p>
+              )}
             </div>
-            {shopProducts.length > 3 && (
-              <a href={`/${username}/shop`} className="text-xs text-primary hover:underline block text-center">
-                View all {shopProducts.length} products →
-              </a>
-            )}
-          </div>
-        )}
-
-        {links.length > 0 ? (
-          <div className="space-y-3">
-            {links.map((link) => {
-              const showRich = link.link_type === "SMART_CARD" && !link.render_as_plain && link.smart_card_meta
-              if (showRich) {
-                return (
-                  <SmartLinkCard
-                    key={link.id}
-                    href={link.url}
-                    linkId={link.id}
-                    meta={link.smart_card_meta as unknown as SmartCardMeta}
-                    buttonClass={buttonClass}
-                  />
-                )
-              }
-              return (
-                <TrackedLink
-                  key={link.id}
-                  href={link.url}
-                  linkId={link.id}
-                  className={[
-                    "flex items-center justify-center gap-2.5 w-full px-4 py-3 text-sm font-medium border border-border bg-background hover:bg-surface transition-colors duration-150",
-                    buttonClass,
-                  ].join(" ")}
-                >
-                  <PlatformIcon platform={detectPlatform(link.url)} className="h-4 w-4 shrink-0" />
-                  {link.label}
-                </TrackedLink>
-              )
-            })}
-          </div>
-        ) : (
-          <p className="text-center text-sm text-muted-foreground">No links yet.</p>
-        )}
+          }
+        />
 
         <div className="pt-2">
           <a

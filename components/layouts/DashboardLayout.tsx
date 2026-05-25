@@ -3,7 +3,7 @@
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { SignOutButton } from "@clerk/nextjs"
-import { Home, Link2, Heart, Palette, Settings, ExternalLink, LogOut, Target, ShoppingBag, Users } from "lucide-react"
+import { Home, Link2, Heart, Palette, Settings, ExternalLink, LogOut, Target, ShoppingBag, Users, FileText } from "lucide-react"
 import { Logo } from "@/components/brand/Logo"
 
 const PRO_TIERS = ["PRO", "BUSINESS", "CONTENT_HOUSE"]
@@ -19,6 +19,7 @@ interface NavItem {
 const NAV_ITEMS: NavItem[] = [
   { label: "Home",        href: "/dashboard",             icon: Home },
   { label: "Links",       href: "/dashboard/links",       icon: Link2 },
+  { label: "Posts",       href: "/dashboard/posts",       icon: FileText },
   { label: "Donations",   href: "/dashboard/donations",   icon: Heart },
   { label: "Fundraisers", href: "/dashboard/fundraisers", icon: Target, tiers: PRO_TIERS },
   { label: "Shop",        href: "/dashboard/shop",        icon: ShoppingBag, tiers: BUSINESS_TIERS },
