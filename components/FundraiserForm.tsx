@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
-import { Loader2 } from "lucide-react"
+import { Loader2, Search } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -32,6 +32,7 @@ export function FundraiserForm({ fundraiserId, initial }: FundraiserFormProps) {
   const [coverUrl, setCoverUrl]         = useState(initial?.cover_image_url ?? "")
   const [showProgress, setShowProgress] = useState(initial?.show_progress ?? true)
   const [type, setType]                 = useState<"PERSONAL" | "CHARITY">(initial?.fundraiser_type ?? "PERSONAL")
+  const [businessHandle, setBusinessHandle] = useState("")
   const [saving, setSaving]             = useState(false)
   const [error, setError]               = useState<string | null>(null)
 
@@ -42,6 +43,11 @@ export function FundraiserForm({ fundraiserId, initial }: FundraiserFormProps) {
     const goalNum = parseInt(goalAmount, 10)
     if (isNaN(goalNum) || goalNum <= 0) {
       setError("Goal amount must be a positive number")
+      return
+    }
+
+    if (type === "CHARITY" && !businessHandle.trim()) {
+      setError("Enter the handle of the business you are fundraising for")
       return
     }
 
@@ -72,6 +78,22 @@ export function FundraiserForm({ fundraiserId, initial }: FundraiserFormProps) {
         return
       }
 
+      const created = (await res.json()) as { data?: { id?: number } }
+
+      // If fundraising for a business, send the campaign request immediately
+      if (!isEdit && type === "CHARITY" && created.data?.id) {
+        const reqRes = await fetch(`/api/fundraisers/${created.data.id}/charity-request`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ charity_username: businessHandle.trim().replace(/^@/, "") }),
+        })
+        if (!reqRes.ok) {
+          const reqBody = (await reqRes.json()) as { message?: string }
+          setError(reqBody.message ?? "Fundraiser created but could not send the campaign request — check the business handle")
+          return
+        }
+      }
+
       router.push("/dashboard/fundraisers")
       router.refresh()
     } catch {
@@ -98,10 +120,30 @@ export function FundraiserForm({ fundraiserId, initial }: FundraiserFormProps) {
                   type === t ? "border-foreground bg-surface" : "border-border text-muted-foreground hover:border-foreground/40",
                 ].join(" ")}
               >
-                {t === "PERSONAL" ? "For myself" : "For a charity"}
+                {t === "PERSONAL" ? "For myself" : "For a specific business"}
               </button>
             ))}
           </div>
+          {type === "CHARITY" && (
+            <div className="space-y-1.5 pt-1">
+              <Label htmlFor="fr-business" className="text-sm font-medium">
+                Business handle on Sub-tree <span className="text-destructive">*</span>
+              </Label>
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">@</span>
+                <Input
+                  id="fr-business"
+                  value={businessHandle}
+                  onChange={(e) => setBusinessHandle(e.target.value.replace(/^@/, ""))}
+                  placeholder="businesshandle"
+                  className="h-11 pl-7"
+                />
+              </div>
+              <p className="text-[11px] text-muted-foreground">
+                The business will receive a campaign request and must approve before your fundraiser goes live.
+              </p>
+            </div>
+          )}
         </div>
       )}
 

@@ -295,11 +295,24 @@ enum CharityApprovalStatus {
   SUSPENDED
 }
 
+model ProductCategory {
+  id         Int       @id @default(autoincrement())
+  key        String    @unique
+  label      String
+  type       String    // "digital" | "physical" | "both"
+  position   Int       @default(0)
+  active     Boolean   @default(true)
+  created_at DateTime  @default(now())
+
+  products   Product[]
+}
+
 model Product {
-  id                Int             @id @default(autoincrement())
+  id                Int              @id @default(autoincrement())
   user_id           Int
+  category_id       Int?
   name              String
-  description       String          @db.Text
+  description       String           @db.Text
   price             BigInt
   product_type      ProductType
   cover_image_url   String?
@@ -307,19 +320,21 @@ model Product {
   file_size_bytes   BigInt?
   shipping_info     String?
   stock             Int?
-  auto_release_days Int             @default(7)
-  affiliate_rate    Decimal         @default(0) @db.Decimal(5, 4)
-  affiliate_open    Boolean         @default(false)
-  status            ProductStatus   @default(ACTIVE)
-  created_at        DateTime        @default(now())
-  updated_at        DateTime        @updatedAt
+  auto_release_days Int              @default(7)
+  affiliate_rate    Decimal          @default(0) @db.Decimal(5, 4)
+  affiliate_open    Boolean          @default(false)
+  status            ProductStatus    @default(ACTIVE)
+  created_at        DateTime         @default(now())
+  updated_at        DateTime         @updatedAt
 
-  user              User            @relation("seller_products", fields: [user_id], references: [id], onDelete: Restrict)
+  user              User             @relation("seller_products", fields: [user_id], references: [id], onDelete: Restrict)
+  category          ProductCategory? @relation(fields: [category_id], references: [id])
   orders            Order[]
   affiliate_grants  AffiliateProductGrant[]
 
   @@index([user_id])
   @@index([status])
+  @@index([category_id])
 }
 
 model Order {

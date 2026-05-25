@@ -1,7 +1,9 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
+
+interface Category { id: number; key: string; label: string; type: string }
 
 interface ProductFormProps {
   mode: "create" | "edit"
@@ -11,6 +13,7 @@ interface ProductFormProps {
     description?: string
     price?: number
     product_type?: "DIGITAL" | "PHYSICAL"
+    category_id?: number | null
     cover_image_url?: string | null
     file_url?: string | null
     shipping_info?: string | null
@@ -26,11 +29,13 @@ export function ProductForm({ mode, productId, defaults = {} }: ProductFormProps
   const router = useRouter()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [categories, setCategories] = useState<Category[]>([])
 
   const [name, setName] = useState(defaults.name ?? "")
   const [description, setDescription] = useState(defaults.description ?? "")
   const [price, setPrice] = useState(String(defaults.price ?? ""))
   const [productType, setProductType] = useState<"DIGITAL" | "PHYSICAL">(defaults.product_type ?? "DIGITAL")
+  const [categoryId, setCategoryId] = useState<string>(defaults.category_id ? String(defaults.category_id) : "")
   const [coverImageUrl, setCoverImageUrl] = useState(defaults.cover_image_url ?? "")
   const [fileUrl, setFileUrl] = useState(defaults.file_url ?? "")
   const [shippingInfo, setShippingInfo] = useState(defaults.shipping_info ?? "")
@@ -38,6 +43,13 @@ export function ProductForm({ mode, productId, defaults = {} }: ProductFormProps
   const [autoReleaseDays, setAutoReleaseDays] = useState(defaults.auto_release_days ?? 7)
   const [affiliateRate, setAffiliateRate] = useState(defaults.affiliate_rate != null ? Math.round(defaults.affiliate_rate * 100) : 0)
   const [affiliateOpen, setAffiliateOpen] = useState(defaults.affiliate_open ?? false)
+
+  useEffect(() => {
+    fetch("/api/public/categories")
+      .then((r) => r.json())
+      .then((j: { data: Category[] }) => setCategories(j.data ?? []))
+      .catch(() => {})
+  }, [])
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -60,6 +72,7 @@ export function ProductForm({ mode, productId, defaults = {} }: ProductFormProps
       affiliate_rate: affiliateRate / 100,
       affiliate_open: affiliateOpen,
     }
+    if (categoryId) body.category_id = parseInt(categoryId, 10)
     if (coverImageUrl.trim()) body.cover_image_url = coverImageUrl.trim()
     if (productType === "DIGITAL" && fileUrl.trim()) body.file_url = fileUrl.trim()
     if (productType === "PHYSICAL") {
@@ -121,6 +134,22 @@ export function ProductForm({ mode, productId, defaults = {} }: ProductFormProps
             <option value="PHYSICAL">Physical</option>
           </select>
         </div>
+      </div>
+
+      <div>
+        <label className={labelClass}>Category</label>
+        <select
+          className={inputClass}
+          value={categoryId}
+          onChange={(e) => setCategoryId(e.target.value)}
+        >
+          <option value="">Unclassified</option>
+          {categories
+            .filter((c) => c.type === "both" || c.type === productType.toLowerCase())
+            .map((c) => (
+              <option key={c.id} value={String(c.id)}>{c.label}</option>
+            ))}
+        </select>
       </div>
 
       <div>
