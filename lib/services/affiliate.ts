@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/db"
 import { z } from "zod"
+import { getSettingAsNumber } from "@/lib/services/platform-settings"
 
 export class AffiliateError extends Error {
   constructor(
@@ -22,7 +23,6 @@ export class AffiliateError extends Error {
 
 const PRO_TIERS = ["PRO", "BUSINESS", "CONTENT_HOUSE"]
 const BUSINESS_TIERS = ["BUSINESS", "CONTENT_HOUSE"]
-const MIN_PAYOUT_UGX = 5000
 
 // ── Validators ────────────────────────────────────────────────────────────────
 
@@ -413,7 +413,8 @@ export async function runWeeklyPayouts() {
   const results = { paid: 0, skipped: 0, failed: 0 }
 
   for (const [affiliateUserId, { total, orderIds }] of byAffiliate) {
-    if (Number(total) < MIN_PAYOUT_UGX) {
+    const minPayoutUgx = await getSettingAsNumber("affiliate_min_payout_ugx", 5000)
+    if (Number(total) < minPayoutUgx) {
       results.skipped++
       continue
     }

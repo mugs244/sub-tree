@@ -2,6 +2,7 @@ import { prisma } from "@/lib/db"
 import { z } from "zod"
 import { randomBytes, createHash } from "crypto"
 import { randomUUID } from "crypto"
+import { getFeeRate } from "@/lib/services/platform-settings"
 
 export class ShopError extends Error {
   constructor(
@@ -26,7 +27,6 @@ export class ShopError extends Error {
 }
 
 const BUSINESS_TIERS = ["BUSINESS", "CONTENT_HOUSE"]
-const PLATFORM_FEE_RATE = 0.08 // 8%
 
 // ── Validators ────────────────────────────────────────────────────────────────
 
@@ -297,7 +297,8 @@ export async function initiateOrder(input: unknown) {
   }
 
   const amountPaid = product.price
-  const platformFee = BigInt(Math.floor(Number(amountPaid) * PLATFORM_FEE_RATE))
+  const feeRate = await getFeeRate("fee_shop_business", 0.08)
+  const platformFee = BigInt(Math.floor(Number(amountPaid) * feeRate))
   const sellerAmount = amountPaid - platformFee - (affiliateAmount ?? BigInt(0))
 
   const normalized = buyer_phone
