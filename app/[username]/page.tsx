@@ -1,5 +1,6 @@
 import { Suspense } from "react"
 import { notFound } from "next/navigation"
+import { auth } from "@clerk/nextjs/server"
 import { prisma } from "@/lib/db"
 import { TrackedLink } from "@/components/TrackedLink"
 import { PageViewTracker } from "@/components/PageViewTracker"
@@ -7,8 +8,10 @@ import { PlatformIcon } from "@/components/PlatformIcon"
 import { ReferrerTracker } from "@/components/ReferrerTracker"
 import { SmartLinkCard } from "@/components/SmartLinkCard"
 import { PublicFundraiserCard } from "@/components/PublicFundraiserCard"
+import { FollowButton } from "@/components/FollowButton"
 import { getActiveFundraiser } from "@/lib/services/fundraiser"
 import { getPublicShop } from "@/lib/services/shop"
+import { getCreatorFollowStats } from "@/lib/services/fan"
 import { detectPlatform } from "@/lib/utils/platform"
 import type { SmartCardMeta } from "@/lib/services/smart-links"
 
@@ -70,6 +73,7 @@ export async function generateMetadata({ params }: Props) {
 
 export default async function PublicProfilePage({ params }: Props) {
   const { username } = await params
+  const { userId: viewerClerkId } = await auth()
 
   const user = await prisma.user.findUnique({
     where: { username },
@@ -106,9 +110,10 @@ export default async function PublicProfilePage({ params }: Props) {
 
   const { profile, links } = user
 
-  const [activeFundraiser, shopProducts] = await Promise.all([
+  const [activeFundraiser, shopProducts, followStats] = await Promise.all([
     getActiveFundraiser(user.id),
     getPublicShop(username),
+    getCreatorFollowStats(user.id, viewerClerkId),
   ])
   const buttonClass = profile.button_style === "sharp"
     ? "rounded-none"
@@ -148,12 +153,20 @@ export default async function PublicProfilePage({ params }: Props) {
           </div>
         )}
 
-        <div className="text-center space-y-1">
+        <div className="text-center space-y-2">
           <h1 className="text-xl font-semibold tracking-tight">{profile.display_name}</h1>
           <p className="text-xs text-muted-foreground font-mono">@{username}</p>
           {profile.bio && (
             <p className="text-sm text-muted-foreground leading-relaxed pt-1">{profile.bio}</p>
           )}
+          <div className="flex justify-center pt-1">
+            <FollowButton
+              handle={username}
+              initialIsFollowing={followStats.isFollowing}
+              initialCount={followStats.followerCount}
+              isLoggedIn={!!viewerClerkId}
+            />
+          </div>
         </div>
 
         {activeFundraiser && (

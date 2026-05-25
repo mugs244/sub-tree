@@ -22,6 +22,7 @@ model User {
 
   username_claims    UsernameClaim[]
   profile            Profile?
+  fan_profile        FanProfile?
   links              Link[]
   donations          Donation[]
   subscription       Subscription?
@@ -33,6 +34,8 @@ model User {
   shop_affiliates    AffiliateRelationship[] @relation("shop_affiliates")
   my_affiliates      AffiliateRelationship[] @relation("my_affiliates")
   affiliate_payouts  AffiliatePayoutRecord[]
+  follows            Follow[]        @relation("fan_follows")
+  followers          Follow[]        @relation("creator_followers")
 
   @@index([clerk_user_id])
 }
@@ -183,6 +186,7 @@ model ContentHouseMember {
 }
 
 enum AccountType {
+  FAN
   INDIVIDUAL
   BUSINESS
   NGO
@@ -531,4 +535,30 @@ model PlatformSettingAuditLog {
 
   @@index([key])
   @@index([changed_by])
+}
+
+model FanProfile {
+  id                   Int      @id @default(autoincrement())
+  user_id              Int      @unique
+  bio                  String?  @db.VarChar(300)
+  show_support_history Boolean  @default(true)
+  show_following       Boolean  @default(true)
+  created_at           DateTime @default(now())
+  updated_at           DateTime @updatedAt
+
+  user                 User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+}
+
+model Follow {
+  id          Int      @id @default(autoincrement())
+  follower_id Int
+  creator_id  Int
+  followed_at DateTime @default(now())
+
+  follower    User     @relation("fan_follows",      fields: [follower_id], references: [id], onDelete: Cascade)
+  creator     User     @relation("creator_followers", fields: [creator_id],  references: [id], onDelete: Cascade)
+
+  @@unique([follower_id, creator_id])
+  @@index([follower_id])
+  @@index([creator_id])
 }
