@@ -2,7 +2,7 @@ import { prisma } from "@/lib/db"
 import { z } from "zod"
 import { randomBytes, createHash } from "crypto"
 import { randomUUID } from "crypto"
-import { getFeeRate } from "@/lib/services/platform-settings"
+import { getFeeRate, getSettingAsNumber } from "@/lib/services/platform-settings"
 
 export class ShopError extends Error {
   constructor(
@@ -360,7 +360,8 @@ export async function confirmOrderPayment(
     const raw = randomBytes(32).toString("base64url")
     rawToken = raw
     downloadToken = raw // stored directly; URL-safe base64 is opaque enough for v2
-    downloadExpiresAt = new Date(Date.now() + 48 * 60 * 60 * 1000)
+    const expiryHours = await getSettingAsNumber("digital_download_expiry_hours", 48)
+    downloadExpiresAt = new Date(Date.now() + expiryHours * 60 * 60 * 1000)
   }
 
   await prisma.$transaction(async (tx) => {
@@ -424,7 +425,8 @@ export async function getDownloadUrl(orderId: number, rawToken: string) {
   if (order.download_expires_at && order.download_expires_at < new Date()) {
     throw new ShopError("DOWNLOAD_EXPIRED", "Download link has expired")
   }
-  if (order.download_count >= 3) {
+  const maxDownloads = await getSettingAsNumber("digital_download_max_count", 3)
+  if (order.download_count >= maxDownloads) {
     throw new ShopError("DOWNLOAD_LIMIT", "Download limit reached")
   }
 
