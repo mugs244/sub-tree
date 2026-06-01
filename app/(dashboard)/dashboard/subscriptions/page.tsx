@@ -13,6 +13,7 @@ export default async function DashboardSubscriptionsPage() {
   const serializableTiers = tiers.map((tier) => ({
     ...tier,
     price_ugx: Number(tier.price_ugx),
+    perks: Array.isArray(tier.perks) ? tier.perks : null,
   }))
 
   return (
