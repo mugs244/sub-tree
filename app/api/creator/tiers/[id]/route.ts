@@ -2,17 +2,18 @@ import { NextResponse } from "next/server"
 import { auth } from "@clerk/nextjs/server"
 import { deleteTier, TierError, updateTier } from "@/lib/services/membership-tiers"
 
-function getTierId(params: { id?: string }) {
-  const id = params.id ? parseInt(params.id, 10) : NaN
-  if (Number.isNaN(id)) throw new Error("Invalid tier id")
-  return id
+function getTierId(id: string) {
+  const parsedId = parseInt(id, 10)
+  if (Number.isNaN(parsedId)) throw new Error("Invalid tier id")
+  return parsedId
 }
 
-export async function PATCH(req: Request, { params }: { params: { id?: string } }) {
+export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const { userId } = await auth()
   if (!userId) return NextResponse.json({ error: "Unauthenticated" }, { status: 401 })
 
-  const tierId = getTierId(params)
+  const { id } = await params
+  const tierId = getTierId(id)
   let body: unknown
   try {
     body = await req.json()
@@ -40,11 +41,12 @@ export async function PATCH(req: Request, { params }: { params: { id?: string } 
   }
 }
 
-export async function DELETE(_req: Request, { params }: { params: { id?: string } }) {
+export async function DELETE(_req: Request, { params }: { params: Promise<{ id: string }> }) {
   const { userId } = await auth()
   if (!userId) return NextResponse.json({ error: "Unauthenticated" }, { status: 401 })
 
-  const tierId = getTierId(params)
+  const { id } = await params
+  const tierId = getTierId(id)
   try {
     await deleteTier(userId, tierId)
     return NextResponse.json({ data: { ok: true } })
