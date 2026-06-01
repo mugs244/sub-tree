@@ -26,16 +26,16 @@ All three feature sets are active and inherited. v3 does not replace v1 or v2.
 
 | # | Feature | Tier | Status | Depends On | File |
 |---|---|---|---|---|---|
-| 43 | Fan Accounts & Two-Sided Platform | All | Proposed | v1: 03, 04; v2: 37+ | `docs/v3/features/43-fan-accounts.md` |
-| 44 | Follow System | All | Proposed | Feature 43 | (within 43) |
-| 45 | Fan Feed | All | Proposed | Feature 44 | `docs/v3/features/45-fan-feed.md` |
-| 46 | Fan Support History | All | Proposed | Feature 43 | (within 43) |
+| 43 | Fan Accounts & Two-Sided Platform | All | **Shipped (2026-05-26)** | v1: 03, 04; v2: 37+ | `docs/v3/features/43-fan-accounts.md` |
+| 44 | Follow System | All | **Shipped (2026-05-26)** | Feature 43 | (within 43) |
+| 45 | Fan Feed | All | **Shipped (2026-05-26)** | Feature 44 | `docs/v3/features/45-fan-feed.md` |
+| 46 | Fan Support History | All | **Shipped (2026-05-26)** | Feature 43 | (within 43) |
 | 47 | Fan-to-Creator Upgrade | All | Proposed | Feature 43 | (within 43) |
 | 48 | Creator Follower Dashboard | Creator tiers | Proposed | Feature 44 | `docs/v3/features/48-follower-dashboard.md` |
 | 49 | Fan Notifications | All | Proposed | Feature 45 | `docs/v3/features/49-fan-notifications.md` |
 | 50 | Make-a-Wish | Business+ | Deferred | Market validation required | (future-ideas.md) |
 | 51 | Subscription Content | Pro+ | Proposed | Feature 43 + Pesapal recurring confirm | `docs/v3/features/51-subscriptions.md` |
-| 52 | Fan Membership Tiers | Pro+ | Proposed | Feature 51 | `docs/v3/features/52-membership-tiers.md` |
+| 52 | Fan Membership Tiers | Pro+ | **Shipped (2026-05-26)** | — (tier display only; fan payment via Feature 51) | `docs/v3/features/52-membership-tiers.md` |
 | 53 | ~~Creator-Fan Direct Message~~ | — | Superseded | by Feature 62 | — |
 | 54 | Ticketing Commission | All | Deferred | Platform partnerships required | (future-ideas.md) |
 | 55 | Fan Discovery | All | Proposed | Features 43, 44, 45 | `docs/v3/features/55-fan-discovery.md` |
@@ -44,7 +44,7 @@ All three feature sets are active and inherited. v3 does not replace v1 or v2.
 | 58 | Kenya M-Pesa | All | Deferred | v1 live first | `docs/v3/features/58-mpesa.md` |
 | 59 | USSD Donation Flow | All | Deferred | v1 live first | `docs/v3/features/59-ussd.md` |
 | 60 | EFRIS Tax Receipts | Business+ | Deferred | v2 Feature 38 (Fundraiser) | `docs/v3/features/60-efris.md` |
-| 61 | Creator Posts | Creator tiers | Proposed | Feature 43 | `docs/v3/features/61-creator-posts.md` |
+| 61 | Creator Posts | Creator tiers | **Shipped (2026-05-26)** | Feature 43 | `docs/v3/features/61-creator-posts.md` |
 | 62 | Chat System (Creator DMs) | Creator tiers | Proposed | Feature 43 | `docs/v3/features/62-chat-system.md` |
 | 63 | Platform Settings & Admin Fees | Admin | **Shipped** | v1 live | `docs/v3/features/63-platform-settings.md` |
 | 64 | Product Categories & Shop Discovery | Business, CH | Greenlit | Feature 39, v3 Feature 43 | `docs/v3/features/64-product-categories.md` |
@@ -58,25 +58,31 @@ All three feature sets are active and inherited. v3 does not replace v1 or v2.
 and `lib/services/affiliate.ts` now use `getFeeRate()` / `getSettingAsNumber()`. Admin
 UI at `/admin/settings`. The next v3 task is Feature 43 — Fan Accounts.
 
-### Phase 2 — Fan Identity (everything else depends on this)
+### Phase 2 — Fan Identity ✅ Complete
 
-1. **43 — Fan Accounts** (includes 44 Follow System, 46 Support History, 47 Upgrade)
-2. **45 — Fan Feed**
-3. **61 — Creator Posts** (what populates the feed — useless without this)
-4. **48 — Creator Follower Dashboard** (small, builds creator trust in the system)
-5. **49 — Fan Notifications**
+1. **43 — Fan Accounts** ✅ FAN account type, FanProfile, Follow, fan signup flow, fan onboarding
+2. **44 — Follow System** ✅ Follow button on public profiles, POST/DELETE /api/fan/follow/[handle]
+3. **45 — Fan Feed** ✅ /fan/feed page, getFanFeed service, FeedEvent written on post publish
+4. **46 — Fan Support History** ✅ /fan/support, donation history by phone
+5. **61 — Creator Posts** ✅ Post composer, visibility gating, like system, public Posts tab, FeedEvent integration
+6. **52 — Membership Tiers** ✅ Creator tier CRUD, public pricing display (fan subscribe payment via Feature 51)
+
+### Phase 2 — Also shipped (free trial system)
+- **PRO / BUSINESS trials**: plan picker calls `/api/onboarding/start-trial`, immediate access, 5-day TRIALING subscription
+- **Content House trial-on-review**: CH form grants CONTENT_HOUSE tier immediately while admin reviews application
 
 ### Phase 3 — Fan Engagement
 
-6. **51 — Subscription Content** (gated on Pesapal recurring confirmation)
-7. **52 — Membership Tiers** (builds on subscriptions)
-8. **62 — Chat System**
-9. **55 — Fan Discovery**
+6. **48 — Creator Follower Dashboard** (small, builds creator trust)
+7. **49 — Fan Notifications**
+8. **51 — Subscription Content** (gated on Pesapal recurring billing confirmation)
+9. **62 — Chat System**
+10. **55 — Fan Discovery**
 
-### Phase 3b — Shop & Creator Tools (build alongside Phase 3)
+### Phase 3b — Shop & Creator Tools
 
-- **64 — Product Categories** (alongside or after Feature 43 — required before shop is publicly discoverable)
-- **65 — Media File Upload** (alongside Feature 43 — blocks shop file delivery and profile customisation from feeling complete)
+- **64 — Product Categories** ✅ Shipped (2026-05-25)
+- **65 — Media File Upload** — blocked on `BLOB_READ_WRITE_TOKEN` (Vercel Blob not yet configured)
 
 ### Phase 4 — Expansion (when v3 core is live)
 

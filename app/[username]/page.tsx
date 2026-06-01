@@ -13,6 +13,7 @@ import { PublicProfileTabs } from "@/components/PublicProfileTabs"
 import { getActiveFundraiser } from "@/lib/services/fundraiser"
 import { getPublicShop } from "@/lib/services/shop"
 import { getCreatorFollowStats } from "@/lib/services/fan"
+import { getPublicTiers } from "@/lib/services/membership-tiers"
 import { getPublicPosts } from "@/lib/services/posts"
 import { detectPlatform } from "@/lib/utils/platform"
 import type { SmartCardMeta } from "@/lib/services/smart-links"
@@ -112,12 +113,19 @@ export default async function PublicProfilePage({ params }: Props) {
 
   const { profile, links } = user
 
-  const [activeFundraiser, shopProducts, followStats, publicPosts] = await Promise.all([
+  const [activeFundraiser, shopProducts, followStats, publicPosts, publicTiersRaw] = await Promise.all([
     getActiveFundraiser(user.id),
     getPublicShop(username),
     getCreatorFollowStats(user.id, viewerClerkId),
     getPublicPosts(username, viewerClerkId ?? null),
+    getPublicTiers(username),
   ])
+
+  const publicTiers = (publicTiersRaw ?? []).map((tier) => ({
+    ...tier,
+    price_ugx: Number(tier.price_ugx),
+  }))
+
   const buttonClass = profile.button_style === "sharp"
     ? "rounded-none"
     : profile.button_style === "pill"
@@ -174,6 +182,62 @@ export default async function PublicProfilePage({ params }: Props) {
 
         {activeFundraiser && (
           <PublicFundraiserCard fundraiser={activeFundraiser} username={username} />
+        )}
+
+        {publicTiers.length > 0 && (
+          <div className="bg-surface border border-border rounded-3xl p-4 space-y-4">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+              <div>
+                <p className="text-xs uppercase tracking-[0.3em] text-muted-foreground">Membership tiers</p>
+                <p className="text-sm font-semibold mt-2">Support {profile.display_name} every month</p>
+              </div>
+              <p className="text-xs text-muted-foreground">Subscription checkout coming soon</p>
+            </div>
+
+            <div className="grid gap-3 sm:grid-cols-2">
+              {publicTiers.map((tier) => (
+                <div key={tier.id} className="rounded-3xl border border-border bg-background p-4">
+                  <div className="flex items-center justify-between gap-4">
+                    <div>
+                      <p className="text-sm font-semibold">{tier.name}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {new Intl.NumberFormat("en-UG", {
+                          style: "currency",
+                          currency: "UGX",
+                          maximumFractionDigits: 0,
+                        }).format(tier.price_ugx)}
+                      </p>
+                    </div>
+                    <span className="rounded-full bg-accent/10 px-2 py-1 text-[11px] font-semibold uppercase text-accent-foreground">
+                      Tier {tier.position + 1}
+                    </span>
+                  </div>
+
+                  {tier.description && (
+                    <p className="text-sm text-muted-foreground mt-3">{tier.description}</p>
+                  )}
+
+                  {Array.isArray(tier.perks) && tier.perks.length ? (
+                    <ul className="mt-3 space-y-2 text-sm text-muted-foreground">
+                      {(tier.perks as string[]).map((perk, index) => (
+                        <li key={index} className="flex items-start gap-2">
+                          <span className="mt-1 h-1.5 w-1.5 rounded-full bg-foreground" />
+                          <span>{perk}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : null}
+
+                  <a
+                    href={`/${username}/subscribe/${tier.id}`}
+                    className="mt-4 inline-flex items-center justify-center rounded-full border border-accent bg-accent/10 px-4 py-2 text-sm font-medium text-accent transition hover:bg-accent/20"
+                  >
+                    Subscribe
+                  </a>
+                </div>
+              ))}
+            </div>
+          </div>
         )}
 
         <PublicProfileTabs

@@ -1,6 +1,6 @@
 import { auth } from "@clerk/nextjs/server"
 import { prisma } from "@/lib/db"
-import { Link2, Heart, Eye, TrendingUp, Smartphone, Globe } from "lucide-react"
+import { Link2, Heart, Eye, TrendingUp, Smartphone, Globe, UserPlus } from "lucide-react"
 import { NotificationsFeed } from "@/components/NotificationsFeed"
 
 export default async function DashboardHomePage() {
@@ -19,7 +19,7 @@ export default async function DashboardHomePage() {
   const displayName = user?.profile?.display_name ?? user?.username ?? "Creator"
   const username = user?.username ?? ""
 
-  const [donationStats, topLink, providerBreakdown, referrerBreakdown] =
+  const [donationStats, topLink, providerBreakdown, referrerBreakdown, tierCount] =
     await Promise.all([
       prisma.donation.aggregate({
         where: { user: { clerk_user_id: userId! }, status: "COMPLETED" },
@@ -45,6 +45,9 @@ export default async function DashboardHomePage() {
         },
         _count: { id: true },
         _sum: { amount: true },
+      }),
+      prisma.membershipTier.count({
+        where: { creator: { clerk_user_id: userId! } },
       }),
     ])
 
@@ -85,6 +88,12 @@ export default async function DashboardHomePage() {
           href="/dashboard/donations"
         />
         <StatCard
+          icon={UserPlus}
+          label="Membership tiers"
+          value={tierCount}
+          href="/dashboard/subscriptions"
+        />
+        <StatCard
           icon={Eye}
           label="Profile views"
           value={user?.profile?.view_count ?? 0}
@@ -98,6 +107,30 @@ export default async function DashboardHomePage() {
           sublabel="UGX"
           href="/dashboard/donations"
         />
+      </div>
+
+      <div className="grid grid-cols-1 gap-6">
+        <div className="bg-surface border border-border rounded-xl p-5 space-y-4">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+              <h2 className="text-sm font-medium">Membership tiers</h2>
+              <p className="text-sm text-muted-foreground mt-1">
+                Build your subscription offering and let fans join the right tier on your public profile.
+              </p>
+            </div>
+            <a
+              href="/dashboard/subscriptions"
+              className="inline-flex items-center justify-center rounded-full bg-accent px-4 py-2 text-sm font-semibold text-accent-foreground"
+            >
+              Manage tiers
+            </a>
+          </div>
+          <p className="text-sm text-muted-foreground">
+            {tierCount > 0
+              ? `You currently have ${tierCount} membership tier${tierCount === 1 ? "" : "s"}.` 
+              : "You haven’t created any membership tiers yet."}
+          </p>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

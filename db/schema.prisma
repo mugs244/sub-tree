@@ -39,6 +39,7 @@ model User {
   posts              Post[]
   post_likes         PostLike[]
   feed_events        FeedEvent[]
+  membership_tiers   MembershipTier[]
 
   @@index([clerk_user_id])
 }
@@ -638,4 +639,21 @@ enum FeedEventType {
   PRODUCT_ADDED
   LINK_ADDED
   DONATION_MILESTONE
+}
+
+model MembershipTier {
+  id          Int      @id @default(autoincrement())
+  creator_id  Int
+  name        String
+  description String?  @db.Text
+  price_ugx   BigInt
+  perks       Json?
+  position    Int      @default(0)
+  is_active   Boolean  @default(true)
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+
+  creator     User     @relation(fields: [creator_id], references: [id], onDelete: Cascade)
+
+  @@index([creator_id])
 }

@@ -4,7 +4,7 @@ Update this file after every meaningful implementation change. Treat it as the r
 
 ## Current Phase
 
-v1 and v2 are complete and shipped. v3 foundation (Feature 63 — Platform Settings) is live. Next focus: **Feature 43 — Fan Accounts & Two-Sided Platform** (the prerequisite for the entire v3 fan side). All fee rates are now driven by `PlatformSetting` table — no hardcoded constants in the payment services layer.
+v1, v2, and v3 Phase 2 are complete and shipped. Fan accounts, follow system, creator posts, fan feed, fan support history, and membership tier creation are all live. Free-trial onboarding is live for all paid tiers. Next focus: **Feature 48 — Creator Follower Dashboard**, **Feature 49 — Fan Notifications**, and **Feature 51 — Subscription Content** (blocked on Pesapal recurring billing confirmation).
 
 ## Completed
 
@@ -75,14 +75,19 @@ v1 and v2 are complete and shipped. v3 foundation (Feature 63 — Platform Setti
 - **v3 Feature 63 — Platform Settings & Admin Fee Configuration shipped (2026-05-25):** `PlatformSetting` + `PlatformSettingAuditLog` Prisma models, migration applied. `lib/services/platform-settings.ts` — `getSetting()`, `getFeeRate()`, `getSettingAsNumber()`, `getSettingAsBool()` backed by 5-minute in-memory cache. 21 default settings seeded. Admin API at `GET/PATCH /api/admin/settings`, `GET /api/admin/settings/audit`. Admin UI at `/admin/settings` — inline edit, fee confirmation modal, audit log tab. Backfill complete: `PLATFORM_FEE_RATE` in `lib/services/shop.ts` and `MIN_PAYOUT_UGX` in `lib/services/affiliate.ts` replaced with `getFeeRate()` / `getSettingAsNumber()` calls. v3 Invariant 6 enforced — no hardcoded fee constants anywhere in the payment layer.
 - **v3 planning docs added (`docs/v3/`):** V3-OVERVIEW.md, V3-ARCHITECTURE.md, V3-FEATURES.md, and feature specs for Features 43, 45, 48, 49, 51, 52, 55, 61, 62, 63. Fan portal mockup at `components/mockups/FanPortal.jsx`.
 
-## In Progress
-
-Nothing.
+- **v3 Feature 43/44 — Fan Accounts & Follow System shipped (2026-05-26):** `FAN` added to `AccountType` enum. `FanProfile` and `Follow` tables (migration `20260525225433`). Follow button on every creator public profile. `GET /fan/join/[handle]` sets cookie and redirects to sign-up. Fan onboarding at `/onboarding/fan` calls `POST /api/onboarding/complete-fan` (sets `account_type=FAN`, creates `FanProfile`). `lib/services/fan.ts`: `followCreator`, `unfollowCreator`, `getCreatorFollowStats`. `POST/DELETE /api/fan/follow/[handle]`. `components/FollowButton.tsx` with live toggle and follower count.
+- **v3 Feature 45/46 — Fan Feed & Fan Support History shipped (2026-05-26):** `app/(fan)` route group with `FanNav` layout (Feed / Following / Support tabs). `/fan/feed` — posts from followed creators with visibility gating and locked previews. `/fan/following` — live unfollow. `/fan/support` — donation history matched by `donor_phone`. `lib/services/fan.ts` extended with `getFanFeed`, `getFanFollowing`, `getFanSupportHistory`.
+- **v3 Feature 61 — Creator Posts shipped (2026-05-26):** `Post`, `PostLink`, `PostLike`, `FeedEvent`, `PostVisibility`, `FeedEventType` models (migration `20260525231355`). `/dashboard/posts` composer (text + link + visibility), edit, pin, soft-delete. Public profile now has Links | Posts tab switcher (`PublicProfileTabs`). Posts tab shows locked previews for restricted content with donate/subscribe CTA. Like button with live count on both public and fan feed. `FeedEvent` written on every publish for fan feed integration. Full API: `POST/GET /api/posts`, `PATCH/DELETE /api/posts/[id]`, `/pin`, `/like`. `GET /api/public/[handle]/posts` with server-side visibility gating.
+- **Free trial system shipped (2026-05-26):** `POST /api/onboarding/start-trial` — sets `user.tier` and creates `Subscription` with `TRIALING` status, 5-day `trial_ends_at`. PRO and BUSINESS in `PlanPicker` now call this directly — no payment screen. Content House form grants `CONTENT_HOUSE` trial immediately on submission while admin reviews application. `/content-house` page requires login. Dev bypass button removed.
+- **v3 Feature 52 — Membership Tiers shipped (2026-05-26):** `MembershipTier` model (migration). Creator tier CRUD at `/dashboard/subscriptions` — create Bronze/Silver/Gold tiers with name, price, description, perks. Active tiers shown on creator public profile as a pricing card. `lib/services/membership-tiers.ts`. API: `GET/POST /api/creator/tiers`, `PATCH/DELETE /api/creator/tiers/[id]`. Fan subscription payment wired once Feature 51 (Pesapal recurring) is confirmed.
+- **FirstLinkForm plan gate restored (2026-05-26):** `router.push("/dashboard")` reverted to `router.push("/onboarding/plan")` — creator onboarding now correctly flows through plan selection after adding first link.
 
 ## Next Up
 
-1. **Feature 43 — Fan Accounts & Two-Sided Platform.** This is the prerequisite for the entire v3 fan side. Adds `FanProfile`, `Follow` models, `account_type` field on User, signup default to FAN, "Become a creator" upgrade path. See `docs/v3/features/43-fan-accounts.md`.
-2. **Register webhook URLs with Pesapal + OpenFloat** in their respective dashboards once merchant onboarding completes:
+1. **Feature 48 — Creator Follower Dashboard.** Small — shows follower list on creator's dashboard with basic stats. Builds creator trust that the follow system is working.
+2. **Feature 49 — Fan Notifications.** Push/in-app notification when a creator they follow publishes a post.
+3. **Feature 51 — Subscription Content.** Blocked on confirming Pesapal supports recurring monthly charges on stored MoMo numbers. Once confirmed, wire the "Subscribe" button on public profiles to a payment flow.
+4. **Register webhook URLs with Pesapal + OpenFloat** in their respective dashboards once merchant onboarding completes:
    - `https://sub-tree.vercel.app/api/webhooks/payments/pesapal` (GET IPN)
    - `https://sub-tree.vercel.app/api/webhooks/payments/openfloat` (POST)
    - Add `PESAPAL_CONSUMER_KEY`, `PESAPAL_CONSUMER_SECRET`, `PESAPAL_IPN_ID`, `PESAPAL_ENVIRONMENT`, `PESAPAL_CALLBACK_URL`, `OPENFLOAT_API_KEY`, `OPENFLOAT_WEBHOOK_SECRET` to Vercel env vars.

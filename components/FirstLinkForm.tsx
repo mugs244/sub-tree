@@ -44,8 +44,7 @@ export function FirstLinkForm() {
         return
       }
 
-      // TODO: restore plan gate — change back to router.push("/onboarding/plan") before launch
-      router.push("/dashboard")
+      router.push("/onboarding/plan")
     } catch {
       setServerError("Could not add link — please try again")
     } finally {
