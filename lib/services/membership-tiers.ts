@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/db"
+import { Prisma } from "@prisma/client"
 import { z } from "zod"
 
 export class TierError extends Error {
@@ -90,7 +91,7 @@ export async function createTier(clerkUserId: string, input: unknown) {
       name,
       description: description ?? null,
       price_ugx:   BigInt(price_ugx),
-      perks:       perks ?? null,
+      perks:       perks ?? Prisma.JsonNull,
       position,
     },
   })
@@ -107,12 +108,13 @@ export async function updateTier(clerkUserId: string, tierId: number, input: unk
   if (!tier) throw new TierError("NOT_FOUND", "Tier not found")
   if (tier.creator_id !== user.id) throw new TierError("FORBIDDEN", "Not your tier")
 
-  const { price_ugx, ...rest } = parsed.data
+  const { price_ugx, perks, ...rest } = parsed.data
   await prisma.membershipTier.update({
     where: { id: tierId },
     data: {
       ...rest,
       ...(price_ugx !== undefined ? { price_ugx: BigInt(price_ugx) } : {}),
+      ...(perks !== undefined ? { perks: perks ?? Prisma.JsonNull } : {}),
     },
   })
 }
