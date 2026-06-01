@@ -1,6 +1,10 @@
 import { NextResponse } from "next/server"
+import { auth } from "@clerk/nextjs/server"
 import { prisma } from "@/lib/db"
 import { z } from "zod"
+import { randomUUID } from "crypto"
+
+const TRIAL_DAYS = 5
 
 const MemberSchema = z.object({
   name: z.string().min(1),
@@ -18,6 +22,9 @@ const BodySchema = z.object({
 })
 
 export async function POST(req: Request): Promise<NextResponse> {
+  const { userId } = await auth()
+  if (!userId) return new NextResponse("Unauthorized", { status: 401 })
+
   let raw: unknown
   try {
     raw = await req.json()
@@ -32,32 +39,62 @@ export async function POST(req: Request): Promise<NextResponse> {
 
   const { company_email, social_platforms, features_requested, notes, members } = parsed.data
 
-  // Validate share rates sum to 100
   const total = members.reduce((sum, m) => sum + m.share_rate, 0)
   if (Math.round(total) !== 100) {
-    return NextResponse.json(
-      { error: "Share rates must sum to 100%" },
-      { status: 422 },
-    )
+    return NextResponse.json({ error: "Share rates must sum to 100%" }, { status: 422 })
   }
 
-  const request = await prisma.contentHouseRequest.create({
-    data: {
-      company_email,
-      social_platforms,
-      features_requested,
-      notes: notes ?? null,
-      members: {
-        create: members.map((m) => ({
-          name: m.name,
-          phone: m.phone,
-          email: m.email,
-          share_rate: m.share_rate,
-        })),
+  const user = await prisma.user.findUnique({
+    where: { clerk_user_id: userId },
+    select: { id: true, tier: true },
+  })
+  if (!user) return new NextResponse("User not found", { status: 404 })
+
+  const trialEnd = new Date()
+  trialEnd.setDate(trialEnd.getDate() + TRIAL_DAYS)
+
+  await prisma.$transaction(async (tx) => {
+    await tx.contentHouseRequest.create({
+      data: {
+        company_email,
+        social_platforms,
+        features_requested,
+        notes: notes ?? null,
+        members: {
+          create: members.map((m) => ({
+            name: m.name,
+            phone: m.phone,
+            email: m.email,
+            share_rate: m.share_rate,
+          })),
+        },
       },
-    },
-    select: { id: true },
+    })
+
+    // Grant CONTENT_HOUSE tier immediately as trial while under review
+    await tx.user.update({
+      where: { id: user.id },
+      data: { tier: "CONTENT_HOUSE" },
+    })
+
+    await tx.subscription.upsert({
+      where: { user_id: user.id },
+      create: {
+        user_id: user.id,
+        tier: "CONTENT_HOUSE",
+        status: "TRIALING",
+        trial_ends_at: trialEnd,
+        current_period_end: trialEnd,
+        idempotency_key: randomUUID(),
+      },
+      update: {
+        tier: "CONTENT_HOUSE",
+        status: "TRIALING",
+        trial_ends_at: trialEnd,
+        current_period_end: trialEnd,
+      },
+    })
   })
 
-  return NextResponse.json({ id: request.id }, { status: 201 })
+  return NextResponse.json({ ok: true }, { status: 201 })
 }

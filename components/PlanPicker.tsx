@@ -44,7 +44,7 @@ const PLANS: Plan[] = [
     price: "UGX 15,000",
     period: "/mo",
     description: "For creators who want more reach.",
-    badge: null,
+    badge: "5-day free trial",
     features: [
       { label: "Unlimited links", included: true },
       { label: "Custom domain", included: true },
@@ -53,7 +53,7 @@ const PLANS: Plan[] = [
       { label: "Team members", included: false },
       { label: "Donation splits", included: false },
     ],
-    cta: "Get Pro",
+    cta: "Start free trial",
     href: null,
   },
   {
@@ -109,13 +109,23 @@ export function PlanPicker({ preselected }: { preselected: string | null }) {
   const [selected, setSelected] = useState<Tier>(normalise(preselected))
   const [loading, setLoading] = useState(false)
 
-  function handleContinue() {
+  async function handleContinue() {
     const plan = PLANS.find((p) => p.id === selected)!
     setLoading(true)
     if (plan.href) {
       router.push(plan.href)
+      return
+    }
+    // PRO and BUSINESS start a free trial immediately — no payment required
+    const res = await fetch("/api/onboarding/start-trial", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ tier: selected }),
+    })
+    if (res.ok) {
+      router.push("/dashboard")
     } else {
-      router.push(`/onboarding/payment?tier=${selected}`)
+      setLoading(false)
     }
   }
 
@@ -183,7 +193,7 @@ export function PlanPicker({ preselected }: { preselected: string | null }) {
 
       <Button
         className="w-full"
-        onClick={handleContinue}
+        onClick={() => void handleContinue()}
         disabled={loading}
       >
         {loading ? "Continuing…" : PLANS.find((p) => p.id === selected)?.cta ?? "Continue"}

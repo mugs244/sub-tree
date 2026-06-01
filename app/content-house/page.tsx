@@ -1,8 +1,13 @@
+import { redirect } from "next/navigation"
+import { auth } from "@clerk/nextjs/server"
 import { ContentHouseForm } from "@/components/ContentHouseForm"
 
 export const metadata = { title: "Content House — Sub-tree" }
 
-export default function ContentHousePage() {
+export default async function ContentHousePage() {
+  const { userId } = await auth()
+  if (!userId) redirect("/sign-in")
+
   return (
     <main className="min-h-screen px-6 py-16 md:py-24">
       <div className="max-w-2xl mx-auto space-y-10">
@@ -13,8 +18,8 @@ export default function ContentHousePage() {
           <p className="text-[15px] leading-relaxed text-[color:var(--text-secondary)] max-w-prose">
             Built for multi-creator studios. Share one link page across your whole
             team, split donations by share rate, and manage everything from a shared
-            dashboard. Fill in the form below and we will review your request and get
-            back to you within 24 hours.
+            dashboard. Fill in the form below — you&apos;ll get immediate access to the
+            portal as a trial while we review your application.
           </p>
         </div>
 

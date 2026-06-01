@@ -141,6 +141,7 @@ export function ContentHouseForm() {
       }
 
       setSubmitted(true)
+      router.push("/dashboard")
     } catch {
       setServerError("Could not submit — please try again")
     } finally {

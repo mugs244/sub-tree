@@ -2,7 +2,6 @@ import { redirect } from "next/navigation"
 import { auth } from "@clerk/nextjs/server"
 import { prisma } from "@/lib/db"
 import { PaymentForm } from "@/components/PaymentForm"
-import { DevBypassButton } from "@/components/DevBypassButton"
 
 type Tier = "PRO" | "BUSINESS" | "CONTENT_HOUSE"
 const VALID_TIERS: Tier[] = ["PRO", "BUSINESS", "CONTENT_HOUSE"]
@@ -53,10 +52,6 @@ export default async function PaymentOnboardingPage({
         <div className="bg-[color:var(--bg-raised)] border border-[color:var(--border-default)] rounded-xl p-6">
           <PaymentForm tier={tier} />
         </div>
-
-        {process.env.BYPASS_PAYMENTS_KEY && (
-          <DevBypassButton tier={tier} />
-        )}
 
         <p className="text-xs text-center text-[color:var(--text-muted)]">
           <a href="/onboarding/plan" className="underline underline-offset-2">
