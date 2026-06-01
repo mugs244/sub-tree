@@ -66,7 +66,7 @@ export default async function CreatorTierSubscribePage({ params }: Props) {
             <div>
               <p className="text-sm font-semibold mb-3">Included perks</p>
               <ul className="space-y-2 text-sm text-muted-foreground">
-                {tier.perks.map((perk, index) => (
+                {(tier.perks as string[]).map((perk, index) => (
                   <li key={index} className="flex items-start gap-2">
                     <span className="mt-1 h-1.5 w-1.5 rounded-full bg-foreground" />
                     <span>{perk}</span>
