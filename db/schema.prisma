@@ -16,6 +16,7 @@ model User {
   email_verified_at DateTime?
   account_type      AccountType     @default(INDIVIDUAL)
   tier              Tier            @default(FREE)
+  last_active_at    DateTime?
   created_at        DateTime        @default(now())
   updated_at        DateTime        @updatedAt
   deleted_at        DateTime?
@@ -50,6 +51,7 @@ model Profile {
   display_name  String
   bio           String?
   avatar_url    String?
+  country_code  String?
   theme_preset  String  @default("default")
   button_style  String  @default("rounded")
   view_count    Int     @default(0)
