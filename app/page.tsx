@@ -95,40 +95,6 @@ const TIERS: Tier[] = [
       { label: "Members",              value: "1" },
     ],
   },
-  {
-    id: "business",
-    name: "Business",
-    blurb: "Sell, not just collect.",
-    price: 40000,
-    cta: "Start free trial",
-    href: "/api/plan-redirect?plan=business",
-    highlight: false,
-    features: [
-      { label: "Donation fee",         value: "3%" },
-      { label: "Themes",               value: "Custom colours + fonts" },
-      { label: "Fundraiser campaigns", value: true },
-      { label: "Sell products",        value: true },
-      { label: "Affiliate",            value: "Promoter + merchant" },
-      { label: "Members",              value: "1" },
-    ],
-  },
-  {
-    id: "house",
-    name: "Content House",
-    blurb: "For groups, labels and small teams.",
-    price: 80000,
-    cta: "Talk to us",
-    href: "/content-house",
-    highlight: false,
-    features: [
-      { label: "Donation fee",         value: "3%" },
-      { label: "Themes",               value: "Custom, shared" },
-      { label: "Fundraiser campaigns", value: true },
-      { label: "Sell products",        value: true },
-      { label: "Affiliate",            value: "Promoter + merchant" },
-      { label: "Members",              value: "Up to 10" },
-    ],
-  },
 ]
 
 export default function LandingPage() {
@@ -349,7 +315,7 @@ export default function LandingPage() {
               Start free. Upgrade when you outgrow it — we lower the donation fee on every paid plan.
             </p>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-2xl mx-auto w-full">
             {TIERS.map((tier) => (
               <PricingCard key={tier.id} tier={tier} />
             ))}

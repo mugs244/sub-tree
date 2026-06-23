@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation"
 import { auth } from "@clerk/nextjs/server"
 import { prisma } from "@/lib/db"
+import { touchUserLastActive } from "@/lib/services/user-activity"
 import { DashboardLayout } from "@/components/layouts/DashboardLayout"
 
 export default async function DashboardRootLayout({
@@ -11,11 +12,12 @@ export default async function DashboardRootLayout({
   const { userId } = await auth()
   if (!userId) redirect("/sign-in")
 
+  await touchUserLastActive(userId)
+
   const user = await prisma.user.findUnique({
     where: { clerk_user_id: userId },
     select: {
       username: true,
-      tier: true,
       profile: { select: { id: true } },
     },
   })
@@ -25,7 +27,7 @@ export default async function DashboardRootLayout({
   if (!user.profile) redirect("/onboarding/profile")
 
   return (
-    <DashboardLayout username={user.username} tier={user.tier}>
+    <DashboardLayout username={user.username}>
       {children}
     </DashboardLayout>
   )

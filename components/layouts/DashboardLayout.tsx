@@ -3,30 +3,21 @@
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { SignOutButton } from "@clerk/nextjs"
-import { Home, Link2, Heart, Palette, Settings, ExternalLink, LogOut, Target, ShoppingBag, Users, UserPlus, FileText } from "lucide-react"
+import { Home, Link2, Heart, Palette, Settings, ExternalLink, LogOut } from "lucide-react"
 import { Logo } from "@/components/brand/Logo"
-
-const PRO_TIERS = ["PRO", "BUSINESS", "CONTENT_HOUSE"]
-const BUSINESS_TIERS = ["BUSINESS", "CONTENT_HOUSE"]
 
 interface NavItem {
   label: string
   href: string
   icon: React.ElementType
-  tiers?: string[]
 }
 
 const NAV_ITEMS: NavItem[] = [
-  { label: "Home",        href: "/dashboard",             icon: Home },
-  { label: "Links",       href: "/dashboard/links",       icon: Link2 },
-  { label: "Posts",       href: "/dashboard/posts",       icon: FileText },
-  { label: "Donations",   href: "/dashboard/donations",   icon: Heart },
-  { label: "Fundraisers", href: "/dashboard/fundraisers", icon: Target, tiers: PRO_TIERS },
-  { label: "Shop",        href: "/dashboard/shop",        icon: ShoppingBag, tiers: BUSINESS_TIERS },
-  { label: "Affiliates",  href: "/dashboard/affiliates",  icon: Users, tiers: PRO_TIERS },
-  { label: "Subscriptions", href: "/dashboard/subscriptions", icon: UserPlus },
-  { label: "Appearance",  href: "/dashboard/appearance",  icon: Palette },
-  { label: "Settings",    href: "/dashboard/settings",    icon: Settings },
+  { label: "Home",       href: "/dashboard",            icon: Home },
+  { label: "Links",      href: "/dashboard/links",      icon: Link2 },
+  { label: "Donations",  href: "/dashboard/donations",  icon: Heart },
+  { label: "Appearance", href: "/dashboard/appearance", icon: Palette },
+  { label: "Settings",   href: "/dashboard/settings",   icon: Settings },
 ]
 
 function isActive(pathname: string, href: string) {
@@ -37,12 +28,11 @@ function isActive(pathname: string, href: string) {
 interface DashboardLayoutProps {
   children: React.ReactNode
   username: string
-  tier: string
 }
 
-export function DashboardLayout({ children, username, tier }: DashboardLayoutProps) {
+export function DashboardLayout({ children, username }: DashboardLayoutProps) {
   const pathname = usePathname()
-  const visibleNav = NAV_ITEMS.filter((item) => !item.tiers || item.tiers.includes(tier))
+  const visibleNav = NAV_ITEMS
 
   return (
     <div className="min-h-screen flex bg-background">

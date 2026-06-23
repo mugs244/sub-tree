@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation"
 import { Check, Minus } from "lucide-react"
 import { Button } from "@/components/ui/button"
 
-type Tier = "FREE" | "PRO" | "BUSINESS" | "CONTENT_HOUSE"
+type Tier = "FREE" | "PRO"
 
 interface Plan {
   id: Tier
@@ -56,49 +56,11 @@ const PLANS: Plan[] = [
     cta: "Start free trial",
     href: null,
   },
-  {
-    id: "BUSINESS",
-    name: "Business",
-    price: "UGX 40,000",
-    period: "/mo",
-    description: "For teams and organisations.",
-    badge: "5-day free trial",
-    features: [
-      { label: "Everything in Pro", included: true },
-      { label: "Up to 5 team members", included: true },
-      { label: "Shared dashboard", included: true },
-      { label: "Priority support", included: true },
-      { label: "Donation splits", included: false },
-      { label: "Multi-member accounts", included: false },
-    ],
-    cta: "Start free trial",
-    href: null,
-  },
-  {
-    id: "CONTENT_HOUSE",
-    name: "Content House",
-    price: "UGX 80,000",
-    period: "/mo",
-    description: "For multi-creator content studios.",
-    badge: "5-day free trial",
-    features: [
-      { label: "Everything in Business", included: true },
-      { label: "Up to 10 members", included: true },
-      { label: "Donation splits by share rate", included: true },
-      { label: "Setup via admin review", included: true },
-      { label: "Dedicated onboarding", included: true },
-      { label: "Priority support", included: true },
-    ],
-    cta: "Talk to us",
-    href: "/content-house",
-  },
 ]
 
 function normalise(cookieVal: string | null): Tier {
   const map: Record<string, Tier> = {
     pro: "PRO",
-    business: "BUSINESS",
-    content_house: "CONTENT_HOUSE",
     free: "FREE",
   }
   return (cookieVal ? map[cookieVal.toLowerCase()] : undefined) ?? "FREE"
