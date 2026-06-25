@@ -13,12 +13,15 @@ function SignInForm() {
   const params = useSearchParams()
   const next = params.get("next") ?? "/dashboard"
 
+  const [mode, setMode] = useState<"password" | "otp-send" | "otp-verify">("password")
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
+  const [code, setCode] = useState("")
+  const [otpUserId, setOtpUserId] = useState<number | null>(null)
   const [error, setError] = useState("")
   const [loading, setLoading] = useState(false)
 
-  async function handleSubmit(e: React.FormEvent) {
+  async function handlePasswordSignIn(e: React.FormEvent) {
     e.preventDefault()
     setError("")
     setLoading(true)
@@ -40,6 +43,37 @@ function SignInForm() {
     router.push(next)
   }
 
+  async function handleSendCode(e: React.FormEvent) {
+    e.preventDefault()
+    setError("")
+    setLoading(true)
+    const res = await fetch("/api/auth/signin-otp", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email }),
+    })
+    const data = await res.json()
+    setLoading(false)
+    if (!res.ok) { setError(data.error ?? "Something went wrong"); return }
+    setOtpUserId(data.userId)
+    setMode("otp-verify")
+  }
+
+  async function handleVerifyCode(e: React.FormEvent) {
+    e.preventDefault()
+    setError("")
+    setLoading(true)
+    const res = await fetch("/api/auth/verify-signin-otp", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ userId: otpUserId, code }),
+    })
+    const data = await res.json()
+    setLoading(false)
+    if (!res.ok) { setError(data.error ?? "Invalid code"); return }
+    router.push(next)
+  }
+
   return (
     <div className="min-h-screen flex items-center justify-center px-6 py-12 bg-[color:var(--bg-base)]">
       <div className="w-full max-w-sm space-y-8">
@@ -48,20 +82,82 @@ function SignInForm() {
           <h1 className="text-2xl font-semibold tracking-tight">Sign in to Sub-tree</h1>
         </div>
 
-        <form onSubmit={(e) => void handleSubmit(e)} className="space-y-4">
-          <div className="space-y-1.5">
-            <Label htmlFor="email">Email</Label>
-            <Input id="email" type="email" autoComplete="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" />
-          </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="password">Password</Label>
-            <Input id="password" type="password" autoComplete="current-password" required value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Your password" />
-          </div>
-          {error && <p className="text-sm text-red-600">{error}</p>}
-          <Button type="submit" className="w-full" disabled={loading}>
-            {loading ? "Signing in…" : "Sign in"}
-          </Button>
-        </form>
+        {mode === "password" && (
+          <form onSubmit={(e) => void handlePasswordSignIn(e)} className="space-y-4">
+            <div className="space-y-1.5">
+              <Label htmlFor="email">Email</Label>
+              <Input id="email" type="email" autoComplete="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="password">Password</Label>
+              <Input id="password" type="password" autoComplete="current-password" required value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Your password" />
+            </div>
+            {error && <p className="text-sm text-red-600">{error}</p>}
+            <Button type="submit" className="w-full" disabled={loading}>
+              {loading ? "Signing in…" : "Sign in"}
+            </Button>
+            <button
+              type="button"
+              onClick={() => { setError(""); setMode("otp-send") }}
+              className="w-full text-sm text-center text-[color:var(--text-secondary)] hover:text-[color:var(--text-primary)] transition-colors"
+            >
+              Sign in with a code instead
+            </button>
+          </form>
+        )}
+
+        {mode === "otp-send" && (
+          <form onSubmit={(e) => void handleSendCode(e)} className="space-y-4">
+            <p className="text-sm text-[color:var(--text-secondary)] text-center">
+              We&apos;ll email you a 6-digit code to sign in.
+            </p>
+            <div className="space-y-1.5">
+              <Label htmlFor="otp-email">Email</Label>
+              <Input id="otp-email" type="email" autoComplete="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" />
+            </div>
+            {error && <p className="text-sm text-red-600">{error}</p>}
+            <Button type="submit" className="w-full" disabled={loading}>
+              {loading ? "Sending…" : "Send code"}
+            </Button>
+            <button
+              type="button"
+              onClick={() => { setError(""); setMode("password") }}
+              className="w-full text-sm text-center text-[color:var(--text-secondary)] hover:text-[color:var(--text-primary)] transition-colors"
+            >
+              Sign in with password instead
+            </button>
+          </form>
+        )}
+
+        {mode === "otp-verify" && (
+          <form onSubmit={(e) => void handleVerifyCode(e)} className="space-y-4">
+            <p className="text-sm text-[color:var(--text-secondary)] text-center">
+              We sent a 6-digit code to <strong>{email}</strong>.
+            </p>
+            <Input
+              type="text"
+              inputMode="numeric"
+              autoComplete="one-time-code"
+              maxLength={6}
+              placeholder="000000"
+              className="text-center text-2xl tracking-[0.5em] font-mono"
+              value={code}
+              onChange={(e) => setCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+              required
+            />
+            {error && <p className="text-sm text-red-600 text-center">{error}</p>}
+            <Button type="submit" className="w-full" disabled={loading || code.length < 6}>
+              {loading ? "Verifying…" : "Sign in"}
+            </Button>
+            <button
+              type="button"
+              onClick={() => { setError(""); setCode(""); setMode("otp-send") }}
+              className="w-full text-sm text-center text-[color:var(--text-secondary)] hover:text-[color:var(--text-primary)] transition-colors"
+            >
+              Resend code
+            </button>
+          </form>
+        )}
 
         <p className="text-center text-sm text-[color:var(--text-secondary)]">
           Don&apos;t have an account?{" "}
