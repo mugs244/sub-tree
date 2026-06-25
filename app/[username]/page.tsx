@@ -1,14 +1,11 @@
 import { Suspense } from "react"
 import { notFound } from "next/navigation"
-import { getSession } from "@/lib/auth/session"
 import { prisma } from "@/lib/db"
 import { TrackedLink } from "@/components/TrackedLink"
 import { PageViewTracker } from "@/components/PageViewTracker"
 import { PlatformIcon } from "@/components/PlatformIcon"
 import { ReferrerTracker } from "@/components/ReferrerTracker"
 import { SmartLinkCard } from "@/components/SmartLinkCard"
-import { FollowButton } from "@/components/FollowButton"
-import { getCreatorFollowStats } from "@/lib/services/fan"
 import { detectPlatform } from "@/lib/utils/platform"
 import type { SmartCardMeta } from "@/lib/services/smart-links"
 
@@ -70,9 +67,6 @@ export async function generateMetadata({ params }: Props) {
 
 export default async function PublicProfilePage({ params }: Props) {
   const { username } = await params
-  const session = await getSession()
-  const viewerUserId = session?.userId ?? null
-
   const user = await prisma.user.findUnique({
     where: { username },
     select: {
@@ -107,8 +101,6 @@ export default async function PublicProfilePage({ params }: Props) {
   if (!user || user.deleted_at || !user.profile) notFound()
 
   const { profile, links } = user
-
-  const followStats = await getCreatorFollowStats(user.id, viewerUserId)
 
   const buttonClass = profile.button_style === "sharp"
     ? "rounded-none"
@@ -154,14 +146,6 @@ export default async function PublicProfilePage({ params }: Props) {
           {profile.bio && (
             <p className="text-sm text-muted-foreground leading-relaxed pt-1">{profile.bio}</p>
           )}
-          <div className="flex justify-center pt-1">
-            <FollowButton
-              handle={username}
-              initialIsFollowing={followStats.isFollowing}
-              initialCount={followStats.followerCount}
-              isLoggedIn={!!viewerUserId}
-            />
-          </div>
         </div>
 
         {/* Links section */}
@@ -205,8 +189,9 @@ export default async function PublicProfilePage({ params }: Props) {
         <div className="pt-2">
           <a
             href={`/${username}/donate`}
+            style={{ color: "var(--primary-foreground)" }}
             className={[
-              "flex items-center justify-center w-full px-4 py-3 text-sm font-medium bg-primary text-primary-foreground hover:bg-accent-dark transition-colors duration-150",
+              "flex items-center justify-center w-full px-4 py-3 text-sm font-medium bg-primary hover:bg-accent-dark transition-colors duration-150",
               buttonClass,
             ].join(" ")}
           >
