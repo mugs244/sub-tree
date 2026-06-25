@@ -4,7 +4,7 @@ import { isAdmin } from "@/lib/services/admin"
 import { prisma } from "@/lib/db"
 import { AdminSettingsClient } from "./AdminSettingsClient"
 
-export const metadata = { title: "Platform Settings — Admin" }
+export const metadata = { title: "Settings — Admin" }
 
 export default async function AdminSettingsPage() {
   const session = await getSession()
@@ -30,17 +30,15 @@ export default async function AdminSettingsPage() {
   }))
 
   return (
-    <main className="min-h-screen bg-surface px-4 py-12">
-      <div className="max-w-5xl mx-auto space-y-6">
-        <div>
-          <p className="text-xs font-mono text-muted-foreground mb-1">Admin</p>
-          <h1 className="text-2xl font-semibold tracking-tight">Platform Settings</h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            Fee rates and platform-wide configuration. Changes take effect within 5 minutes.
-          </p>
-        </div>
-        <AdminSettingsClient settings={serializedSettings} auditLogs={serializedLogs} />
+    <div className="px-4 py-5 md:p-8 max-w-5xl space-y-6">
+      <div>
+        <p className="text-xs font-mono text-muted-foreground mb-1">Admin</p>
+        <h1 className="text-2xl font-semibold tracking-tight">Platform settings</h1>
+        <p className="text-sm text-muted-foreground mt-1">
+          Fee rates and platform-wide configuration. Changes take effect within 5 minutes.
+        </p>
       </div>
-    </main>
+      <AdminSettingsClient settings={serializedSettings} auditLogs={serializedLogs} />
+    </div>
   )
 }

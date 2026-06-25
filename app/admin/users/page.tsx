@@ -1,16 +1,17 @@
-import { redirect } from "next/navigation"
-import { getSession } from "@/lib/auth/session"
-import { isAdmin } from "@/lib/services/admin"
-import AdminUsersTable from '../../../components/AdminUsersTable'
+import AdminUsersTable from "@/components/AdminUsersTable"
 
-export default async function AdminUsersPage() {
-  const session = await getSession()
-  if (!session || !isAdmin(session.userId)) redirect("/")
+export const metadata = { title: "Users — Admin" }
 
+export default function AdminUsersPage() {
   return (
-    <div style={{ padding: 24 }}>
-      <h1>Users</h1>
-      <p>Manage platform users: search, view, and change account status.</p>
+    <div className="px-4 py-5 md:p-8 max-w-5xl space-y-6">
+      <div>
+        <p className="text-xs font-mono text-muted-foreground mb-1">Admin</p>
+        <h1 className="text-2xl font-semibold tracking-tight">Users</h1>
+        <p className="text-sm text-muted-foreground mt-1">
+          Search, view, and manage platform accounts.
+        </p>
+      </div>
       <AdminUsersTable />
     </div>
   )
