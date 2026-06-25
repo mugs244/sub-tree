@@ -52,6 +52,33 @@ Parked together with Posts.
 
 ---
 
+## Follow Button
+
+**What it is:** A Follow / Unfollow button rendered on every creator's public
+profile page. Logged-in fans can follow a creator; unauthenticated visitors are
+sent to `/fan/join/[handle]` to create a fan account first. A follower count is
+shown below the button. Fans can manage who they follow from the `/fan/following`
+dashboard tab.
+
+**Code that exists:**
+- `components/FollowButton.tsx` — Follow / Unfollow toggle with optimistic count
+- `app/api/fan/follow/[handle]/route.ts` — POST (follow) / DELETE (unfollow)
+- `app/fan/join/[handle]/page.tsx` — fan sign-up/sign-in prompt triggered by unauthenticated follow attempt
+- `app/(fan)/fan/following/` — fan's following list page
+- `components/FanFollowingClient.tsx` — client component for the following list
+- `lib/services/fan.ts` → `followCreator`, `unfollowCreator`, `getFanFollowing`
+- Schema: `Follow` model (fan_id → creator_id unique pair)
+- Public profile (`app/[username]/page.tsx`) — renders `<FollowButton>` after creator bio
+
+**Why parked:** Follows are only meaningful when there is a feed — without
+Posts, following a creator has no visible effect for the fan. The fan account
+system (Fan Feed section) is also parked, making the follow graph orphaned.
+
+**Re-enable when:** Fan Feed and Posts are re-enabled so that follows drive a
+visible feed experience.
+
+---
+
 ## Fan Membership Tiers (Creator-defined tiers for fans)
 
 **What it is:** Creators define Bronze / Silver / Gold style subscription tiers
