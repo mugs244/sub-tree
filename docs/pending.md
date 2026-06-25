@@ -198,18 +198,39 @@ multi-creator studio accounts.
 
 ---
 
+## Pro Tier
+
+**What it is:** UGX 15,000/month plan. Includes: reduced donation fee (3%),
+custom colours + fonts, advanced analytics, custom domain (not implemented),
+fundraiser campaigns (parked separately), affiliate promoter access (parked
+separately), priority support, 5-day free trial.
+
+**Code that exists:**
+- `components/PlanPicker.tsx` — plan selection component (FREE card only now)
+- `app/onboarding/plan/page.tsx` — now just redirects to `/dashboard`
+- `app/page.tsx` — pricing section simplified to Free-only
+- `app/api/onboarding/start-trial/` — route that sets tier to PRO with `trial_ends_at`
+- Schema: `UserTier` enum retains `PRO` value (no migration needed)
+
+**Why parked:** Custom domain — the marquee Pro feature — is not implemented.
+Adding a paywall before the free-tier value is proven increases sign-up friction
+with no offsetting benefit at current volumes.
+
+**Re-enable when:** Free tier is live and validated, custom domain is
+implemented or a clearly differentiated Pro feature set is chosen, and creators
+are actively asking for paid features.
+
+---
+
 ## Active product after parking
 
-What remains (Free + Pro):
+What remains (Free only):
 
-| Feature | Free | Pro |
-|---|---|---|
-| Link page + links manager | Yes | Yes |
-| Donations (MoMo) | Yes | Yes |
-| Transaction history + CSV | Yes | Yes |
-| Page view + click analytics | Yes | Yes |
-| 5 standard theme presets | Yes | Yes |
-| Extended Pro theme presets | — | Yes |
-| Custom colors + fonts | — | Yes |
-| Hide Sub-tree branding | — | Yes |
-| Platform donation fee | 5% | 3% |
+| Feature | Free |
+|---|---|
+| Link page + links manager | Yes |
+| Donations (MoMo) | Yes |
+| Transaction history + CSV | Yes |
+| Page view + click analytics | Yes |
+| 5 standard theme presets | Yes |
+| Platform donation fee | 5% |

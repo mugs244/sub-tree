@@ -31,14 +31,14 @@ const TESTIMONIALS = [
     initial: "A",
   },
   {
-    quote: "The donation fee on Pro paid for itself in the first week. Supporters from the diaspora send larger amounts when they don’t have to use a card.",
+    quote: "Setting up took ten minutes. Now my audience can find everything from one link and support me without needing a bank card.",
     name: "Joel Mukasa",
-    role: "Musician",
+    role: "Musician · Kampala",
     handle: "@joelm",
     initial: "J",
   },
   {
-    quote: "We run a small youth choir. Sub-tree gave us one page for the schedule, the donate button and a way to sell rehearsal recordings — all in shillings.",
+    quote: "We run a small youth choir. Sub-tree gave us one page for the schedule, the donate button, and a way for the community to find us — all in shillings.",
     name: "St. Andrew’s Voices",
     role: "Choir · Entebbe",
     handle: "@standrews",
@@ -64,35 +64,18 @@ const TIERS: Tier[] = [
   {
     id: "free",
     name: "Free",
-    blurb: "All your links, one page.",
+    blurb: "All your links, one page — forever free.",
     price: null,
     cta: "Get started",
     href: "/sign-up",
-    highlight: false,
-    features: [
-      { label: "Donation fee",         value: "5%" },
-      { label: "Themes",               value: "5 presets" },
-      { label: "Fundraiser campaigns", value: false },
-      { label: "Sell products",        value: false },
-      { label: "Affiliate",            value: false },
-      { label: "Members",              value: "1" },
-    ],
-  },
-  {
-    id: "pro",
-    name: "Pro",
-    blurb: "Customise everything. Run campaigns.",
-    price: 15000,
-    cta: "Get Pro",
-    href: "/api/plan-redirect?plan=pro",
     highlight: true,
     features: [
-      { label: "Donation fee",         value: "3%" },
-      { label: "Themes",               value: "Custom colours + fonts" },
-      { label: "Fundraiser campaigns", value: true },
-      { label: "Sell products",        value: false },
-      { label: "Affiliate",            value: "Promoter" },
-      { label: "Members",              value: "1" },
+      { label: "Donation fee",      value: "5%" },
+      { label: "Themes",            value: "5 presets" },
+      { label: "Links",             value: "Unlimited" },
+      { label: "Analytics",         value: "Page views + clicks" },
+      { label: "Mobile money",      value: "MTN + Airtel" },
+      { label: "Members",           value: "1" },
     ],
   },
 ]
@@ -309,19 +292,19 @@ export default function LandingPage() {
         <section id="pricing" className="mx-auto max-w-5xl px-4 sm:px-6 py-20">
           <div className="text-center mb-14">
             <h2 className="text-2xl sm:text-3xl font-semibold tracking-tight mb-3">
-              Simple pricing, in shillings
+              Free. No credit card needed.
             </h2>
             <p className="text-muted-foreground text-sm max-w-md mx-auto">
-              Start free. Upgrade when you outgrow it — we lower the donation fee on every paid plan.
+              Everything you need to share your links and accept mobile money donations — at no cost.
             </p>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-2xl mx-auto w-full">
+          <div className="max-w-sm mx-auto w-full">
             {TIERS.map((tier) => (
               <PricingCard key={tier.id} tier={tier} />
             ))}
           </div>
           <p className="mt-8 text-center text-[11px] text-muted-foreground font-mono">
-            All prices in UGX. Cancel any time. Donation fees are on top — Sub-tree never holds your money.
+            5% donation fee applies. Sub-tree never holds your money.
           </p>
         </section>
 
