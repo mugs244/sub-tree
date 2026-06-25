@@ -119,6 +119,10 @@ export default async function PublicProfilePage({ params }: Props) {
 
   const themeStyle = { ...presetStyle, ...customOverrides } as React.CSSProperties
 
+  // Donate button text: midnight preset uses a light accent so needs dark text;
+  // all other presets use a dark accent so need white text.
+  const donateTextColor = profile.theme_preset === "midnight" ? "#0f172a" : "#ffffff"
+
   const isPro = (["PRO", "BUSINESS", "CONTENT_HOUSE"] as string[]).includes(user.tier)
   const showBranding = !isPro || !profile.hide_branding
 
@@ -189,7 +193,7 @@ export default async function PublicProfilePage({ params }: Props) {
         <div className="pt-2">
           <a
             href={`/${username}/donate`}
-            style={{ color: "var(--primary-foreground)" }}
+            style={{ color: donateTextColor }}
             className={[
               "flex items-center justify-center w-full px-4 py-3 text-sm font-medium bg-primary hover:bg-accent-dark transition-colors duration-150",
               buttonClass,
