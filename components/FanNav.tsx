@@ -1,8 +1,7 @@
 "use client"
 
 import Link from "next/link"
-import { usePathname } from "next/navigation"
-import { SignOutButton } from "@clerk/nextjs"
+import { usePathname, useRouter } from "next/navigation"
 import { Rss, Users, Heart, LayoutDashboard, LogOut, ExternalLink } from "lucide-react"
 import { Logo } from "@/components/brand/Logo"
 
@@ -21,9 +20,15 @@ interface Props {
 
 export function FanNav({ children, username, displayName, isCreator }: Props) {
   const pathname = usePathname()
+  const router = useRouter()
 
   function isActive(href: string) {
     return pathname === href || pathname.startsWith(href + "/")
+  }
+
+  async function handleSignOut() {
+    await fetch("/api/auth/signout", { method: "POST" })
+    router.push("/sign-in")
   }
 
   return (
@@ -76,12 +81,10 @@ export function FanNav({ children, username, displayName, isCreator }: Props) {
               View profile
             </Link>
           )}
-          <SignOutButton>
-            <button className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-muted-foreground hover:bg-surface hover:text-foreground transition-colors w-full">
-              <LogOut className="h-4 w-4 shrink-0" strokeWidth={1.5} />
-              Sign out
-            </button>
-          </SignOutButton>
+          <button onClick={() => void handleSignOut()} className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-muted-foreground hover:bg-surface hover:text-foreground transition-colors w-full">
+            <LogOut className="h-4 w-4 shrink-0" strokeWidth={1.5} />
+            Sign out
+          </button>
           <div className="px-3 py-2">
             <p className="text-sm font-medium text-foreground truncate">{displayName}</p>
             {username && <p className="text-xs text-muted-foreground font-mono">@{username}</p>}
@@ -95,11 +98,9 @@ export function FanNav({ children, username, displayName, isCreator }: Props) {
           <Link href="/fan/feed">
             <Logo variant="icon" />
           </Link>
-          <SignOutButton>
-            <button className="flex items-center justify-center h-9 w-9 rounded-lg text-muted-foreground hover:bg-surface hover:text-foreground transition-colors">
-              <LogOut className="h-5 w-5" strokeWidth={1.5} />
-            </button>
-          </SignOutButton>
+          <button onClick={() => void handleSignOut()} className="flex items-center justify-center h-9 w-9 rounded-lg text-muted-foreground hover:bg-surface hover:text-foreground transition-colors">
+            <LogOut className="h-5 w-5" strokeWidth={1.5} />
+          </button>
         </header>
 
         <main className="flex-1 pb-16 md:pb-0 overflow-auto">{children}</main>

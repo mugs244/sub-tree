@@ -1,12 +1,11 @@
 import { NextResponse } from "next/server"
-import { auth } from "@clerk/nextjs/server"
+import { getSession } from "@/lib/auth/session"
+import { isAdmin } from "@/lib/services/admin"
 import { prisma } from "@/lib/db"
 import { updateSetting } from "@/lib/services/platform-settings"
 import { z } from "zod"
 
 type Props = { params: Promise<{ key: string }> }
-
-const ADMIN_IDS = (process.env.ADMIN_CLERK_IDS ?? "").split(",").filter(Boolean)
 
 const schema = z.object({ value: z.string().min(1) })
 
@@ -35,10 +34,11 @@ function validateSettingValue(key: string, value: string): string | null {
 }
 
 export async function PATCH(req: Request, { params }: Props): Promise<NextResponse> {
-  const { userId } = await auth()
-  if (!userId || !ADMIN_IDS.includes(userId)) {
+  const session = await getSession()
+  if (!session || !isAdmin(session.userId)) {
     return NextResponse.json({ error: "UNAUTHORIZED" }, { status: 401 })
   }
+  const userId = session.userId
 
   const { key } = await params
 
@@ -62,7 +62,8 @@ export async function PATCH(req: Request, { params }: Props): Promise<NextRespon
     return NextResponse.json({ error: "VALIDATION_ERROR", message: validationError }, { status: 400 })
   }
 
-  const dbUser = await prisma.user.findFirst({ where: { clerk_user_id: userId } })
+  // Verify the user exists in DB (belt-and-suspenders)
+  const dbUser = await prisma.user.findUnique({ where: { id: userId }, select: { id: true } })
   if (!dbUser) {
     return NextResponse.json({ error: "UNAUTHORIZED" }, { status: 401 })
   }

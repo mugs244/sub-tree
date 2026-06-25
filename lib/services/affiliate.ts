@@ -5,7 +5,6 @@ import { getSettingAsNumber } from "@/lib/services/platform-settings"
 export class AffiliateError extends Error {
   constructor(
     public readonly code:
-      | "USER_NOT_FOUND"
       | "NOT_FOUND"
       | "FORBIDDEN"
       | "VALIDATION_ERROR"
@@ -48,23 +47,11 @@ export const productAffiliateSchema = z.object({
   affiliate_open: z.boolean(),
 })
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
-
-async function resolveUser(clerkUserId: string) {
-  const user = await prisma.user.findUnique({
-    where: { clerk_user_id: clerkUserId },
-    select: { id: true, tier: true, username: true },
-  })
-  if (!user) throw new AffiliateError("USER_NOT_FOUND", "User record not found")
-  return user
-}
-
 // ── Merchant side ─────────────────────────────────────────────────────────────
 
-export async function listInboundRequests(clerkUserId: string) {
-  const user = await resolveUser(clerkUserId)
+export async function listInboundRequests(userId: number) {
   return prisma.affiliateRelationship.findMany({
-    where: { shop_user_id: user.id, status: "PENDING" },
+    where: { shop_user_id: userId, status: "PENDING" },
     orderBy: { created_at: "desc" },
     select: {
       id: true, initiated_by: true, requested_at: true,
@@ -75,10 +62,9 @@ export async function listInboundRequests(clerkUserId: string) {
   })
 }
 
-export async function listAllAffiliates(clerkUserId: string) {
-  const user = await resolveUser(clerkUserId)
+export async function listAllAffiliates(userId: number) {
   return prisma.affiliateRelationship.findMany({
-    where: { shop_user_id: user.id, status: "APPROVED" },
+    where: { shop_user_id: userId, status: "APPROVED" },
     orderBy: { reviewed_at: "desc" },
     select: {
       id: true, reviewed_at: true,
@@ -93,10 +79,9 @@ export async function listAllAffiliates(clerkUserId: string) {
   })
 }
 
-export async function listOldAffiliates(clerkUserId: string) {
-  const user = await resolveUser(clerkUserId)
+export async function listOldAffiliates(userId: number) {
   return prisma.affiliateRelationship.findMany({
-    where: { shop_user_id: user.id, status: { in: ["REJECTED", "SUSPENDED"] } },
+    where: { shop_user_id: userId, status: { in: ["REJECTED", "SUSPENDED"] } },
     orderBy: { reviewed_at: "desc" },
     select: {
       id: true, status: true, reviewed_at: true, rejected_reason: true,
@@ -107,21 +92,20 @@ export async function listOldAffiliates(clerkUserId: string) {
   })
 }
 
-export async function approveRequest(clerkUserId: string, relationshipId: number, input: unknown) {
+export async function approveRequest(userId: number, relationshipId: number, input: unknown) {
   const parsed = approveRequestSchema.safeParse(input)
   if (!parsed.success) {
     throw new AffiliateError("VALIDATION_ERROR", parsed.error.issues[0]?.message ?? "Invalid input")
   }
 
-  const user = await resolveUser(clerkUserId)
   const rel = await prisma.affiliateRelationship.findUnique({ where: { id: relationshipId } })
   if (!rel) throw new AffiliateError("NOT_FOUND", "Relationship not found")
-  if (rel.shop_user_id !== user.id) throw new AffiliateError("FORBIDDEN", "Not your relationship")
+  if (rel.shop_user_id !== userId) throw new AffiliateError("FORBIDDEN", "Not your relationship")
   if (rel.status !== "PENDING") throw new AffiliateError("NOT_PENDING", "Request is not pending")
 
   // Verify all product_ids belong to this merchant and are affiliate_open
   const products = await prisma.product.findMany({
-    where: { id: { in: parsed.data.product_ids }, user_id: user.id, affiliate_open: true },
+    where: { id: { in: parsed.data.product_ids }, user_id: userId, affiliate_open: true },
     select: { id: true, name: true },
   })
   const validProducts = products
@@ -171,16 +155,15 @@ export async function approveRequest(clerkUserId: string, relationshipId: number
   })
 }
 
-export async function rejectRequest(clerkUserId: string, relationshipId: number, input: unknown) {
+export async function rejectRequest(userId: number, relationshipId: number, input: unknown) {
   const parsed = rejectRequestSchema.safeParse(input)
   if (!parsed.success) {
     throw new AffiliateError("VALIDATION_ERROR", parsed.error.issues[0]?.message ?? "Invalid input")
   }
 
-  const user = await resolveUser(clerkUserId)
   const rel = await prisma.affiliateRelationship.findUnique({ where: { id: relationshipId } })
   if (!rel) throw new AffiliateError("NOT_FOUND", "Relationship not found")
-  if (rel.shop_user_id !== user.id) throw new AffiliateError("FORBIDDEN", "Not your relationship")
+  if (rel.shop_user_id !== userId) throw new AffiliateError("FORBIDDEN", "Not your relationship")
   if (rel.status !== "PENDING") throw new AffiliateError("NOT_PENDING", "Request is not pending")
 
   await prisma.affiliateRelationship.update({
@@ -193,14 +176,14 @@ export async function rejectRequest(clerkUserId: string, relationshipId: number,
   })
 }
 
-export async function inviteAffiliate(clerkUserId: string, input: unknown) {
+export async function inviteAffiliate(userId: number, input: unknown) {
   const parsed = inviteSchema.safeParse(input)
   if (!parsed.success) {
     throw new AffiliateError("VALIDATION_ERROR", parsed.error.issues[0]?.message ?? "Invalid input")
   }
 
-  const user = await resolveUser(clerkUserId)
-  if (!BUSINESS_TIERS.includes(user.tier)) {
+  const user = await prisma.user.findUnique({ where: { id: userId }, select: { id: true, tier: true } })
+  if (!user || !BUSINESS_TIERS.includes(user.tier)) {
     throw new AffiliateError("WRONG_TIER", "Business tier required to invite affiliates")
   }
 
@@ -209,18 +192,18 @@ export async function inviteAffiliate(clerkUserId: string, input: unknown) {
     select: { id: true, tier: true },
   })
   if (!target) throw new AffiliateError("NOT_FOUND", "Creator not found")
-  if (target.id === user.id) throw new AffiliateError("SELF_REFERRAL", "Cannot affiliate with yourself")
+  if (target.id === userId) throw new AffiliateError("SELF_REFERRAL", "Cannot affiliate with yourself")
   if (!PRO_TIERS.includes(target.tier)) {
     throw new AffiliateError("WRONG_TIER", "Target must be a Pro or higher creator")
   }
 
   const existing = await prisma.affiliateRelationship.findUnique({
-    where: { shop_user_id_affiliate_user_id: { shop_user_id: user.id, affiliate_user_id: target.id } },
+    where: { shop_user_id_affiliate_user_id: { shop_user_id: userId, affiliate_user_id: target.id } },
   })
   if (existing) throw new AffiliateError("ALREADY_EXISTS", "Relationship already exists")
 
   const products = await prisma.product.findMany({
-    where: { id: { in: parsed.data.product_ids }, user_id: user.id, affiliate_open: true },
+    where: { id: { in: parsed.data.product_ids }, user_id: userId, affiliate_open: true },
     select: { id: true },
   })
   const validIds = products.map((p) => p.id)
@@ -228,7 +211,7 @@ export async function inviteAffiliate(clerkUserId: string, input: unknown) {
   await prisma.$transaction(async (tx) => {
     const rel = await tx.affiliateRelationship.create({
       data: {
-        shop_user_id: user.id,
+        shop_user_id: userId,
         affiliate_user_id: target.id,
         initiated_by: "MERCHANT_INVITE",
         status: "APPROVED",
@@ -242,20 +225,19 @@ export async function inviteAffiliate(clerkUserId: string, input: unknown) {
   })
 }
 
-export async function updateGrants(clerkUserId: string, relationshipId: number, input: unknown) {
+export async function updateGrants(userId: number, relationshipId: number, input: unknown) {
   const parsed = updateGrantsSchema.safeParse(input)
   if (!parsed.success) {
     throw new AffiliateError("VALIDATION_ERROR", parsed.error.issues[0]?.message ?? "Invalid input")
   }
 
-  const user = await resolveUser(clerkUserId)
   const rel = await prisma.affiliateRelationship.findUnique({ where: { id: relationshipId } })
   if (!rel) throw new AffiliateError("NOT_FOUND", "Relationship not found")
-  if (rel.shop_user_id !== user.id) throw new AffiliateError("FORBIDDEN", "Not your relationship")
+  if (rel.shop_user_id !== userId) throw new AffiliateError("FORBIDDEN", "Not your relationship")
   if (rel.status !== "APPROVED") throw new AffiliateError("NOT_APPROVED", "Relationship is not approved")
 
   const products = await prisma.product.findMany({
-    where: { id: { in: parsed.data.product_ids }, user_id: user.id, affiliate_open: true },
+    where: { id: { in: parsed.data.product_ids }, user_id: userId, affiliate_open: true },
     select: { id: true },
   })
   const validIds = products.map((p) => p.id)
@@ -278,11 +260,10 @@ export async function updateGrants(clerkUserId: string, relationshipId: number, 
   })
 }
 
-export async function suspendAffiliate(clerkUserId: string, relationshipId: number) {
-  const user = await resolveUser(clerkUserId)
+export async function suspendAffiliate(userId: number, relationshipId: number) {
   const rel = await prisma.affiliateRelationship.findUnique({ where: { id: relationshipId } })
   if (!rel) throw new AffiliateError("NOT_FOUND", "Relationship not found")
-  if (rel.shop_user_id !== user.id) throw new AffiliateError("FORBIDDEN", "Not your relationship")
+  if (rel.shop_user_id !== userId) throw new AffiliateError("FORBIDDEN", "Not your relationship")
   if (rel.status !== "APPROVED") throw new AffiliateError("NOT_APPROVED", "Relationship is not approved")
 
   await prisma.affiliateRelationship.update({
@@ -291,16 +272,15 @@ export async function suspendAffiliate(clerkUserId: string, relationshipId: numb
   })
 }
 
-export async function updateProductAffiliate(clerkUserId: string, productId: number, input: unknown) {
+export async function updateProductAffiliate(userId: number, productId: number, input: unknown) {
   const parsed = productAffiliateSchema.safeParse(input)
   if (!parsed.success) {
     throw new AffiliateError("VALIDATION_ERROR", parsed.error.issues[0]?.message ?? "Invalid input")
   }
 
-  const user = await resolveUser(clerkUserId)
   const product = await prisma.product.findUnique({ where: { id: productId } })
   if (!product) throw new AffiliateError("NOT_FOUND", "Product not found")
-  if (product.user_id !== user.id) throw new AffiliateError("FORBIDDEN", "Not your product")
+  if (product.user_id !== userId) throw new AffiliateError("FORBIDDEN", "Not your product")
 
   await prisma.product.update({
     where: { id: productId },
@@ -310,9 +290,9 @@ export async function updateProductAffiliate(clerkUserId: string, productId: num
 
 // ── Affiliate (promoter) side ─────────────────────────────────────────────────
 
-export async function applyAsAffiliate(clerkUserId: string, merchantHandle: string) {
-  const user = await resolveUser(clerkUserId)
-  if (!PRO_TIERS.includes(user.tier)) {
+export async function applyAsAffiliate(userId: number, merchantHandle: string) {
+  const user = await prisma.user.findUnique({ where: { id: userId }, select: { id: true, tier: true } })
+  if (!user || !PRO_TIERS.includes(user.tier)) {
     throw new AffiliateError("WRONG_TIER", "Pro tier or higher required to become an affiliate")
   }
 
@@ -324,26 +304,25 @@ export async function applyAsAffiliate(clerkUserId: string, merchantHandle: stri
   if (!BUSINESS_TIERS.includes(merchant.tier)) {
     throw new AffiliateError("WRONG_TIER", "Target is not a Business creator")
   }
-  if (merchant.id === user.id) throw new AffiliateError("SELF_REFERRAL", "Cannot affiliate with yourself")
+  if (merchant.id === userId) throw new AffiliateError("SELF_REFERRAL", "Cannot affiliate with yourself")
 
   const existing = await prisma.affiliateRelationship.findUnique({
-    where: { shop_user_id_affiliate_user_id: { shop_user_id: merchant.id, affiliate_user_id: user.id } },
+    where: { shop_user_id_affiliate_user_id: { shop_user_id: merchant.id, affiliate_user_id: userId } },
   })
   if (existing) throw new AffiliateError("ALREADY_EXISTS", "You already have a relationship with this merchant")
 
   await prisma.affiliateRelationship.create({
     data: {
       shop_user_id: merchant.id,
-      affiliate_user_id: user.id,
+      affiliate_user_id: userId,
       initiated_by: "CREATOR_REQUEST",
     },
   })
 }
 
-export async function listMyShops(clerkUserId: string) {
-  const user = await resolveUser(clerkUserId)
+export async function listMyShops(userId: number) {
   return prisma.affiliateRelationship.findMany({
-    where: { affiliate_user_id: user.id, status: "APPROVED" },
+    where: { affiliate_user_id: userId, status: "APPROVED" },
     orderBy: { reviewed_at: "desc" },
     select: {
       id: true,
@@ -362,12 +341,10 @@ export async function listMyShops(clerkUserId: string) {
   })
 }
 
-export async function getEarnings(clerkUserId: string) {
-  const user = await resolveUser(clerkUserId)
-
+export async function getEarnings(userId: number) {
   const pending = await prisma.order.aggregate({
     where: {
-      affiliate_user_id: user.id,
+      affiliate_user_id: userId,
       escrow_status: "RELEASED",
       affiliate_paid_at: null,
     },
@@ -376,7 +353,7 @@ export async function getEarnings(clerkUserId: string) {
   })
 
   const paid = await prisma.order.aggregate({
-    where: { affiliate_user_id: user.id, affiliate_paid_at: { not: null } },
+    where: { affiliate_user_id: userId, affiliate_paid_at: { not: null } },
     _sum: { affiliate_amount: true },
     _count: { id: true },
   })
@@ -389,10 +366,9 @@ export async function getEarnings(clerkUserId: string) {
   }
 }
 
-export async function listPayouts(clerkUserId: string) {
-  const user = await resolveUser(clerkUserId)
+export async function listPayouts(userId: number) {
   return prisma.affiliatePayoutRecord.findMany({
-    where: { affiliate_user_id: user.id },
+    where: { affiliate_user_id: userId },
     orderBy: { created_at: "desc" },
     select: {
       id: true, period_start: true, period_end: true, total_amount: true,

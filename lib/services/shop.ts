@@ -7,7 +7,6 @@ import { getFeeRate, getSettingAsNumber } from "@/lib/services/platform-settings
 export class ShopError extends Error {
   constructor(
     public readonly code:
-      | "USER_NOT_FOUND"
       | "NOT_FOUND"
       | "FORBIDDEN"
       | "VALIDATION_ERROR"
@@ -72,15 +71,6 @@ export const initiateOrderSchema = z.object({
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
-async function resolveUser(clerkUserId: string) {
-  const user = await prisma.user.findUnique({
-    where: { clerk_user_id: clerkUserId },
-    select: { id: true, tier: true },
-  })
-  if (!user) throw new ShopError("USER_NOT_FOUND", "User record not found")
-  return user
-}
-
 async function resolveProduct(id: number, userId: number) {
   const p = await prisma.product.findUnique({ where: { id } })
   if (!p) throw new ShopError("NOT_FOUND", "Product not found")
@@ -90,10 +80,9 @@ async function resolveProduct(id: number, userId: number) {
 
 // ── Queries ───────────────────────────────────────────────────────────────────
 
-export async function listMyProducts(clerkUserId: string) {
-  const user = await resolveUser(clerkUserId)
+export async function listMyProducts(userId: number) {
   return prisma.product.findMany({
-    where: { user_id: user.id },
+    where: { user_id: userId },
     orderBy: { created_at: "desc" },
     select: {
       id: true, name: true, description: true, price: true,
@@ -140,11 +129,10 @@ export async function getPublicShop(username: string) {
   })
 }
 
-export async function listMyOrders(clerkUserId: string, page = 1) {
-  const user = await resolveUser(clerkUserId)
+export async function listMyOrders(userId: number, page = 1) {
   const take = 50
   return prisma.order.findMany({
-    where: { seller_user_id: user.id, payment_confirmed: true },
+    where: { seller_user_id: userId, payment_confirmed: true },
     orderBy: { created_at: "desc" },
     skip: (page - 1) * take,
     take,
@@ -158,19 +146,18 @@ export async function listMyOrders(clerkUserId: string, page = 1) {
   })
 }
 
-export async function getEscrowSummary(clerkUserId: string) {
-  const user = await resolveUser(clerkUserId)
+export async function getEscrowSummary(userId: number) {
   const held = await prisma.order.aggregate({
-    where: { seller_user_id: user.id, payment_confirmed: true, escrow_status: "HELD" },
+    where: { seller_user_id: userId, payment_confirmed: true, escrow_status: "HELD" },
     _sum: { seller_amount: true },
     _count: { id: true },
   })
   const disputed = await prisma.order.count({
-    where: { seller_user_id: user.id, payment_confirmed: true, escrow_status: "DISPUTED" },
+    where: { seller_user_id: userId, payment_confirmed: true, escrow_status: "DISPUTED" },
   })
   const next = await prisma.order.findFirst({
     where: {
-      seller_user_id: user.id, payment_confirmed: true,
+      seller_user_id: userId, payment_confirmed: true,
       escrow_status: "HELD", dispute_raised_at: null,
     },
     orderBy: { escrow_release_at: "asc" },
@@ -197,21 +184,21 @@ export async function getOrderStatus(idempotencyKey: string) {
 
 // ── Mutations ─────────────────────────────────────────────────────────────────
 
-export async function createProduct(clerkUserId: string, input: unknown) {
+export async function createProduct(userId: number, input: unknown) {
   const parsed = createProductSchema.safeParse(input)
   if (!parsed.success) {
     throw new ShopError("VALIDATION_ERROR", parsed.error.issues[0]?.message ?? "Invalid input")
   }
 
-  const user = await resolveUser(clerkUserId)
-  if (!BUSINESS_TIERS.includes(user.tier)) {
+  const user = await prisma.user.findUnique({ where: { id: userId }, select: { tier: true } })
+  if (!user || !BUSINESS_TIERS.includes(user.tier)) {
     throw new ShopError("WRONG_TIER", "Business tier required to create products")
   }
 
   const { price, file_size_bytes, affiliate_rate, ...rest } = parsed.data
   return prisma.product.create({
     data: {
-      user_id: user.id,
+      user_id: userId,
       price: BigInt(price),
       file_size_bytes: file_size_bytes ? BigInt(file_size_bytes) : null,
       affiliate_rate: affiliate_rate,
@@ -221,14 +208,13 @@ export async function createProduct(clerkUserId: string, input: unknown) {
   })
 }
 
-export async function updateProduct(clerkUserId: string, id: number, input: unknown) {
+export async function updateProduct(userId: number, id: number, input: unknown) {
   const parsed = updateProductSchema.safeParse(input)
   if (!parsed.success) {
     throw new ShopError("VALIDATION_ERROR", parsed.error.issues[0]?.message ?? "Invalid input")
   }
 
-  const user = await resolveUser(clerkUserId)
-  await resolveProduct(id, user.id)
+  await resolveProduct(id, userId)
 
   const { price, file_size_bytes, ...rest } = parsed.data
   await prisma.product.update({
@@ -243,9 +229,8 @@ export async function updateProduct(clerkUserId: string, id: number, input: unkn
   })
 }
 
-export async function deactivateProduct(clerkUserId: string, id: number) {
-  const user = await resolveUser(clerkUserId)
-  await resolveProduct(id, user.id)
+export async function deactivateProduct(userId: number, id: number) {
+  await resolveProduct(id, userId)
   await prisma.product.update({ where: { id }, data: { status: "INACTIVE" } })
 }
 
@@ -476,10 +461,9 @@ export async function raiseDispute(orderId: number, buyerPhone: string) {
   })
 }
 
-export async function releaseBySeller(clerkUserId: string, orderId: number) {
-  const user = await resolveUser(clerkUserId)
+export async function releaseBySeller(userId: number, orderId: number) {
   const order = await prisma.order.findUnique({
-    where: { id: orderId, seller_user_id: user.id },
+    where: { id: orderId, seller_user_id: userId },
     select: { payment_confirmed: true, escrow_status: true },
   })
   if (!order || !order.payment_confirmed) throw new ShopError("ORDER_NOT_FOUND", "Order not found")
@@ -494,7 +478,7 @@ export async function releaseBySeller(clerkUserId: string, orderId: number) {
       data: {
         order_id: orderId,
         event_type: "ESCROW_RELEASED",
-        actor_id: user.id,
+        actor_id: userId,
         metadata: JSON.parse(JSON.stringify({ method: "seller_manual" })),
       },
     })

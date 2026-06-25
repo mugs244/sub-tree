@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation"
-import { auth } from "@clerk/nextjs/server"
+import { getSession } from "@/lib/auth/session"
 import { isAdmin } from "@/lib/services/admin"
 import { prisma } from "@/lib/db"
 import { AdminSettingsClient } from "./AdminSettingsClient"
@@ -7,8 +7,8 @@ import { AdminSettingsClient } from "./AdminSettingsClient"
 export const metadata = { title: "Platform Settings — Admin" }
 
 export default async function AdminSettingsPage() {
-  const { userId } = await auth()
-  if (!userId || !isAdmin(userId)) redirect("/")
+  const session = await getSession()
+  if (!session || !isAdmin(session.userId)) redirect("/")
 
   const [settings, auditLogs] = await Promise.all([
     prisma.platformSetting.findMany({ orderBy: { key: "asc" } }),

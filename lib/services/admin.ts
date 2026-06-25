@@ -1,11 +1,12 @@
 import { prisma } from "@/lib/db"
 
-export function isAdmin(clerkUserId: string): boolean {
-  const adminIds = (process.env.ADMIN_CLERK_USER_IDS ?? "")
+export function isAdmin(userId: number): boolean {
+  const adminIds = (process.env.ADMIN_USER_IDS ?? "")
     .split(",")
     .map((s) => s.trim())
     .filter(Boolean)
-  return adminIds.includes(clerkUserId)
+    .map(Number)
+  return adminIds.includes(userId)
 }
 
 export async function listClaims(status?: "PENDING" | "APPROVED" | "REJECTED") {

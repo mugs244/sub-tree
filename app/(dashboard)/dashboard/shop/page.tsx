@@ -1,8 +1,8 @@
-import { auth } from "@clerk/nextjs/server"
+import { getSession } from "@/lib/auth/session"
 import { redirect } from "next/navigation"
 import Link from "next/link"
 import { prisma } from "@/lib/db"
-import { Plus, ShoppingBag, Copy, TrendingUp, Clock, CheckCircle2 } from "lucide-react"
+import { Plus, ShoppingBag, TrendingUp, Clock, CheckCircle2 } from "lucide-react"
 import { ProductCard } from "@/components/ProductCard"
 import { getEscrowSummary } from "@/lib/services/shop"
 import { ShopLinkCopy } from "@/components/ShopLinkCopy"
@@ -14,11 +14,12 @@ function formatUGX(n: bigint | number) {
 }
 
 export default async function ShopPage() {
-  const { userId } = await auth()
-  if (!userId) redirect("/sign-in")
+  const session = await getSession()
+  if (!session) redirect("/sign-in")
+  const userId = session.userId
 
   const user = await prisma.user.findUnique({
-    where: { clerk_user_id: userId },
+    where: { id: userId },
     select: { id: true, tier: true, username: true },
   })
   if (!user || !BUSINESS_TIERS.includes(user.tier)) redirect("/dashboard")

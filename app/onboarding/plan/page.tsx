@@ -1,15 +1,16 @@
 import { redirect } from "next/navigation"
 import { cookies } from "next/headers"
-import { auth } from "@clerk/nextjs/server"
+import { getSession } from "@/lib/auth/session"
 import { prisma } from "@/lib/db"
 import { PlanPicker } from "@/components/PlanPicker"
 
 export default async function PlanOnboardingPage() {
-  const { userId } = await auth()
-  if (!userId) redirect("/sign-in")
+  const session = await getSession()
+  if (!session) redirect("/sign-in")
+  const userId = session.userId
 
   const user = await prisma.user.findUnique({
-    where: { clerk_user_id: userId },
+    where: { id: userId },
     select: {
       username: true,
       tier: true,
@@ -20,7 +21,6 @@ export default async function PlanOnboardingPage() {
   if (!user?.username) redirect("/onboarding/username")
   if (!user.profile) redirect("/onboarding/profile")
 
-  // Already on a paid plan — skip directly to dashboard
   if (user.tier !== "FREE") redirect("/dashboard")
 
   const cookieStore = await cookies()

@@ -1,11 +1,12 @@
 import { NextResponse } from "next/server"
-import { auth } from "@clerk/nextjs/server"
+import { getSession } from "@/lib/auth/session"
 import { claimUsernameSchema } from "@/lib/validators/username"
 import { claimUsername, UsernameError } from "@/lib/services/username"
 
 export async function POST(req: Request): Promise<NextResponse> {
-  const { userId } = await auth()
-  if (!userId) return new NextResponse("Unauthorized", { status: 401 })
+  const session = await getSession()
+  if (!session) return new NextResponse("Unauthorized", { status: 401 })
+  const userId = session.userId
 
   let body: unknown
   try {

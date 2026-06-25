@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server"
-import { auth } from "@clerk/nextjs/server"
+import { getSession } from "@/lib/auth/session"
 import { deleteTier, TierError, updateTier } from "@/lib/services/membership-tiers"
 
 function getTierId(id: string) {
@@ -9,8 +9,9 @@ function getTierId(id: string) {
 }
 
 export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
-  const { userId } = await auth()
-  if (!userId) return NextResponse.json({ error: "Unauthenticated" }, { status: 401 })
+  const session = await getSession()
+  if (!session) return NextResponse.json({ error: "Unauthenticated" }, { status: 401 })
+  const userId = session.userId
 
   const { id } = await params
   const tierId = getTierId(id)
@@ -42,8 +43,9 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
 }
 
 export async function DELETE(_req: Request, { params }: { params: Promise<{ id: string }> }) {
-  const { userId } = await auth()
-  if (!userId) return NextResponse.json({ error: "Unauthenticated" }, { status: 401 })
+  const session = await getSession()
+  if (!session) return NextResponse.json({ error: "Unauthenticated" }, { status: 401 })
+  const userId = session.userId
 
   const { id } = await params
   const tierId = getTierId(id)

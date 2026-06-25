@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server"
-import { auth } from "@clerk/nextjs/server"
+import { getSession } from "@/lib/auth/session"
 import { prisma } from "@/lib/db"
 import { checkRateLimit } from "@/lib/rateLimit"
 
@@ -16,10 +16,10 @@ export async function POST(req: Request, { params }: Params): Promise<NextRespon
   }
 
   // Check if viewer is the profile owner
-  const { userId } = await auth()
-  if (userId) {
+  const session = await getSession()
+  if (session) {
     const owner = await prisma.user.findUnique({
-      where: { clerk_user_id: userId },
+      where: { id: session.userId },
       select: { username: true },
     })
     // Skip increment if viewer owns the profile

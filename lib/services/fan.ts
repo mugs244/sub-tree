@@ -3,7 +3,6 @@ import { prisma } from "@/lib/db"
 export class FanError extends Error {
   constructor(
     public readonly code:
-      | "USER_NOT_FOUND"
       | "CREATOR_NOT_FOUND"
       | "ALREADY_FOLLOWING"
       | "NOT_FOLLOWING"
@@ -15,38 +14,25 @@ export class FanError extends Error {
   }
 }
 
-async function resolveUser(clerkUserId: string) {
-  const user = await prisma.user.findUnique({
-    where: { clerk_user_id: clerkUserId },
-    select: { id: true, account_type: true },
-  })
-  if (!user) throw new FanError("USER_NOT_FOUND", "User not found")
-  return user
-}
-
-export async function followCreator(clerkUserId: string, creatorHandle: string) {
-  const fan = await resolveUser(clerkUserId)
-
+export async function followCreator(userId: number, creatorHandle: string) {
   const creator = await prisma.user.findUnique({
     where: { username: creatorHandle },
     select: { id: true, deleted_at: true },
   })
   if (!creator || creator.deleted_at) throw new FanError("CREATOR_NOT_FOUND", "Creator not found")
-  if (creator.id === fan.id) throw new FanError("SELF_FOLLOW", "You cannot follow yourself")
+  if (creator.id === userId) throw new FanError("SELF_FOLLOW", "You cannot follow yourself")
 
   const existing = await prisma.follow.findUnique({
-    where: { follower_id_creator_id: { follower_id: fan.id, creator_id: creator.id } },
+    where: { follower_id_creator_id: { follower_id: userId, creator_id: creator.id } },
   })
   if (existing) throw new FanError("ALREADY_FOLLOWING", "Already following this creator")
 
   await prisma.follow.create({
-    data: { follower_id: fan.id, creator_id: creator.id },
+    data: { follower_id: userId, creator_id: creator.id },
   })
 }
 
-export async function unfollowCreator(clerkUserId: string, creatorHandle: string) {
-  const fan = await resolveUser(clerkUserId)
-
+export async function unfollowCreator(userId: number, creatorHandle: string) {
   const creator = await prisma.user.findUnique({
     where: { username: creatorHandle },
     select: { id: true },
@@ -54,20 +40,18 @@ export async function unfollowCreator(clerkUserId: string, creatorHandle: string
   if (!creator) throw new FanError("CREATOR_NOT_FOUND", "Creator not found")
 
   const existing = await prisma.follow.findUnique({
-    where: { follower_id_creator_id: { follower_id: fan.id, creator_id: creator.id } },
+    where: { follower_id_creator_id: { follower_id: userId, creator_id: creator.id } },
   })
   if (!existing) throw new FanError("NOT_FOLLOWING", "Not following this creator")
 
   await prisma.follow.delete({
-    where: { follower_id_creator_id: { follower_id: fan.id, creator_id: creator.id } },
+    where: { follower_id_creator_id: { follower_id: userId, creator_id: creator.id } },
   })
 }
 
-export async function getFanFeed(clerkUserId: string) {
-  const fan = await resolveUser(clerkUserId)
-
+export async function getFanFeed(userId: number) {
   const follows = await prisma.follow.findMany({
-    where: { follower_id: fan.id },
+    where: { follower_id: userId },
     select: { creator_id: true },
   })
   if (follows.length === 0) return []
@@ -97,7 +81,7 @@ export async function getFanFeed(clerkUserId: string) {
         },
       },
       links: { select: { id: true, url: true } },
-      likes: { where: { user_id: fan.id }, select: { id: true } },
+      likes: { where: { user_id: userId }, select: { id: true } },
     },
   })
 
@@ -117,11 +101,9 @@ export async function getFanFeed(clerkUserId: string) {
   })
 }
 
-export async function getFanFollowing(clerkUserId: string) {
-  const fan = await resolveUser(clerkUserId)
-
+export async function getFanFollowing(userId: number) {
   return prisma.follow.findMany({
-    where: { follower_id: fan.id },
+    where: { follower_id: userId },
     orderBy: { followed_at: "desc" },
     select: {
       id: true,
@@ -137,13 +119,12 @@ export async function getFanFollowing(clerkUserId: string) {
   })
 }
 
-export async function getFanSupportHistory(clerkUserId: string) {
+export async function getFanSupportHistory(userId: number) {
   const user = await prisma.user.findUnique({
-    where: { clerk_user_id: clerkUserId },
-    select: { id: true, account_type: true, phone: true },
+    where: { id: userId },
+    select: { phone: true },
   })
-  if (!user) throw new FanError("USER_NOT_FOUND", "User not found")
-  if (!user.phone) return []
+  if (!user?.phone) return []
 
   return prisma.donation.findMany({
     where: { donor_phone: user.phone, status: "COMPLETED" },
@@ -161,20 +142,13 @@ export async function getFanSupportHistory(clerkUserId: string) {
   })
 }
 
-export async function getCreatorFollowStats(creatorId: number, viewerClerkId: string | null) {
+export async function getCreatorFollowStats(creatorId: number, viewerUserId: number | null) {
   const [followerCount, isFollowing] = await Promise.all([
     prisma.follow.count({ where: { creator_id: creatorId } }),
-    viewerClerkId
-      ? prisma.user.findUnique({
-          where: { clerk_user_id: viewerClerkId },
-          select: { id: true },
-        }).then((viewer) =>
-          viewer
-            ? prisma.follow.findUnique({
-                where: { follower_id_creator_id: { follower_id: viewer.id, creator_id: creatorId } },
-              }).then(Boolean)
-            : false
-        )
+    viewerUserId
+      ? prisma.follow.findUnique({
+          where: { follower_id_creator_id: { follower_id: viewerUserId, creator_id: creatorId } },
+        }).then(Boolean)
       : Promise.resolve(false),
   ])
   return { followerCount, isFollowing }

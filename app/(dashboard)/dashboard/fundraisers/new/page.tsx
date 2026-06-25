@@ -1,10 +1,10 @@
 import { redirect } from "next/navigation"
-import { auth } from "@clerk/nextjs/server"
+import { getSession } from "@/lib/auth/session"
 import { FundraiserForm } from "@/components/FundraiserForm"
 
 export default async function NewFundraiserPage() {
-  const { userId } = await auth()
-  if (!userId) redirect("/sign-in")
+  const session = await getSession()
+  if (!session) redirect("/sign-in")
 
   return (
     <div className="px-4 py-5 md:p-8 max-w-2xl space-y-6">

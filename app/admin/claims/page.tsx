@@ -1,13 +1,13 @@
 import { redirect } from "next/navigation"
-import { auth } from "@clerk/nextjs/server"
+import { getSession } from "@/lib/auth/session"
 import { isAdmin, listClaims } from "@/lib/services/admin"
 import { AdminClaimsTable } from "@/components/AdminClaimsTable"
 
 export const metadata = { title: "Username Claims — Admin" }
 
 export default async function AdminClaimsPage() {
-  const { userId } = await auth()
-  if (!userId || !isAdmin(userId)) redirect("/")
+  const session = await getSession()
+  if (!session || !isAdmin(session.userId)) redirect("/")
 
   const raw = await listClaims("PENDING")
   const claims = raw.map((c) => ({ ...c, created_at: c.created_at.toISOString() }))

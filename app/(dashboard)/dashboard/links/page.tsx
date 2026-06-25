@@ -1,10 +1,11 @@
-import { auth } from "@clerk/nextjs/server"
+import { getSession } from "@/lib/auth/session"
 import { listLinks } from "@/lib/services/link"
 import { LinksManager } from "@/components/LinksManager"
 
 export default async function LinksPage() {
-  const { userId } = await auth()
-  const links = await listLinks(userId!)
+  const session = await getSession()
+  const userId = session!.userId
+  const links = await listLinks(userId)
 
   return (
     <div className="px-4 py-5 md:p-8 max-w-2xl space-y-6">

@@ -1,12 +1,12 @@
 import { redirect } from "next/navigation"
-import { auth } from "@clerk/nextjs/server"
+import { getSession } from "@/lib/auth/session"
 import { ContentHouseForm } from "@/components/ContentHouseForm"
 
 export const metadata = { title: "Content House — Sub-tree" }
 
 export default async function ContentHousePage() {
-  const { userId } = await auth()
-  if (!userId) redirect("/sign-in")
+  const session = await getSession()
+  if (!session) redirect("/sign-in")
 
   return (
     <main className="min-h-screen px-6 py-16 md:py-24">

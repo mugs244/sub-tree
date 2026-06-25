@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server"
-import { auth } from "@clerk/nextjs/server"
+import { getSession } from "@/lib/auth/session"
 import { z } from "zod"
 import { isAdmin, approveClaim, rejectClaim } from "@/lib/services/admin"
 
@@ -11,8 +11,8 @@ const actionSchema = z.object({
 type Params = { params: Promise<{ id: string }> }
 
 export async function POST(req: Request, { params }: Params): Promise<NextResponse> {
-  const { userId } = await auth()
-  if (!userId || !isAdmin(userId)) return new NextResponse("Forbidden", { status: 403 })
+  const session = await getSession()
+  if (!session || !isAdmin(session.userId)) return new NextResponse("Forbidden", { status: 403 })
 
   const { id } = await params
   const claimId = parseInt(id, 10)

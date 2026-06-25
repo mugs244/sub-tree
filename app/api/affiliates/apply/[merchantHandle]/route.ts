@@ -1,12 +1,13 @@
 import { NextResponse } from "next/server"
-import { auth } from "@clerk/nextjs/server"
+import { getSession } from "@/lib/auth/session"
 import { applyAsAffiliate, AffiliateError } from "@/lib/services/affiliate"
 
 type Props = { params: Promise<{ merchantHandle: string }> }
 
 export async function POST(_req: Request, { params }: Props): Promise<NextResponse> {
-  const { userId } = await auth()
-  if (!userId) return NextResponse.json({ error: "UNAUTHORIZED" }, { status: 401 })
+  const session = await getSession()
+  if (!session) return NextResponse.json({ error: "UNAUTHORIZED" }, { status: 401 })
+  const userId = session.userId
 
   const { merchantHandle } = await params
 

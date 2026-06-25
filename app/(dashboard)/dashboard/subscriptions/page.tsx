@@ -1,4 +1,4 @@
-import { auth } from "@clerk/nextjs/server"
+import { getSession } from "@/lib/auth/session"
 import { redirect } from "next/navigation"
 import { listCreatorTiers } from "@/lib/services/membership-tiers"
 import { MembershipTierManager } from "@/components/MembershipTierManager"
@@ -6,8 +6,9 @@ import { MembershipTierManager } from "@/components/MembershipTierManager"
 export const metadata = { title: "Subscriptions" }
 
 export default async function DashboardSubscriptionsPage() {
-  const { userId } = await auth()
-  if (!userId) redirect("/sign-in")
+  const session = await getSession()
+  if (!session) redirect("/sign-in")
+  const userId = session.userId
 
   const tiers = await listCreatorTiers(userId)
   const serializableTiers = tiers.map((tier) => ({

@@ -1,4 +1,4 @@
-import { auth } from "@clerk/nextjs/server"
+import { getSession } from "@/lib/auth/session"
 import { redirect } from "next/navigation"
 import Link from "next/link"
 import { getFanSupportHistory } from "@/lib/services/fan"
@@ -14,8 +14,9 @@ function formatUGX(amount: number) {
 }
 
 export default async function FanSupportPage() {
-  const { userId } = await auth()
-  if (!userId) redirect("/sign-in")
+  const session = await getSession()
+  if (!session) redirect("/sign-in")
+  const userId = session.userId
 
   const history = await getFanSupportHistory(userId)
 

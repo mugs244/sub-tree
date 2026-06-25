@@ -1,12 +1,11 @@
 import { NextResponse } from "next/server"
-import { auth } from "@clerk/nextjs/server"
+import { getSession } from "@/lib/auth/session"
+import { isAdmin } from "@/lib/services/admin"
 import { listAdminDisputes } from "@/lib/services/shop"
 
-const ADMIN_IDS = (process.env.ADMIN_CLERK_IDS ?? "").split(",").filter(Boolean)
-
 export async function GET(): Promise<NextResponse> {
-  const { userId } = await auth()
-  if (!userId || !ADMIN_IDS.includes(userId)) {
+  const session = await getSession()
+  if (!session || !isAdmin(session.userId)) {
     return NextResponse.json({ error: "UNAUTHORIZED" }, { status: 401 })
   }
 

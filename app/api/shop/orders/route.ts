@@ -1,10 +1,11 @@
 import { NextResponse } from "next/server"
-import { auth } from "@clerk/nextjs/server"
+import { getSession } from "@/lib/auth/session"
 import { listMyOrders, ShopError } from "@/lib/services/shop"
 
 export async function GET(req: Request): Promise<NextResponse> {
-  const { userId } = await auth()
-  if (!userId) return NextResponse.json({ error: "UNAUTHORIZED" }, { status: 401 })
+  const session = await getSession()
+  if (!session) return NextResponse.json({ error: "UNAUTHORIZED" }, { status: 401 })
+  const userId = session.userId
 
   const { searchParams } = new URL(req.url)
   const page = Math.max(1, parseInt(searchParams.get("page") ?? "1", 10))

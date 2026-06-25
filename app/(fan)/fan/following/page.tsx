@@ -1,4 +1,4 @@
-import { auth } from "@clerk/nextjs/server"
+import { getSession } from "@/lib/auth/session"
 import { redirect } from "next/navigation"
 import { getFanFollowing } from "@/lib/services/fan"
 import { FanFollowingClient } from "@/components/FanFollowingClient"
@@ -6,8 +6,9 @@ import { FanFollowingClient } from "@/components/FanFollowingClient"
 export const metadata = { title: "Following" }
 
 export default async function FanFollowingPage() {
-  const { userId } = await auth()
-  if (!userId) redirect("/sign-in")
+  const session = await getSession()
+  if (!session) redirect("/sign-in")
+  const userId = session.userId
 
   const following = await getFanFollowing(userId)
 

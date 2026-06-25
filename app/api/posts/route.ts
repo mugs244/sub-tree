@@ -1,10 +1,11 @@
 import { NextResponse } from "next/server"
-import { auth } from "@clerk/nextjs/server"
+import { getSession } from "@/lib/auth/session"
 import { createPost, listCreatorPosts, PostError } from "@/lib/services/posts"
 
 export async function GET() {
-  const { userId } = await auth()
-  if (!userId) return new NextResponse("Unauthorized", { status: 401 })
+  const session = await getSession()
+  if (!session) return new NextResponse("Unauthorized", { status: 401 })
+  const userId = session.userId
 
   try {
     const data = await listCreatorPosts(userId)
@@ -16,8 +17,9 @@ export async function GET() {
 }
 
 export async function POST(req: Request) {
-  const { userId } = await auth()
-  if (!userId) return new NextResponse("Unauthorized", { status: 401 })
+  const session = await getSession()
+  if (!session) return new NextResponse("Unauthorized", { status: 401 })
+  const userId = session.userId
 
   try {
     const body = await req.json()

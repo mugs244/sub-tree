@@ -3,7 +3,7 @@ import { saveProfileSchema } from "@/lib/validators/profile"
 
 export class ProfileError extends Error {
   constructor(
-    public readonly code: "USER_NOT_FOUND" | "VALIDATION_ERROR",
+    public readonly code: "VALIDATION_ERROR",
     message: string,
   ) {
     super(message)
@@ -12,7 +12,7 @@ export class ProfileError extends Error {
 }
 
 export async function saveProfile(
-  clerkUserId: string,
+  userId: number,
   input: unknown,
 ): Promise<void> {
   const parsed = saveProfileSchema.safeParse(input)
@@ -20,17 +20,11 @@ export async function saveProfile(
     throw new ProfileError("VALIDATION_ERROR", parsed.error.issues[0]?.message ?? "Invalid input")
   }
 
-  const user = await prisma.user.findUnique({
-    where: { clerk_user_id: clerkUserId },
-    select: { id: true },
-  })
-  if (!user) throw new ProfileError("USER_NOT_FOUND", "User record not found")
-
   await prisma.$transaction([
     prisma.profile.upsert({
-      where: { user_id: user.id },
+      where: { user_id: userId },
       create: {
-        user_id: user.id,
+        user_id: userId,
         display_name: parsed.data.display_name,
         bio: parsed.data.bio ?? null,
         avatar_url: parsed.data.avatar_url ?? null,
@@ -42,7 +36,7 @@ export async function saveProfile(
       },
     }),
     ...(parsed.data.momo_number !== undefined
-      ? [prisma.user.update({ where: { id: user.id }, data: { momo_number: parsed.data.momo_number } })]
+      ? [prisma.user.update({ where: { id: userId }, data: { momo_number: parsed.data.momo_number } })]
       : []),
   ])
 }

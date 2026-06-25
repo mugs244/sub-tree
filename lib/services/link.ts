@@ -6,7 +6,6 @@ import { detectSmartPlatform, fetchSmartCardMeta } from "@/lib/services/smart-li
 export class LinkError extends Error {
   constructor(
     public readonly code:
-      | "USER_NOT_FOUND"
       | "LINK_NOT_FOUND"
       | "VALIDATION_ERROR"
       | "FORBIDDEN",
@@ -17,15 +16,9 @@ export class LinkError extends Error {
   }
 }
 
-export async function listLinks(clerkUserId: string) {
-  const user = await prisma.user.findUnique({
-    where: { clerk_user_id: clerkUserId },
-    select: { id: true },
-  })
-  if (!user) throw new LinkError("USER_NOT_FOUND", "User record not found")
-
+export async function listLinks(userId: number) {
   return prisma.link.findMany({
-    where: { user_id: user.id },
+    where: { user_id: userId },
     orderBy: { position: "asc" },
     select: {
       id: true,
@@ -43,20 +36,14 @@ export async function listLinks(clerkUserId: string) {
   })
 }
 
-export async function addLink(clerkUserId: string, input: unknown): Promise<void> {
+export async function addLink(userId: number, input: unknown): Promise<void> {
   const parsed = addLinkSchema.safeParse(input)
   if (!parsed.success) {
     throw new LinkError("VALIDATION_ERROR", parsed.error.issues[0]?.message ?? "Invalid input")
   }
 
-  const user = await prisma.user.findUnique({
-    where: { clerk_user_id: clerkUserId },
-    select: { id: true },
-  })
-  if (!user) throw new LinkError("USER_NOT_FOUND", "User record not found")
-
   const maxPosition = await prisma.link.aggregate({
-    where: { user_id: user.id },
+    where: { user_id: userId },
     _max: { position: true },
   })
 
@@ -66,7 +53,7 @@ export async function addLink(clerkUserId: string, input: unknown): Promise<void
 
   await prisma.link.create({
     data: {
-      user_id: user.id,
+      user_id: userId,
       url: parsed.data.url,
       label: parsed.data.label,
       position: (maxPosition._max.position ?? -1) + 1,
@@ -77,13 +64,13 @@ export async function addLink(clerkUserId: string, input: unknown): Promise<void
   })
 }
 
-export async function refreshLinkMeta(clerkUserId: string, linkId: number): Promise<void> {
+export async function refreshLinkMeta(userId: number, linkId: number): Promise<void> {
   const link = await prisma.link.findUnique({
     where: { id: linkId },
-    select: { url: true, user: { select: { clerk_user_id: true } } },
+    select: { url: true, user_id: true },
   })
   if (!link) throw new LinkError("LINK_NOT_FOUND", "Link not found")
-  if (link.user.clerk_user_id !== clerkUserId) throw new LinkError("FORBIDDEN", "Not your link")
+  if (link.user_id !== userId) throw new LinkError("FORBIDDEN", "Not your link")
 
   const meta = await fetchSmartCardMeta(link.url).catch(() => null)
   await prisma.link.update({
@@ -97,7 +84,7 @@ export async function refreshLinkMeta(clerkUserId: string, linkId: number): Prom
 }
 
 export async function updateLink(
-  clerkUserId: string,
+  userId: number,
   linkId: number,
   input: unknown,
 ): Promise<void> {
@@ -108,10 +95,10 @@ export async function updateLink(
 
   const link = await prisma.link.findUnique({
     where: { id: linkId },
-    select: { user: { select: { clerk_user_id: true } } },
+    select: { user_id: true },
   })
   if (!link) throw new LinkError("LINK_NOT_FOUND", "Link not found")
-  if (link.user.clerk_user_id !== clerkUserId) throw new LinkError("FORBIDDEN", "Not your link")
+  if (link.user_id !== userId) throw new LinkError("FORBIDDEN", "Not your link")
 
   await prisma.link.update({
     where: { id: linkId },
@@ -119,13 +106,13 @@ export async function updateLink(
   })
 }
 
-export async function deleteLink(clerkUserId: string, linkId: number): Promise<void> {
+export async function deleteLink(userId: number, linkId: number): Promise<void> {
   const link = await prisma.link.findUnique({
     where: { id: linkId },
-    select: { user_id: true, position: true, user: { select: { clerk_user_id: true } } },
+    select: { user_id: true, position: true },
   })
   if (!link) throw new LinkError("LINK_NOT_FOUND", "Link not found")
-  if (link.user.clerk_user_id !== clerkUserId) throw new LinkError("FORBIDDEN", "Not your link")
+  if (link.user_id !== userId) throw new LinkError("FORBIDDEN", "Not your link")
 
   await prisma.$transaction([
     prisma.link.delete({ where: { id: linkId } }),
@@ -137,7 +124,7 @@ export async function deleteLink(clerkUserId: string, linkId: number): Promise<v
 }
 
 export async function reorderLink(
-  clerkUserId: string,
+  userId: number,
   linkId: number,
   input: unknown,
 ): Promise<void> {
@@ -148,10 +135,10 @@ export async function reorderLink(
 
   const link = await prisma.link.findUnique({
     where: { id: linkId },
-    select: { user_id: true, position: true, user: { select: { clerk_user_id: true } } },
+    select: { user_id: true, position: true },
   })
   if (!link) throw new LinkError("LINK_NOT_FOUND", "Link not found")
-  if (link.user.clerk_user_id !== clerkUserId) throw new LinkError("FORBIDDEN", "Not your link")
+  if (link.user_id !== userId) throw new LinkError("FORBIDDEN", "Not your link")
 
   const swapPosition = parsed.data.direction === "up" ? link.position - 1 : link.position + 1
 

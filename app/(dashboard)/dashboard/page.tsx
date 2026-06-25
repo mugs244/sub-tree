@@ -1,13 +1,14 @@
-import { auth } from "@clerk/nextjs/server"
+import { getSession } from "@/lib/auth/session"
 import { prisma } from "@/lib/db"
 import { Link2, Heart, Eye, TrendingUp, Smartphone, Globe, UserPlus } from "lucide-react"
 import { NotificationsFeed } from "@/components/NotificationsFeed"
 
 export default async function DashboardHomePage() {
-  const { userId } = await auth()
+  const session = await getSession()
+  const userId = session!.userId
 
   const user = await prisma.user.findUnique({
-    where: { clerk_user_id: userId! },
+    where: { id: userId },
     select: {
       id: true,
       username: true,
@@ -22,24 +23,24 @@ export default async function DashboardHomePage() {
   const [donationStats, topLink, providerBreakdown, referrerBreakdown, tierCount] =
     await Promise.all([
       prisma.donation.aggregate({
-        where: { user: { clerk_user_id: userId! }, status: "COMPLETED" },
+        where: { user_id: userId, status: "COMPLETED" },
         _count: { id: true },
         _sum: { amount: true },
       }),
       prisma.link.findFirst({
-        where: { user: { clerk_user_id: userId! }, is_enabled: true, clicks: { gt: 0 } },
+        where: { user_id: userId, is_enabled: true, clicks: { gt: 0 } },
         orderBy: { clicks: "desc" },
         select: { label: true, clicks: true, url: true },
       }),
       prisma.donation.groupBy({
         by: ["provider"],
-        where: { user: { clerk_user_id: userId! }, status: "COMPLETED" },
+        where: { user_id: userId, status: "COMPLETED" },
         _count: { id: true },
       }),
       prisma.donation.groupBy({
         by: ["referrer_source"],
         where: {
-          user: { clerk_user_id: userId! },
+          user_id: userId,
           status: "COMPLETED",
           referrer_source: { not: null },
         },
@@ -47,7 +48,7 @@ export default async function DashboardHomePage() {
         _sum: { amount: true },
       }),
       prisma.membershipTier.count({
-        where: { creator: { clerk_user_id: userId! } },
+        where: { creator_id: userId },
       }),
     ])
 
@@ -127,8 +128,8 @@ export default async function DashboardHomePage() {
           </div>
           <p className="text-sm text-muted-foreground">
             {tierCount > 0
-              ? `You currently have ${tierCount} membership tier${tierCount === 1 ? "" : "s"}.` 
-              : "You haven’t created any membership tiers yet."}
+              ? `You currently have ${tierCount} membership tier${tierCount === 1 ? "" : "s"}.`
+              : "You haven't created any membership tiers yet."}
           </p>
         </div>
       </div>

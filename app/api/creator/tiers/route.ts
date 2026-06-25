@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server"
-import { auth } from "@clerk/nextjs/server"
+import { getSession } from "@/lib/auth/session"
 import { createTier, listCreatorTiers, TierError } from "@/lib/services/membership-tiers"
 
 function serializeTier(tier: Awaited<ReturnType<typeof createTier>>) {
@@ -10,16 +10,18 @@ function serializeTier(tier: Awaited<ReturnType<typeof createTier>>) {
 }
 
 export async function GET() {
-  const { userId } = await auth()
-  if (!userId) return NextResponse.json({ error: "Unauthenticated" }, { status: 401 })
+  const session = await getSession()
+  if (!session) return NextResponse.json({ error: "Unauthenticated" }, { status: 401 })
+  const userId = session.userId
 
   const tiers = await listCreatorTiers(userId)
   return NextResponse.json({ data: tiers.map(serializeTier) })
 }
 
 export async function POST(req: Request) {
-  const { userId } = await auth()
-  if (!userId) return NextResponse.json({ error: "Unauthenticated" }, { status: 401 })
+  const session = await getSession()
+  if (!session) return NextResponse.json({ error: "Unauthenticated" }, { status: 401 })
+  const userId = session.userId
 
   let body: unknown
   try {

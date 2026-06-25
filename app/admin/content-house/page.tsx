@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation"
-import { auth } from "@clerk/nextjs/server"
+import { getSession } from "@/lib/auth/session"
 import { isAdmin } from "@/lib/services/admin"
 import { prisma } from "@/lib/db"
 import { AdminContentHouseTable } from "@/components/AdminContentHouseTable"
@@ -7,8 +7,8 @@ import { AdminContentHouseTable } from "@/components/AdminContentHouseTable"
 export const metadata = { title: "Content House Requests — Admin" }
 
 export default async function AdminContentHousePage() {
-  const { userId } = await auth()
-  if (!userId || !isAdmin(userId)) redirect("/")
+  const session = await getSession()
+  if (!session || !isAdmin(session.userId)) redirect("/")
 
   const raw = await prisma.contentHouseRequest.findMany({
     orderBy: { created_at: "desc" },

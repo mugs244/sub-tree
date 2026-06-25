@@ -1,18 +1,20 @@
 import { NextResponse } from "next/server"
-import { auth } from "@clerk/nextjs/server"
+import { getSession } from "@/lib/auth/session"
 import { listLinks, addLink, LinkError } from "@/lib/services/link"
 
 export async function GET(): Promise<NextResponse> {
-  const { userId } = await auth()
-  if (!userId) return new NextResponse("Unauthorized", { status: 401 })
+  const session = await getSession()
+  if (!session) return new NextResponse("Unauthorized", { status: 401 })
+  const userId = session.userId
 
   const links = await listLinks(userId)
   return NextResponse.json({ data: links })
 }
 
 export async function POST(req: Request): Promise<NextResponse> {
-  const { userId } = await auth()
-  if (!userId) return new NextResponse("Unauthorized", { status: 401 })
+  const session = await getSession()
+  if (!session) return new NextResponse("Unauthorized", { status: 401 })
+  const userId = session.userId
 
   let body: unknown
   try {

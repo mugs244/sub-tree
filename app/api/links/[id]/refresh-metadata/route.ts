@@ -1,12 +1,13 @@
 import { NextResponse } from "next/server"
-import { auth } from "@clerk/nextjs/server"
+import { getSession } from "@/lib/auth/session"
 import { refreshLinkMeta, LinkError } from "@/lib/services/link"
 
 type Params = { params: Promise<{ id: string }> }
 
 export async function POST(_req: Request, { params }: Params): Promise<NextResponse> {
-  const { userId } = await auth()
-  if (!userId) return new NextResponse("Unauthorized", { status: 401 })
+  const session = await getSession()
+  if (!session) return new NextResponse("Unauthorized", { status: 401 })
+  const userId = session.userId
 
   const { id } = await params
   const linkId = parseInt(id, 10)

@@ -1,13 +1,14 @@
-import { auth } from "@clerk/nextjs/server"
+import { getSession } from "@/lib/auth/session"
 import { prisma } from "@/lib/db"
 import { Heart } from "lucide-react"
 import { DonationExportButton } from "@/components/DonationExportButton"
 
 export default async function DonationsPage() {
-  const { userId } = await auth()
+  const session = await getSession()
+  const userId = session!.userId
 
   const donations = await prisma.donation.findMany({
-    where: { user: { clerk_user_id: userId! } },
+    where: { user_id: userId },
     orderBy: { created_at: "desc" },
     take: 50,
     select: {

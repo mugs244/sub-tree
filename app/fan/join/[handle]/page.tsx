@@ -1,16 +1,16 @@
 import { cookies } from "next/headers"
 import { redirect } from "next/navigation"
-import { auth } from "@clerk/nextjs/server"
+import { getSession } from "@/lib/auth/session"
 import { prisma } from "@/lib/db"
 
 type Props = { params: Promise<{ handle: string }> }
 
 export default async function FanJoinPage({ params }: Props) {
   const { handle } = await params
-  const { userId } = await auth()
+  const session = await getSession()
 
   // If already logged in, just follow and return to the creator
-  if (userId) {
+  if (session) {
     const creator = await prisma.user.findUnique({
       where: { username: handle },
       select: { id: true },

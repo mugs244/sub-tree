@@ -1,4 +1,4 @@
-import { auth } from "@clerk/nextjs/server"
+import { getSession } from "@/lib/auth/session"
 import { redirect } from "next/navigation"
 import { prisma } from "@/lib/db"
 import { ProductForm } from "@/components/ProductForm"
@@ -6,11 +6,12 @@ import { ProductForm } from "@/components/ProductForm"
 const BUSINESS_TIERS = ["BUSINESS", "CONTENT_HOUSE"]
 
 export default async function NewProductPage() {
-  const { userId } = await auth()
-  if (!userId) redirect("/sign-in")
+  const session = await getSession()
+  if (!session) redirect("/sign-in")
+  const userId = session.userId
 
   const user = await prisma.user.findUnique({
-    where: { clerk_user_id: userId },
+    where: { id: userId },
     select: { tier: true },
   })
   if (!user || !BUSINESS_TIERS.includes(user.tier)) redirect("/dashboard")

@@ -7,16 +7,14 @@ import { initiateOrder } from '../../lib/services/shop'
 // disposable test database and run `npm run seed:test` before running the test.
 
 describe('Affiliate conversion flow (integration)', () => {
-  let merchantClerkId = 'test-merchant-clerk-id'
-  let promoterClerkId = 'test-promoter-clerk-id'
   let merchantUserId: number
   let promoterUserId: number
   let productId: number
 
   beforeAll(async () => {
     // Create merchant & promoter user records (minimal)
-    const merchant = await prisma.user.create({ data: { clerk_user_id: merchantClerkId, username: 'merchant_test', tier: 'BUSINESS' } })
-    const promoter = await prisma.user.create({ data: { clerk_user_id: promoterClerkId, username: 'promoter_test', tier: 'PRO' } })
+    const merchant = await prisma.user.create({ data: { email: 'merchant_test@test.local', username: 'merchant_test', tier: 'BUSINESS' } })
+    const promoter = await prisma.user.create({ data: { email: 'promoter_test@test.local', username: 'promoter_test', tier: 'PRO' } })
     merchantUserId = merchant.id
     promoterUserId = promoter.id
 
@@ -30,13 +28,13 @@ describe('Affiliate conversion flow (integration)', () => {
     await prisma.order.deleteMany({ where: { product_id: productId } }).catch(() => {})
     await prisma.product.deleteMany({ where: { id: productId } }).catch(() => {})
     await prisma.affiliateRelationship.deleteMany({ where: { shop_user_id: merchantUserId } }).catch(() => {})
-    await prisma.user.deleteMany({ where: { clerk_user_id: { in: [merchantClerkId, promoterClerkId] } } }).catch(() => {})
+    await prisma.user.deleteMany({ where: { id: { in: [merchantUserId, promoterUserId] } } }).catch(() => {})
     await prisma.$disconnect()
   })
 
   it('applies, merchant approves, and order attributes affiliate fields', async () => {
     // Promoter applies as affiliate
-    await applyAsAffiliate(promoterClerkId, 'merchant_test')
+    await applyAsAffiliate(promoterUserId, 'merchant_test')
 
     // Fetch the relationship id
     const rel = await prisma.affiliateRelationship.findFirst({ where: { shop_user_id: merchantUserId, affiliate_user_id: promoterUserId } })
@@ -44,7 +42,7 @@ describe('Affiliate conversion flow (integration)', () => {
     const relId = rel!.id
 
     // Merchant approves granting the product
-    await approveRequest(merchantClerkId, relId, { product_ids: [productId] })
+    await approveRequest(merchantUserId, relId, { product_ids: [productId] })
 
     // Simulate a checkout with ref cookie by calling initiateOrder with ref_cookie set to promoter user id string
     const orderResult = await initiateOrder({ product_id: productId, buyer_phone: '0777000000', buyer_name: 'Buyer', ref_cookie: String(promoterUserId) })

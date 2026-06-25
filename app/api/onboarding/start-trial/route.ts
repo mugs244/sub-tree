@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server"
-import { auth } from "@clerk/nextjs/server"
+import { getSession } from "@/lib/auth/session"
 import { prisma } from "@/lib/db"
 import { randomUUID } from "crypto"
 
@@ -8,8 +8,9 @@ const VALID_TIERS = ["PRO", "BUSINESS"] as const
 type TrialTier = (typeof VALID_TIERS)[number]
 
 export async function POST(req: Request): Promise<NextResponse> {
-  const { userId } = await auth()
-  if (!userId) return new NextResponse("Unauthorized", { status: 401 })
+  const session = await getSession()
+  if (!session) return new NextResponse("Unauthorized", { status: 401 })
+  const userId = session.userId
 
   const { tier } = (await req.json()) as { tier?: string }
   if (!tier || !VALID_TIERS.includes(tier as TrialTier)) {
@@ -17,7 +18,7 @@ export async function POST(req: Request): Promise<NextResponse> {
   }
 
   const user = await prisma.user.findUnique({
-    where: { clerk_user_id: userId },
+    where: { id: userId },
     select: { id: true, tier: true, subscription: { select: { id: true } } },
   })
   if (!user) return new NextResponse("User not found", { status: 404 })

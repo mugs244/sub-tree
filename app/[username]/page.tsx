@@ -1,6 +1,6 @@
 import { Suspense } from "react"
 import { notFound } from "next/navigation"
-import { auth } from "@clerk/nextjs/server"
+import { getSession } from "@/lib/auth/session"
 import { prisma } from "@/lib/db"
 import { TrackedLink } from "@/components/TrackedLink"
 import { PageViewTracker } from "@/components/PageViewTracker"
@@ -70,7 +70,8 @@ export async function generateMetadata({ params }: Props) {
 
 export default async function PublicProfilePage({ params }: Props) {
   const { username } = await params
-  const { userId: viewerClerkId } = await auth()
+  const session = await getSession()
+  const viewerUserId = session?.userId ?? null
 
   const user = await prisma.user.findUnique({
     where: { username },
@@ -107,7 +108,7 @@ export default async function PublicProfilePage({ params }: Props) {
 
   const { profile, links } = user
 
-  const followStats = await getCreatorFollowStats(user.id, viewerClerkId)
+  const followStats = await getCreatorFollowStats(user.id, viewerUserId)
 
   const buttonClass = profile.button_style === "sharp"
     ? "rounded-none"
@@ -158,7 +159,7 @@ export default async function PublicProfilePage({ params }: Props) {
               handle={username}
               initialIsFollowing={followStats.isFollowing}
               initialCount={followStats.followerCount}
-              isLoggedIn={!!viewerClerkId}
+              isLoggedIn={!!viewerUserId}
             />
           </div>
         </div>

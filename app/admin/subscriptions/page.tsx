@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation"
-import { auth } from "@clerk/nextjs/server"
+import { getSession } from "@/lib/auth/session"
 import { isAdmin } from "@/lib/services/admin"
 import { prisma } from "@/lib/db"
 
@@ -13,8 +13,8 @@ const STATUS_COLORS: Record<string, string> = {
 }
 
 export default async function AdminSubscriptionsPage() {
-  const { userId } = await auth()
-  if (!userId || !isAdmin(userId)) redirect("/")
+  const session = await getSession()
+  if (!session || !isAdmin(session.userId)) redirect("/")
 
   const subs = await prisma.subscription.findMany({
     orderBy: { created_at: "desc" },
@@ -43,7 +43,6 @@ export default async function AdminSubscriptionsPage() {
           </p>
         </div>
 
-        {/* Summary chips */}
         <div className="flex flex-wrap gap-2">
           {Object.entries(counts).map(([status, count]) => (
             <span
@@ -58,7 +57,6 @@ export default async function AdminSubscriptionsPage() {
           ))}
         </div>
 
-        {/* Table */}
         <div className="overflow-x-auto rounded-xl border border-[color:var(--border-default)]">
           <table className="w-full text-[13px] border-collapse">
             <thead>

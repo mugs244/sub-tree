@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server"
-import { auth } from "@clerk/nextjs/server"
+import { getSession } from "@/lib/auth/session"
 import { followCreator, unfollowCreator, FanError } from "@/lib/services/fan"
 
 type Params = { params: Promise<{ handle: string }> }
@@ -14,8 +14,9 @@ function handleFanError(err: FanError) {
 }
 
 export async function POST(_req: Request, { params }: Params) {
-  const { userId } = await auth()
-  if (!userId) return new NextResponse("Unauthorized", { status: 401 })
+  const session = await getSession()
+  if (!session) return new NextResponse("Unauthorized", { status: 401 })
+  const userId = session.userId
 
   const { handle } = await params
   try {
@@ -28,8 +29,9 @@ export async function POST(_req: Request, { params }: Params) {
 }
 
 export async function DELETE(_req: Request, { params }: Params) {
-  const { userId } = await auth()
-  if (!userId) return new NextResponse("Unauthorized", { status: 401 })
+  const session = await getSession()
+  if (!session) return new NextResponse("Unauthorized", { status: 401 })
+  const userId = session.userId
 
   const { handle } = await params
   try {

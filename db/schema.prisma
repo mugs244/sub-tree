@@ -8,11 +8,11 @@ generator client {
 
 model User {
   id                Int             @id @default(autoincrement())
-  clerk_user_id     String          @unique
   username          String?         @unique
+  email             String          @unique
+  password_hash     String?
   phone             String?
   momo_number       String?
-  email             String?
   email_verified_at DateTime?
   account_type      AccountType     @default(INDIVIDUAL)
   tier              Tier            @default(FREE)
@@ -41,8 +41,9 @@ model User {
   post_likes         PostLike[]
   feed_events        FeedEvent[]
   membership_tiers   MembershipTier[]
+  sessions           Session[]
+  email_verifications EmailVerification[]
 
-  @@index([clerk_user_id])
 }
 
 model Profile {
@@ -658,4 +659,29 @@ model MembershipTier {
   creator     User     @relation(fields: [creator_id], references: [id], onDelete: Cascade)
 
   @@index([creator_id])
+}
+
+model Session {
+  id         Int      @id @default(autoincrement())
+  user_id    Int
+  token      String   @unique
+  expires_at DateTime
+  created_at DateTime @default(now())
+
+  user       User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@index([token])
+  @@index([user_id])
+}
+
+model EmailVerification {
+  id         Int      @id @default(autoincrement())
+  user_id    Int
+  code       String
+  expires_at DateTime
+  created_at DateTime @default(now())
+
+  user       User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@index([user_id])
 }

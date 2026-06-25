@@ -1,4 +1,4 @@
-import { auth } from "@clerk/nextjs/server"
+import { getSession } from "@/lib/auth/session"
 import { redirect } from "next/navigation"
 import { getFanFeed } from "@/lib/services/fan"
 import { FanFeedClient } from "@/components/FanFeedClient"
@@ -6,8 +6,9 @@ import { FanFeedClient } from "@/components/FanFeedClient"
 export const metadata = { title: "Your Feed" }
 
 export default async function FanFeedPage() {
-  const { userId } = await auth()
-  if (!userId) redirect("/sign-in")
+  const session = await getSession()
+  if (!session) redirect("/sign-in")
+  const userId = session.userId
 
   const posts = await getFanFeed(userId)
 

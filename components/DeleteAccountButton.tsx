@@ -1,12 +1,12 @@
 "use client"
 
 import { useState } from "react"
-import { useClerk } from "@clerk/nextjs"
+import { useRouter } from "next/navigation"
 import { Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 
 export function DeleteAccountButton() {
-  const { signOut } = useClerk()
+  const router = useRouter()
   const [confirming, setConfirming] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -21,8 +21,8 @@ export function DeleteAccountButton() {
         setError(body.message ?? "Could not delete account")
         return
       }
-      // Sign out before redirecting
-      await signOut({ redirectUrl: "/" })
+      await fetch("/api/auth/signout", { method: "POST" })
+      router.push("/")
     } catch {
       setError("Could not delete account — please try again")
     } finally {
@@ -40,7 +40,7 @@ export function DeleteAccountButton() {
             variant="destructive"
             size="sm"
             disabled={deleting}
-            onClick={() => { navigator?.vibrate?.(20); handleDelete() }}
+            onClick={() => { navigator?.vibrate?.(20); void handleDelete() }}
           >
             {deleting && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
             {deleting ? "Deleting…" : "Yes, delete my account"}

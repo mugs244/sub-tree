@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server"
 import { z } from "zod"
-import { auth } from "@clerk/nextjs/server"
+import { getSession } from "@/lib/auth/session"
 import { prisma } from "@/lib/db"
 import { handleMomoCallback } from "@/lib/services/donation"
 import { confirmOrderPayment } from "@/lib/services/shop"
@@ -76,13 +76,13 @@ export async function POST(req: Request): Promise<NextResponse> {
 
   if (parsed.data.type === "tier") {
     // TODO: remove before launch — directly sets tier without payment
-    const { userId: clerkId } = await auth()
-    if (!clerkId) {
+    const session = await getSession()
+    if (!session) {
       return NextResponse.json({ error: "UNAUTHORIZED", message: "Must be signed in" }, { status: 401 })
     }
 
     const user = await prisma.user.update({
-      where: { clerk_user_id: clerkId },
+      where: { id: session.userId },
       data: { tier: parsed.data.tier },
       select: { id: true, username: true, tier: true },
     })

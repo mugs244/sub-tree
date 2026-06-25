@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server"
-import { auth } from "@clerk/nextjs/server"
+import { getSession } from "@/lib/auth/session"
 import { isAdmin } from "@/lib/services/admin"
 import { prisma } from "@/lib/db"
 
@@ -10,10 +10,11 @@ export async function PATCH(
   req: Request,
   { params }: { params: Promise<{ id: string }> },
 ): Promise<NextResponse> {
-  const { userId } = await auth()
-  if (!userId || !isAdmin(userId)) {
+  const session = await getSession()
+  if (!session || !isAdmin(session.userId)) {
     return new NextResponse("Forbidden", { status: 403 })
   }
+  const userId = session.userId
 
   const { id: rawId } = await params
   const id = parseInt(rawId, 10)
@@ -34,7 +35,7 @@ export async function PATCH(
     where: { id },
     data: {
       status: body.status as Status,
-      reviewed_by: userId,
+      reviewed_by: String(userId),
       reviewed_at: new Date(),
     },
   })

@@ -1,4 +1,4 @@
-import { auth } from "@clerk/nextjs/server"
+import { getSession } from "@/lib/auth/session"
 import { redirect, notFound } from "next/navigation"
 import { prisma } from "@/lib/db"
 import { ProductForm } from "@/components/ProductForm"
@@ -6,15 +6,16 @@ import { ProductForm } from "@/components/ProductForm"
 type Props = { params: Promise<{ id: string }> }
 
 export default async function EditProductPage({ params }: Props) {
-  const { userId } = await auth()
-  if (!userId) redirect("/sign-in")
+  const session = await getSession()
+  if (!session) redirect("/sign-in")
+  const userId = session.userId
 
   const { id: raw } = await params
   const productId = parseInt(raw, 10)
   if (isNaN(productId)) notFound()
 
   const user = await prisma.user.findUnique({
-    where: { clerk_user_id: userId },
+    where: { id: userId },
     select: { id: true },
   })
   if (!user) redirect("/sign-in")

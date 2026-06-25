@@ -1,13 +1,14 @@
 import { NextResponse } from "next/server"
-import { auth } from "@clerk/nextjs/server"
+import { getSession } from "@/lib/auth/session"
 import { prisma } from "@/lib/db"
 
 export async function GET(): Promise<NextResponse> {
-  const { userId } = await auth()
-  if (!userId) return new NextResponse("Unauthorized", { status: 401 })
+  const session = await getSession()
+  if (!session) return new NextResponse("Unauthorized", { status: 401 })
+  const userId = session.userId
 
   const donations = await prisma.donation.findMany({
-    where: { user: { clerk_user_id: userId } },
+    where: { user_id: userId },
     orderBy: { created_at: "desc" },
     select: {
       id: true,

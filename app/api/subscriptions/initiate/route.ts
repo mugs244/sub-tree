@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server"
-import { auth } from "@clerk/nextjs/server"
+import { getSession } from "@/lib/auth/session"
 import { prisma } from "@/lib/db"
 import { initiateSubscription, TIER_PRICES } from "@/lib/services/subscription"
 import type { Tier } from "@prisma/client"
@@ -7,8 +7,9 @@ import type { Tier } from "@prisma/client"
 const PAID_TIERS = Object.keys(TIER_PRICES) as Exclude<Tier, "FREE">[]
 
 export async function POST(req: Request): Promise<NextResponse> {
-  const { userId: clerkId } = await auth()
-  if (!clerkId) return NextResponse.json({ error: "Unauthenticated" }, { status: 401 })
+  const session = await getSession()
+  if (!session) return NextResponse.json({ error: "Unauthenticated" }, { status: 401 })
+  const userId = session.userId
 
   let body: { tier?: string; phone?: string }
   try {
@@ -26,7 +27,7 @@ export async function POST(req: Request): Promise<NextResponse> {
   }
 
   const user = await prisma.user.findUnique({
-    where: { clerk_user_id: clerkId },
+    where: { id: userId },
     select: { id: true },
   })
   if (!user) return NextResponse.json({ error: "User not found" }, { status: 404 })

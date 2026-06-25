@@ -1,14 +1,15 @@
 import Link from "next/link"
 import { redirect } from "next/navigation"
-import { auth } from "@clerk/nextjs/server"
+import { getSession } from "@/lib/auth/session"
 import { Plus, Target } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { listFundraisers } from "@/lib/services/fundraiser"
 import { FundraiserCard } from "@/components/FundraiserCard"
 
 export default async function FundraisersPage() {
-  const { userId } = await auth()
-  if (!userId) redirect("/sign-in")
+  const session = await getSession()
+  if (!session) redirect("/sign-in")
+  const userId = session.userId
 
   const fundraisers = await listFundraisers(userId)
 

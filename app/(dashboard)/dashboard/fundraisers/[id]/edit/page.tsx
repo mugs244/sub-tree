@@ -1,20 +1,21 @@
 import { notFound, redirect } from "next/navigation"
-import { auth } from "@clerk/nextjs/server"
+import { getSession } from "@/lib/auth/session"
 import { prisma } from "@/lib/db"
 import { FundraiserForm } from "@/components/FundraiserForm"
 
 type Props = { params: Promise<{ id: string }> }
 
 export default async function EditFundraiserPage({ params }: Props) {
-  const { userId } = await auth()
-  if (!userId) redirect("/sign-in")
+  const session = await getSession()
+  if (!session) redirect("/sign-in")
+  const userId = session.userId
 
   const { id: raw } = await params
   const id = parseInt(raw, 10)
   if (isNaN(id)) notFound()
 
   const user = await prisma.user.findUnique({
-    where: { clerk_user_id: userId },
+    where: { id: userId },
     select: { id: true },
   })
   if (!user) redirect("/sign-in")

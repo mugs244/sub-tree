@@ -4,7 +4,7 @@ import { z } from "zod"
 
 export class TierError extends Error {
   constructor(
-    public readonly code: "USER_NOT_FOUND" | "NOT_FOUND" | "FORBIDDEN" | "VALIDATION_ERROR" | "LIMIT_REACHED",
+    public readonly code: "NOT_FOUND" | "FORBIDDEN" | "VALIDATION_ERROR" | "LIMIT_REACHED",
     message: string,
   ) {
     super(message)
@@ -30,21 +30,11 @@ export const updateTierSchema = z.object({
   position:    z.number().int().min(0).optional(),
 }).refine((d) => Object.keys(d).length > 0, "At least one field required")
 
-async function resolveUser(clerkUserId: string) {
-  const user = await prisma.user.findUnique({
-    where: { clerk_user_id: clerkUserId },
-    select: { id: true },
-  })
-  if (!user) throw new TierError("USER_NOT_FOUND", "User not found")
-  return user
-}
-
 // ── Queries ───────────────────────────────────────────────────────────────────
 
-export async function listCreatorTiers(clerkUserId: string) {
-  const user = await resolveUser(clerkUserId)
+export async function listCreatorTiers(userId: number) {
   return prisma.membershipTier.findMany({
-    where: { creator_id: user.id },
+    where: { creator_id: userId },
     orderBy: { position: "asc" },
   })
 }
@@ -64,15 +54,13 @@ export async function getPublicTiers(creatorHandle: string) {
 
 // ── Mutations ─────────────────────────────────────────────────────────────────
 
-export async function createTier(clerkUserId: string, input: unknown) {
+export async function createTier(userId: number, input: unknown) {
   const parsed = createTierSchema.safeParse(input)
   if (!parsed.success) {
     throw new TierError("VALIDATION_ERROR", parsed.error.issues[0]?.message ?? "Invalid input")
   }
 
-  const user = await resolveUser(clerkUserId)
-
-  const count = await prisma.membershipTier.count({ where: { creator_id: user.id } })
+  const count = await prisma.membershipTier.count({ where: { creator_id: userId } })
   if (count >= MAX_TIERS) {
     throw new TierError("LIMIT_REACHED", `Maximum ${MAX_TIERS} tiers allowed`)
   }
@@ -80,14 +68,14 @@ export async function createTier(clerkUserId: string, input: unknown) {
   const { name, description, price_ugx, perks } = parsed.data
 
   const maxPos = await prisma.membershipTier.aggregate({
-    where: { creator_id: user.id },
+    where: { creator_id: userId },
     _max: { position: true },
   })
   const position = (maxPos._max.position ?? -1) + 1
 
   return prisma.membershipTier.create({
     data: {
-      creator_id:  user.id,
+      creator_id:  userId,
       name,
       description: description ?? null,
       price_ugx:   BigInt(price_ugx),
@@ -97,16 +85,15 @@ export async function createTier(clerkUserId: string, input: unknown) {
   })
 }
 
-export async function updateTier(clerkUserId: string, tierId: number, input: unknown) {
+export async function updateTier(userId: number, tierId: number, input: unknown) {
   const parsed = updateTierSchema.safeParse(input)
   if (!parsed.success) {
     throw new TierError("VALIDATION_ERROR", parsed.error.issues[0]?.message ?? "Invalid input")
   }
 
-  const user = await resolveUser(clerkUserId)
   const tier = await prisma.membershipTier.findUnique({ where: { id: tierId } })
   if (!tier) throw new TierError("NOT_FOUND", "Tier not found")
-  if (tier.creator_id !== user.id) throw new TierError("FORBIDDEN", "Not your tier")
+  if (tier.creator_id !== userId) throw new TierError("FORBIDDEN", "Not your tier")
 
   const { price_ugx, perks, ...rest } = parsed.data
   await prisma.membershipTier.update({
@@ -119,10 +106,9 @@ export async function updateTier(clerkUserId: string, tierId: number, input: unk
   })
 }
 
-export async function deleteTier(clerkUserId: string, tierId: number) {
-  const user = await resolveUser(clerkUserId)
+export async function deleteTier(userId: number, tierId: number) {
   const tier = await prisma.membershipTier.findUnique({ where: { id: tierId } })
   if (!tier) throw new TierError("NOT_FOUND", "Tier not found")
-  if (tier.creator_id !== user.id) throw new TierError("FORBIDDEN", "Not your tier")
+  if (tier.creator_id !== userId) throw new TierError("FORBIDDEN", "Not your tier")
   await prisma.membershipTier.delete({ where: { id: tierId } })
 }

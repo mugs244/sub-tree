@@ -1,12 +1,13 @@
 import { NextResponse } from "next/server"
-import { auth } from "@clerk/nextjs/server"
+import { getSession } from "@/lib/auth/session"
 import { sendCharityRequest, reviewCharityRequest, FundraiserError } from "@/lib/services/fundraiser"
 
 type Params = { params: Promise<{ id: string }> }
 
 export async function POST(req: Request, { params }: Params): Promise<NextResponse> {
-  const { userId } = await auth()
-  if (!userId) return new NextResponse("Unauthorized", { status: 401 })
+  const session = await getSession()
+  if (!session) return new NextResponse("Unauthorized", { status: 401 })
+  const userId = session.userId
 
   const { id: raw } = await params
   const id = parseInt(raw, 10)
@@ -30,8 +31,9 @@ export async function POST(req: Request, { params }: Params): Promise<NextRespon
 }
 
 export async function PATCH(req: Request, { params }: Params): Promise<NextResponse> {
-  const { userId } = await auth()
-  if (!userId) return new NextResponse("Unauthorized", { status: 401 })
+  const session = await getSession()
+  if (!session) return new NextResponse("Unauthorized", { status: 401 })
+  const userId = session.userId
 
   const { id: raw } = await params
   const id = parseInt(raw, 10)

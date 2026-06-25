@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server"
-import { auth } from "@clerk/nextjs/server"
+import { getSession } from "@/lib/auth/session"
 import { prisma } from "@/lib/db"
 
 type RequestBody = {
@@ -8,8 +8,8 @@ type RequestBody = {
 }
 
 export async function POST(req: Request) {
-  const { userId: clerkId } = await auth()
-  if (!clerkId) return NextResponse.json({ error: "Unauthenticated" }, { status: 401 })
+  const session = await getSession()
+  if (!session) return NextResponse.json({ error: "Unauthenticated" }, { status: 401 })
 
   let body: RequestBody
   try {

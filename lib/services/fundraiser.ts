@@ -5,7 +5,6 @@ import { z } from "zod"
 export class FundraiserError extends Error {
   constructor(
     public readonly code:
-      | "USER_NOT_FOUND"
       | "NOT_FOUND"
       | "FORBIDDEN"
       | "VALIDATION_ERROR"
@@ -54,15 +53,6 @@ export const charityReviewSchema = z.object({
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
-async function resolveUser(clerkUserId: string) {
-  const user = await prisma.user.findUnique({
-    where: { clerk_user_id: clerkUserId },
-    select: { id: true, tier: true },
-  })
-  if (!user) throw new FundraiserError("USER_NOT_FOUND", "User record not found")
-  return user
-}
-
 async function resolveFundraiser(id: number, userId: number) {
   const f = await prisma.fundraiser.findUnique({ where: { id } })
   if (!f) throw new FundraiserError("NOT_FOUND", "Fundraiser not found")
@@ -72,10 +62,9 @@ async function resolveFundraiser(id: number, userId: number) {
 
 // ── Queries ───────────────────────────────────────────────────────────────────
 
-export async function listIncomingCampaignRequests(clerkUserId: string) {
-  const user = await resolveUser(clerkUserId)
+export async function listIncomingCampaignRequests(userId: number) {
   return prisma.fundraiser.findMany({
-    where: { charity_user_id: user.id, charity_approval_status: "PENDING" },
+    where: { charity_user_id: userId, charity_approval_status: "PENDING" },
     orderBy: { created_at: "desc" },
     select: {
       id: true, title: true, description: true, goal_amount: true,
@@ -90,10 +79,9 @@ export async function listIncomingCampaignRequests(clerkUserId: string) {
   })
 }
 
-export async function listFundraisers(clerkUserId: string) {
-  const user = await resolveUser(clerkUserId)
+export async function listFundraisers(userId: number) {
   return prisma.fundraiser.findMany({
-    where: { user_id: user.id },
+    where: { user_id: userId },
     orderBy: { created_at: "desc" },
     select: {
       id: true, title: true, description: true, goal_amount: true,
@@ -136,21 +124,21 @@ export async function getActiveFundraiser(userId: number) {
 
 // ── Mutations ─────────────────────────────────────────────────────────────────
 
-export async function createFundraiser(clerkUserId: string, input: unknown) {
+export async function createFundraiser(userId: number, input: unknown) {
   const parsed = createFundraiserSchema.safeParse(input)
   if (!parsed.success) {
     throw new FundraiserError("VALIDATION_ERROR", parsed.error.issues[0]?.message ?? "Invalid input")
   }
 
-  const user = await resolveUser(clerkUserId)
-  if (!PRO_TIERS.includes(user.tier)) {
+  const user = await prisma.user.findUnique({ where: { id: userId }, select: { tier: true } })
+  if (!user || !PRO_TIERS.includes(user.tier)) {
     throw new FundraiserError("FORBIDDEN", "Pro tier required to create fundraisers")
   }
 
   const { deadline, goal_amount, ...rest } = parsed.data
   return prisma.fundraiser.create({
     data: {
-      user_id: user.id,
+      user_id: userId,
       goal_amount: BigInt(goal_amount),
       deadline: deadline ? new Date(deadline) : undefined,
       ...rest,
@@ -159,14 +147,13 @@ export async function createFundraiser(clerkUserId: string, input: unknown) {
   })
 }
 
-export async function updateFundraiser(clerkUserId: string, id: number, input: unknown) {
+export async function updateFundraiser(userId: number, id: number, input: unknown) {
   const parsed = updateFundraiserSchema.safeParse(input)
   if (!parsed.success) {
     throw new FundraiserError("VALIDATION_ERROR", parsed.error.issues[0]?.message ?? "Invalid input")
   }
 
-  const user = await resolveUser(clerkUserId)
-  await resolveFundraiser(id, user.id)
+  await resolveFundraiser(id, userId)
 
   const { deadline, goal_amount, ...rest } = parsed.data
   await prisma.fundraiser.update({
@@ -179,9 +166,8 @@ export async function updateFundraiser(clerkUserId: string, id: number, input: u
   })
 }
 
-export async function activateFundraiser(clerkUserId: string, id: number) {
-  const user = await resolveUser(clerkUserId)
-  const f = await resolveFundraiser(id, user.id)
+export async function activateFundraiser(userId: number, id: number) {
+  const f = await resolveFundraiser(id, userId)
 
   if (["CLOSED", "COMPLETED", "EXPIRED"].includes(f.status)) {
     throw new FundraiserError("TERMINAL_STATUS", "Cannot activate a fundraiser in a terminal status")
@@ -195,7 +181,7 @@ export async function activateFundraiser(clerkUserId: string, id: number) {
   await prisma.$transaction([
     // Deactivate any currently active fundraiser
     prisma.fundraiser.updateMany({
-      where: { user_id: user.id, status: "ACTIVE" },
+      where: { user_id: userId, status: "ACTIVE" },
       data: { status: "CLOSED" },
     }),
     // Activate the target
@@ -203,9 +189,8 @@ export async function activateFundraiser(clerkUserId: string, id: number) {
   ])
 }
 
-export async function closeFundraiser(clerkUserId: string, id: number) {
-  const user = await resolveUser(clerkUserId)
-  const f = await resolveFundraiser(id, user.id)
+export async function closeFundraiser(userId: number, id: number) {
+  const f = await resolveFundraiser(id, userId)
 
   if (f.status === "CLOSED" || f.status === "COMPLETED" || f.status === "EXPIRED") {
     throw new FundraiserError("TERMINAL_STATUS", "Fundraiser is already in a terminal status")
@@ -214,14 +199,13 @@ export async function closeFundraiser(clerkUserId: string, id: number) {
   await prisma.fundraiser.update({ where: { id }, data: { status: "CLOSED" } })
 }
 
-export async function sendCharityRequest(clerkUserId: string, fundraiserId: number, input: unknown) {
+export async function sendCharityRequest(userId: number, fundraiserId: number, input: unknown) {
   const parsed = charityRequestSchema.safeParse(input)
   if (!parsed.success) {
     throw new FundraiserError("VALIDATION_ERROR", parsed.error.issues[0]?.message ?? "Invalid input")
   }
 
-  const user = await resolveUser(clerkUserId)
-  const f = await resolveFundraiser(fundraiserId, user.id)
+  const f = await resolveFundraiser(fundraiserId, userId)
 
   if (f.fundraiser_type !== "CHARITY") {
     throw new FundraiserError("VALIDATION_ERROR", "Only CHARITY fundraisers can send campaign requests")
@@ -245,17 +229,15 @@ export async function sendCharityRequest(clerkUserId: string, fundraiserId: numb
   })
 }
 
-export async function reviewCharityRequest(clerkUserId: string, fundraiserId: number, input: unknown) {
+export async function reviewCharityRequest(userId: number, fundraiserId: number, input: unknown) {
   const parsed = charityReviewSchema.safeParse(input)
   if (!parsed.success) {
     throw new FundraiserError("VALIDATION_ERROR", parsed.error.issues[0]?.message ?? "Invalid input")
   }
 
-  const user = await resolveUser(clerkUserId)
-
   const f = await prisma.fundraiser.findUnique({ where: { id: fundraiserId } })
   if (!f) throw new FundraiserError("NOT_FOUND", "Fundraiser not found")
-  if (f.charity_user_id !== user.id) throw new FundraiserError("FORBIDDEN", "Not your campaign request")
+  if (f.charity_user_id !== userId) throw new FundraiserError("FORBIDDEN", "Not your campaign request")
   if (f.charity_approval_status !== "PENDING") {
     throw new FundraiserError("VALIDATION_ERROR", "Request is no longer pending")
   }
@@ -281,9 +263,8 @@ export async function reviewCharityRequest(clerkUserId: string, fundraiserId: nu
   })
 }
 
-export async function listSupporters(clerkUserId: string, fundraiserId: number, page = 1) {
-  const user = await resolveUser(clerkUserId)
-  await resolveFundraiser(fundraiserId, user.id)
+export async function listSupporters(userId: number, fundraiserId: number, page = 1) {
+  await resolveFundraiser(fundraiserId, userId)
 
   const take = 50
   return prisma.donation.findMany({

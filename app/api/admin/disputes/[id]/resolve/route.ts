@@ -1,16 +1,16 @@
 import { NextResponse } from "next/server"
-import { auth } from "@clerk/nextjs/server"
+import { getSession } from "@/lib/auth/session"
+import { isAdmin } from "@/lib/services/admin"
 import { resolveDispute, ShopError } from "@/lib/services/shop"
 import { z } from "zod"
 
 type Props = { params: Promise<{ id: string }> }
 
-const ADMIN_IDS = (process.env.ADMIN_CLERK_IDS ?? "").split(",").filter(Boolean)
 const schema = z.object({ action: z.enum(["release", "refund"]) })
 
 export async function POST(req: Request, { params }: Props): Promise<NextResponse> {
-  const { userId } = await auth()
-  if (!userId || !ADMIN_IDS.includes(userId)) {
+  const session = await getSession()
+  if (!session || !isAdmin(session.userId)) {
     return NextResponse.json({ error: "UNAUTHORIZED" }, { status: 401 })
   }
 

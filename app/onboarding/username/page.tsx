@@ -1,31 +1,21 @@
 import { redirect } from "next/navigation"
 import { cookies } from "next/headers"
-import { auth } from "@clerk/nextjs/server"
+import { getSession } from "@/lib/auth/session"
 import { prisma } from "@/lib/db"
 import { UsernameForm } from "@/components/UsernameForm"
 
-async function waitForUserRecord(clerkUserId: string) {
-  const MAX_ATTEMPTS = 10
-  const DELAY_MS = 300
-  for (let i = 0; i < MAX_ATTEMPTS; i++) {
-    const user = await prisma.user.findUnique({
-      where: { clerk_user_id: clerkUserId },
-      select: { username: true, profile: { select: { id: true } } },
-    })
-    if (user !== null) return user
-    if (i < MAX_ATTEMPTS - 1) await new Promise((r) => setTimeout(r, DELAY_MS))
-  }
-  return null
-}
-
 export default async function UsernameOnboardingPage() {
-  const { userId } = await auth()
-  if (!userId) redirect("/sign-in")
+  const session = await getSession()
+  if (!session) redirect("/sign-in")
+  const userId = session.userId
 
   const cookieStore = await cookies()
   const isFan = !!cookieStore.get("fan_redirect")?.value
 
-  const user = await waitForUserRecord(userId)
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { username: true, profile: { select: { id: true } } },
+  })
 
   if (user?.username) {
     if (isFan) redirect("/onboarding/fan")

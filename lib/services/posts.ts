@@ -4,7 +4,6 @@ import { z } from "zod"
 export class PostError extends Error {
   constructor(
     public readonly code:
-      | "USER_NOT_FOUND"
       | "NOT_FOUND"
       | "FORBIDDEN"
       | "VALIDATION_ERROR"
@@ -33,15 +32,6 @@ export const updatePostSchema = z.object({
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
-async function resolveUser(clerkUserId: string) {
-  const user = await prisma.user.findUnique({
-    where: { clerk_user_id: clerkUserId },
-    select: { id: true },
-  })
-  if (!user) throw new PostError("USER_NOT_FOUND", "User not found")
-  return user
-}
-
 async function resolvePost(postId: number, userId: number) {
   const post = await prisma.post.findUnique({
     where: { id: postId },
@@ -54,10 +44,9 @@ async function resolvePost(postId: number, userId: number) {
 
 // ── Queries ───────────────────────────────────────────────────────────────────
 
-export async function listCreatorPosts(clerkUserId: string) {
-  const user = await resolveUser(clerkUserId)
+export async function listCreatorPosts(userId: number) {
   return prisma.post.findMany({
-    where: { user_id: user.id, deleted_at: null },
+    where: { user_id: userId, deleted_at: null },
     orderBy: [{ is_pinned: "desc" }, { published_at: "desc" }],
     select: {
       id: true, content: true, visibility: true,
@@ -67,7 +56,7 @@ export async function listCreatorPosts(clerkUserId: string) {
   })
 }
 
-export async function getPublicPosts(handle: string, viewerClerkId: string | null) {
+export async function getPublicPosts(handle: string, viewerUserId: number | null) {
   const creator = await prisma.user.findUnique({
     where: { username: handle },
     select: { id: true },
@@ -75,25 +64,17 @@ export async function getPublicPosts(handle: string, viewerClerkId: string | nul
   if (!creator) return null
 
   // Determine viewer's access level
-  let viewerUserId: number | null = null
   let isSupporter = false
   let isSubscriber = false
 
-  if (viewerClerkId) {
-    const viewer = await prisma.user.findUnique({
-      where: { clerk_user_id: viewerClerkId },
-      select: { id: true },
-    })
-    if (viewer) {
-      viewerUserId = viewer.id
-      const [donationCount] = await Promise.all([
-        prisma.donation.count({
-          where: { user_id: creator.id, donor_phone: { not: "" }, status: "COMPLETED" },
-        }),
-      ])
-      isSupporter = donationCount > 0
-      // Subscriber check will be added when Feature 51 (subscriptions) ships
-    }
+  if (viewerUserId) {
+    const [donationCount] = await Promise.all([
+      prisma.donation.count({
+        where: { user_id: creator.id, donor_phone: { not: "" }, status: "COMPLETED" },
+      }),
+    ])
+    isSupporter = donationCount > 0
+    // Subscriber check will be added when Feature 51 (subscriptions) ships
   }
 
   const posts = await prisma.post.findMany({
@@ -127,18 +108,17 @@ export async function getPublicPosts(handle: string, viewerClerkId: string | nul
 
 // ── Mutations ─────────────────────────────────────────────────────────────────
 
-export async function createPost(clerkUserId: string, input: unknown) {
+export async function createPost(userId: number, input: unknown) {
   const parsed = createPostSchema.safeParse(input)
   if (!parsed.success) {
     throw new PostError("VALIDATION_ERROR", parsed.error.issues[0]?.message ?? "Invalid input")
   }
 
-  const user = await resolveUser(clerkUserId)
   const { content, visibility, link_url } = parsed.data
 
   return prisma.$transaction(async (tx) => {
     const post = await tx.post.create({
-      data: { user_id: user.id, content, visibility },
+      data: { user_id: userId, content, visibility },
       select: { id: true },
     })
     if (link_url) {
@@ -146,7 +126,7 @@ export async function createPost(clerkUserId: string, input: unknown) {
     }
     await tx.feedEvent.create({
       data: {
-        creator_id: user.id,
+        creator_id: userId,
         event_type: "POST_PUBLISHED",
         resource_id: post.id,
         resource_type: "post",
@@ -156,14 +136,13 @@ export async function createPost(clerkUserId: string, input: unknown) {
   })
 }
 
-export async function updatePost(clerkUserId: string, postId: number, input: unknown) {
+export async function updatePost(userId: number, postId: number, input: unknown) {
   const parsed = updatePostSchema.safeParse(input)
   if (!parsed.success) {
     throw new PostError("VALIDATION_ERROR", parsed.error.issues[0]?.message ?? "Invalid input")
   }
 
-  const user = await resolveUser(clerkUserId)
-  await resolvePost(postId, user.id)
+  await resolvePost(postId, userId)
 
   const { content, visibility, link_url } = parsed.data
 
@@ -184,52 +163,46 @@ export async function updatePost(clerkUserId: string, postId: number, input: unk
   })
 }
 
-export async function deletePost(clerkUserId: string, postId: number) {
-  const user = await resolveUser(clerkUserId)
-  await resolvePost(postId, user.id)
+export async function deletePost(userId: number, postId: number) {
+  await resolvePost(postId, userId)
   await prisma.post.update({
     where: { id: postId },
     data: { deleted_at: new Date() },
   })
 }
 
-export async function pinPost(clerkUserId: string, postId: number) {
-  const user = await resolveUser(clerkUserId)
-  await resolvePost(postId, user.id)
+export async function pinPost(userId: number, postId: number) {
+  await resolvePost(postId, userId)
 
   await prisma.$transaction([
-    prisma.post.updateMany({ where: { user_id: user.id, is_pinned: true }, data: { is_pinned: false } }),
+    prisma.post.updateMany({ where: { user_id: userId, is_pinned: true }, data: { is_pinned: false } }),
     prisma.post.update({ where: { id: postId }, data: { is_pinned: true } }),
   ])
 }
 
-export async function likePost(clerkUserId: string, postId: number) {
-  const user = await resolveUser(clerkUserId)
-
+export async function likePost(userId: number, postId: number) {
   const post = await prisma.post.findUnique({ where: { id: postId }, select: { id: true, deleted_at: true } })
   if (!post || post.deleted_at) throw new PostError("NOT_FOUND", "Post not found")
 
   const existing = await prisma.postLike.findUnique({
-    where: { post_id_user_id: { post_id: postId, user_id: user.id } },
+    where: { post_id_user_id: { post_id: postId, user_id: userId } },
   })
   if (existing) throw new PostError("ALREADY_LIKED", "Already liked this post")
 
   await prisma.$transaction([
-    prisma.postLike.create({ data: { post_id: postId, user_id: user.id } }),
+    prisma.postLike.create({ data: { post_id: postId, user_id: userId } }),
     prisma.post.update({ where: { id: postId }, data: { like_count: { increment: 1 } } }),
   ])
 }
 
-export async function unlikePost(clerkUserId: string, postId: number) {
-  const user = await resolveUser(clerkUserId)
-
+export async function unlikePost(userId: number, postId: number) {
   const existing = await prisma.postLike.findUnique({
-    where: { post_id_user_id: { post_id: postId, user_id: user.id } },
+    where: { post_id_user_id: { post_id: postId, user_id: userId } },
   })
   if (!existing) throw new PostError("NOT_LIKED", "Not liked")
 
   await prisma.$transaction([
-    prisma.postLike.delete({ where: { post_id_user_id: { post_id: postId, user_id: user.id } } }),
+    prisma.postLike.delete({ where: { post_id_user_id: { post_id: postId, user_id: userId } } }),
     prisma.post.update({ where: { id: postId }, data: { like_count: { decrement: 1 } } }),
   ])
 }

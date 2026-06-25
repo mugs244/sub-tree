@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server"
-import { auth } from "@clerk/nextjs/server"
+import { getSession } from "@/lib/auth/session"
 import { z } from "zod"
 import { prisma } from "@/lib/db"
 
@@ -26,8 +26,9 @@ const proSchema = z.object({
 const PRO_TIERS = ["PRO", "BUSINESS", "CONTENT_HOUSE"]
 
 export async function POST(req: Request): Promise<NextResponse> {
-  const { userId } = await auth()
-  if (!userId) return new NextResponse("Unauthorized", { status: 401 })
+  const session = await getSession()
+  if (!session) return new NextResponse("Unauthorized", { status: 401 })
+  const userId = session.userId
 
   let body: unknown
   try {
@@ -45,14 +46,13 @@ export async function POST(req: Request): Promise<NextResponse> {
   }
 
   const user = await prisma.user.findUnique({
-    where: { clerk_user_id: userId },
+    where: { id: userId },
     select: { id: true, tier: true },
   })
   if (!user) return NextResponse.json({ error: "USER_NOT_FOUND", message: "User not found" }, { status: 404 })
 
   const isPro = PRO_TIERS.includes(user.tier)
 
-  // Check if body contains Pro-only fields
   const bodyObj = body as Record<string, unknown>
   const hasProFields = Object.keys(proSchema.shape).some((k) => k in bodyObj)
   if (hasProFields && !isPro) {
@@ -85,11 +85,12 @@ export async function POST(req: Request): Promise<NextResponse> {
 }
 
 export async function GET(): Promise<NextResponse> {
-  const { userId } = await auth()
-  if (!userId) return new NextResponse("Unauthorized", { status: 401 })
+  const session = await getSession()
+  if (!session) return new NextResponse("Unauthorized", { status: 401 })
+  const userId = session.userId
 
   const user = await prisma.user.findUnique({
-    where: { clerk_user_id: userId },
+    where: { id: userId },
     select: {
       tier: true,
       profile: {

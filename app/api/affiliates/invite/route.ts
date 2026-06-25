@@ -1,10 +1,11 @@
 import { NextResponse } from "next/server"
-import { auth } from "@clerk/nextjs/server"
+import { getSession } from "@/lib/auth/session"
 import { inviteAffiliate, AffiliateError } from "@/lib/services/affiliate"
 
 export async function POST(req: Request): Promise<NextResponse> {
-  const { userId } = await auth()
-  if (!userId) return NextResponse.json({ error: "UNAUTHORIZED" }, { status: 401 })
+  const session = await getSession()
+  if (!session) return NextResponse.json({ error: "UNAUTHORIZED" }, { status: 401 })
+  const userId = session.userId
 
   let body: unknown
   try { body = await req.json() } catch {

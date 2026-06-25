@@ -1,16 +1,17 @@
 import { redirect } from "next/navigation"
-import { auth } from "@clerk/nextjs/server"
+import { getSession } from "@/lib/auth/session"
 import { prisma } from "@/lib/db"
 import { AppearanceForm } from "@/components/AppearanceForm"
 
 const PRO_TIERS = ["PRO", "BUSINESS", "CONTENT_HOUSE"]
 
 export default async function AppearancePage() {
-  const { userId } = await auth()
-  if (!userId) redirect("/sign-in")
+  const session = await getSession()
+  if (!session) redirect("/sign-in")
+  const userId = session.userId
 
   const user = await prisma.user.findUnique({
-    where: { clerk_user_id: userId },
+    where: { id: userId },
     select: {
       id: true,
       username: true,
