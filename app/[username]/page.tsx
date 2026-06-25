@@ -119,9 +119,11 @@ export default async function PublicProfilePage({ params }: Props) {
 
   const themeStyle = { ...presetStyle, ...customOverrides } as React.CSSProperties
 
-  // Donate button text: midnight preset uses a light accent so needs dark text;
-  // all other presets use a dark accent so need white text.
-  const donateTextColor = profile.theme_preset === "midnight" ? "#0f172a" : "#ffffff"
+  // Derive donate button colors directly from the resolved preset + custom overrides
+  // so they are never affected by Tailwind's @theme inline variable chain.
+  const presetVars = presetStyle as Record<string, string>
+  const donateBg   = profile.theme_accent_color ?? presetVars["--accent-primary"] ?? "#111827"
+  const donateText = presetVars["--primary-foreground"] ?? "#ffffff"
 
   const isPro = (["PRO", "BUSINESS", "CONTENT_HOUSE"] as string[]).includes(user.tier)
   const showBranding = !isPro || !profile.hide_branding
@@ -193,9 +195,9 @@ export default async function PublicProfilePage({ params }: Props) {
         <div className="pt-2">
           <a
             href={`/${username}/donate`}
-            style={{ color: donateTextColor }}
+            style={{ backgroundColor: donateBg, color: donateText }}
             className={[
-              "flex items-center justify-center w-full px-4 py-3 text-sm font-medium bg-primary hover:bg-accent-dark transition-colors duration-150",
+              "flex items-center justify-center w-full px-4 py-3 text-sm font-medium transition-colors duration-150",
               buttonClass,
             ].join(" ")}
           >
