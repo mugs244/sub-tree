@@ -1,4 +1,5 @@
 import { cookies } from "next/headers"
+import { NextResponse } from "next/server"
 import { prisma } from "@/lib/db"
 import { randomBytes } from "crypto"
 
@@ -10,22 +11,26 @@ export interface Session {
   email: string
 }
 
-export async function createSession(userId: number): Promise<string> {
-  const token = randomBytes(32).toString("hex")
-  const expires_at = new Date(Date.now() + TTL_DAYS * 24 * 60 * 60 * 1000)
-
-  await prisma.session.create({ data: { user_id: userId, token, expires_at } })
-
-  const store = await cookies()
-  store.set(COOKIE, token, {
+function cookieOpts(expires: Date) {
+  return {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",
+    sameSite: "lax" as const,
     path: "/",
-    expires: expires_at,
-  })
+    expires,
+  }
+}
 
-  return token
+export async function createSession(userId: number): Promise<{ token: string; expires_at: Date }> {
+  const token = randomBytes(32).toString("hex")
+  const expires_at = new Date(Date.now() + TTL_DAYS * 24 * 60 * 60 * 1000)
+  await prisma.session.create({ data: { user_id: userId, token, expires_at } })
+  return { token, expires_at }
+}
+
+export function applySessionCookie<T>(res: NextResponse<T>, token: string, expires_at: Date): NextResponse<T> {
+  res.cookies.set(COOKIE, token, cookieOpts(expires_at))
+  return res
 }
 
 export async function getSession(): Promise<Session | null> {
