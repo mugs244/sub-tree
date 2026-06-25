@@ -31,7 +31,11 @@ export async function POST(req: Request) {
     select: { id: true },
   })
 
-  await sendVerificationEmail(user.id, email)
+  try {
+    await sendVerificationEmail(user.id, email)
+  } catch (err) {
+    console.error("Failed to send verification email:", err)
+  }
 
   return NextResponse.json({ userId: user.id }, { status: 201 })
 }
