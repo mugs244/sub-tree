@@ -1,7 +1,8 @@
 import { getSession } from "@/lib/auth/session"
 import { prisma } from "@/lib/db"
-import { Link2, Heart, Eye, TrendingUp, Smartphone, Globe } from "lucide-react"
+import { Link2, Heart, Eye, Smartphone, Globe, Wallet } from "lucide-react"
 import { NotificationsFeed } from "@/components/NotificationsFeed"
+import { Button } from "@/components/ui/button"
 
 export default async function DashboardHomePage() {
   const session = await getSession()
@@ -71,8 +72,29 @@ export default async function DashboardHomePage() {
         </p>
       </div>
 
+      {/* ── Balance ────────────────────────────────────────── */}
+      <div className="bg-surface border border-border rounded-xl p-6 flex flex-col sm:flex-row sm:items-center gap-5 sm:gap-0 sm:justify-between">
+        <div className="flex items-center gap-4">
+          <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-background border border-border">
+            <Wallet className="h-5 w-5 text-muted-foreground" strokeWidth={1.5} />
+          </span>
+          <div>
+            <p className="text-xs text-muted-foreground">Total received</p>
+            <p className="text-3xl font-semibold tracking-tight">
+              UGX {totalUGX.toLocaleString()}
+            </p>
+          </div>
+        </div>
+        <div className="flex flex-col items-start sm:items-end gap-1">
+          <Button disabled size="lg" className="w-full sm:w-auto">
+            Withdraw
+          </Button>
+          <p className="text-[11px] text-muted-foreground">Coming soon</p>
+        </div>
+      </div>
+
       {/* ── Core stats ─────────────────────────────────────── */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+      <div className="grid grid-cols-3 gap-3">
         <StatCard
           icon={Link2}
           label="Links"
@@ -91,13 +113,6 @@ export default async function DashboardHomePage() {
           value={user?.profile?.view_count ?? 0}
           href={`/${username}`}
           external
-        />
-        <StatCard
-          icon={TrendingUp}
-          label="Total received"
-          value={totalUGX > 0 ? `${(totalUGX / 1000).toFixed(0)}K` : "—"}
-          sublabel="UGX"
-          href="/dashboard/donations"
         />
       </div>
 
