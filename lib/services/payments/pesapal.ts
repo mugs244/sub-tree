@@ -119,3 +119,6 @@ function verifyCallback(_rawBody: string, _signature: string): MomoCallbackPaylo
 }
 
 export const pesapal: MomoProvider = { requestToPay, verifyCallback }
+
+// Exposed for system-health checks — fetches an OAuth token only, moves no money.
+export { getToken as checkPesapalHealth }

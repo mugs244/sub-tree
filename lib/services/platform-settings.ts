@@ -62,3 +62,44 @@ export function invalidateCache(key?: string): void {
     cache.clear();
   }
 }
+
+export interface RatePeriod {
+  from: Date;
+  to: Date | null;
+  rate: number;
+}
+
+// Reconstructs the sequence of rates a fee key has held over time from its
+// audit log, so historical amounts can be estimated at the rate that was
+// actually in effect on each date, not today's rate applied retroactively.
+export async function getRateHistory(key: string, defaultRate: number): Promise<RatePeriod[]> {
+  const [current, logs] = await Promise.all([
+    prisma.platformSetting.findUnique({ where: { key } }),
+    prisma.platformSettingAuditLog.findMany({ where: { key }, orderBy: { changed_at: "asc" } }),
+  ]);
+
+  if (logs.length === 0) {
+    const currentRate = current ? parseFloat(current.value) : defaultRate;
+    return [{ from: new Date(0), to: null, rate: isNaN(currentRate) ? defaultRate : currentRate }];
+  }
+
+  const periods: RatePeriod[] = [];
+
+  const firstOld = parseFloat(logs[0]!.old_value);
+  periods.push({ from: new Date(0), to: logs[0]!.changed_at, rate: isNaN(firstOld) ? defaultRate : firstOld });
+
+  for (let i = 0; i < logs.length; i++) {
+    const rate = parseFloat(logs[i]!.new_value);
+    const to = i + 1 < logs.length ? logs[i + 1]!.changed_at : null;
+    periods.push({ from: logs[i]!.changed_at, to, rate: isNaN(rate) ? defaultRate : rate });
+  }
+
+  return periods;
+}
+
+export function rateAtTime(periods: RatePeriod[], date: Date): number {
+  for (const p of periods) {
+    if (date >= p.from && (p.to === null || date < p.to)) return p.rate;
+  }
+  return periods[periods.length - 1]?.rate ?? 0;
+}

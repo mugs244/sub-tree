@@ -3,6 +3,7 @@ import { Logo } from "@/components/brand/Logo"
 import { PlatformIcon } from "@/components/PlatformIcon"
 import { Link2, Heart, BarChart2, ArrowRight, Globe, Smartphone, Check, Minus } from "lucide-react"
 import type { Platform } from "@/lib/utils/platform"
+import { getFeeRate } from "@/lib/services/platform-settings"
 
 // ── Orbit ring ───────────────────────────────────────────
 const ORBIT_PLATFORMS: Platform[] = [
@@ -60,27 +61,42 @@ interface Tier {
   features: { label: string; value: FeatureValue }[]
 }
 
-const TIERS: Tier[] = [
-  {
-    id: "free",
-    name: "Free",
-    blurb: "All your links, one page — forever free.",
-    price: null,
-    cta: "Get started",
-    href: "/sign-up",
-    highlight: true,
-    features: [
-      { label: "Donation fee",      value: "5%" },
-      { label: "Themes",            value: "5 presets" },
-      { label: "Links",             value: "Unlimited" },
-      { label: "Analytics",         value: "Page views + clicks" },
-      { label: "Mobile money",      value: "MTN + Airtel" },
-      { label: "Members",           value: "1" },
-    ],
-  },
-]
+function buildTiers(donationFeePct: string): Tier[] {
+  return [
+    {
+      id: "free",
+      name: "Free",
+      blurb: "All your links, one page — forever free.",
+      price: null,
+      cta: "Get started",
+      href: "/sign-up",
+      highlight: true,
+      features: [
+        { label: "Donation fee",      value: donationFeePct },
+        { label: "Themes",            value: "5 presets" },
+        { label: "Links",             value: "Unlimited" },
+        { label: "Analytics",         value: "Page views + clicks" },
+        { label: "Mobile money",      value: "MTN + Airtel" },
+        { label: "Members",           value: "1" },
+      ],
+    },
+  ]
+}
 
-export default function LandingPage() {
+export const metadata = {
+  title: "Sub-tree — All your links, one page",
+  description: "Share everything you create and accept mobile money donations, all from one link.",
+  openGraph: {
+    title: "Sub-tree — All your links, one page",
+    description: "Share everything you create and accept mobile money donations, all from one link.",
+  },
+}
+
+export default async function LandingPage() {
+  const donationFeeRate = await getFeeRate("fee_donation_free", 0.05)
+  const donationFeePct = `${(donationFeeRate * 100).toFixed(donationFeeRate * 100 % 1 === 0 ? 0 : 1)}%`
+  const TIERS = buildTiers(donationFeePct)
+
   return (
     <div className="flex flex-col min-h-screen bg-background text-foreground">
       {/* ── Nav ─────────────────────────────────────────── */}
@@ -304,7 +320,7 @@ export default function LandingPage() {
             ))}
           </div>
           <p className="mt-8 text-center text-[11px] text-muted-foreground font-mono">
-            5% donation fee applies. Sub-tree never holds your money.
+            {donationFeePct} donation fee applies. Sub-tree never holds your money.
           </p>
         </section>
 

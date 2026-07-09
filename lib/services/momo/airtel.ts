@@ -118,3 +118,6 @@ function verifyCallback(rawBody: string, signature: string): MomoCallbackPayload
 }
 
 export const airtelMoney: MomoProvider = { requestToPay, verifyCallback }
+
+// Exposed for system-health checks — fetches an OAuth token only, moves no money.
+export { getAccessToken as checkAirtelHealth }
