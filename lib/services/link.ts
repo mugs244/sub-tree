@@ -47,9 +47,11 @@ export async function addLink(userId: number, input: unknown): Promise<void> {
     _max: { position: true },
   })
 
-  // Try to fetch OG metadata — never blocks creation on failure
+  // Only auto-promote to a rich card for recognized smart platforms — a
+  // generic website link (or an unmatched profile/homepage URL) stays a
+  // plain link even if it happens to have OG tags.
   const platform = detectSmartPlatform(parsed.data.url)
-  const meta = await fetchSmartCardMeta(parsed.data.url).catch(() => null)
+  const meta = platform ? await fetchSmartCardMeta(parsed.data.url).catch(() => null) : null
 
   await prisma.link.create({
     data: {
@@ -57,7 +59,7 @@ export async function addLink(userId: number, input: unknown): Promise<void> {
       url: parsed.data.url,
       label: parsed.data.label,
       position: (maxPosition._max.position ?? -1) + 1,
-      link_type: meta ? "SMART_CARD" : platform ? "SMART_CARD" : "URL",
+      link_type: meta ? "SMART_CARD" : "URL",
       smart_card_meta: meta ? JSON.parse(JSON.stringify(meta)) : undefined,
       smart_card_fetched_at: meta ? new Date() : undefined,
     },
