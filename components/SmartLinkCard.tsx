@@ -1,3 +1,5 @@
+"use client"
+
 import type { SmartCardMeta } from "@/lib/services/smart-links"
 import { Music, Play, Ticket, Mic, Globe } from "lucide-react"
 
