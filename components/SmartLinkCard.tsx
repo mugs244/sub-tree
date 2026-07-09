@@ -7,20 +7,21 @@ interface Props {
   href: string
   linkId: number
   meta: SmartCardMeta
-  buttonClass: string
 }
 
-export function SmartLinkCard({ href, linkId, meta, buttonClass }: Props) {
+export function SmartLinkCard({ href, linkId, meta }: Props) {
   const trackClick = async () => {
     await fetch(`/api/links/${linkId}/click`, { method: "POST" }).catch(() => {})
   }
 
-  const base = "block w-full overflow-hidden border border-border transition-colors hover:bg-surface"
+  // Card layout is fixed regardless of the creator's button_style choice
+  // (Feature 42: "layouts are fixed", only Feature 37 theming/colors apply).
+  const base = "block w-full overflow-hidden rounded-xl border border-border transition-colors hover:bg-surface"
 
   if (meta.platform === "spotify") {
     return (
       <a href={href} target="_blank" rel="noopener noreferrer" onClick={trackClick}
-        className={[base, buttonClass].join(" ")}
+        className={base}
       >
         <div className="flex items-center gap-3 px-4 py-3">
           {meta.image_url ? (
@@ -46,7 +47,7 @@ export function SmartLinkCard({ href, linkId, meta, buttonClass }: Props) {
     const thumb = meta.youtube?.thumbnail ?? meta.image_url
     return (
       <a href={href} target="_blank" rel="noopener noreferrer" onClick={trackClick}
-        className={[base, buttonClass].join(" ")}
+        className={base}
       >
         {thumb && (
           <div className="relative w-full aspect-video">
@@ -69,7 +70,7 @@ export function SmartLinkCard({ href, linkId, meta, buttonClass }: Props) {
   if (meta.platform === "ticket") {
     return (
       <a href={href} target="_blank" rel="noopener noreferrer" onClick={trackClick}
-        className={[base, buttonClass].join(" ")}
+        className={base}
       >
         {meta.image_url && (
           <img src={meta.image_url} alt="" className="w-full h-32 object-cover" />
@@ -96,7 +97,7 @@ export function SmartLinkCard({ href, linkId, meta, buttonClass }: Props) {
   if (meta.platform === "podcast") {
     return (
       <a href={href} target="_blank" rel="noopener noreferrer" onClick={trackClick}
-        className={[base, buttonClass].join(" ")}
+        className={base}
       >
         <div className="flex items-center gap-3 px-4 py-3">
           {meta.image_url ? (
@@ -120,7 +121,7 @@ export function SmartLinkCard({ href, linkId, meta, buttonClass }: Props) {
   // Generic OG card (tiktok, instagram, twitter, generic)
   return (
     <a href={href} target="_blank" rel="noopener noreferrer" onClick={trackClick}
-      className={[base, buttonClass].join(" ")}
+      className={base}
     >
       {meta.image_url && (
         <img src={meta.image_url} alt="" className="w-full h-36 object-cover" />
