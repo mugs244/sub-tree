@@ -5,9 +5,10 @@ interface TrackedLinkProps {
   linkId: number
   children: React.ReactNode
   className?: string
+  style?: React.CSSProperties
 }
 
-export function TrackedLink({ href, linkId, children, className }: TrackedLinkProps) {
+export function TrackedLink({ href, linkId, children, className, style }: TrackedLinkProps) {
   function handleClick() {
     fetch(`/api/links/${linkId}/click`, { method: "POST" }).catch(() => {})
   }
@@ -19,6 +20,7 @@ export function TrackedLink({ href, linkId, children, className }: TrackedLinkPr
       rel="noopener noreferrer"
       onClick={handleClick}
       className={className}
+      style={style}
     >
       {children}
     </a>

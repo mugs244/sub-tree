@@ -1,5 +1,6 @@
 import { Suspense } from "react"
 import { notFound } from "next/navigation"
+import { Inter, Playfair_Display, Space_Grotesk } from "next/font/google"
 import { prisma } from "@/lib/db"
 import { TrackedLink } from "@/components/TrackedLink"
 import { PageViewTracker } from "@/components/PageViewTracker"
@@ -11,8 +12,28 @@ import type { SmartCardMeta } from "@/lib/services/smart-links"
 
 type Props = { params: Promise<{ username: string }> }
 
+const inter = Inter({ subsets: ["latin"], weight: ["400", "500", "600"] })
+const playfair = Playfair_Display({ subsets: ["latin"], weight: ["400", "500", "600"] })
+const spaceGrotesk = Space_Grotesk({ subsets: ["latin"], weight: ["400", "500", "600"] })
+
+// Geist Sans is already the site default (loaded once in the root layout) — no class needed for it.
+const FONT_CLASS: Record<string, string> = {
+  geist: "",
+  inter: inter.className,
+  playfair: playfair.className,
+  "space-grotesk": spaceGrotesk.className,
+}
+
 const THEME_VARS: Record<string, React.CSSProperties> = {
-  default: {},
+  default: {
+    "--bg-base": "#ffffff",
+    "--bg-surface": "#f9fafb",
+    "--text-primary": "#111827",
+    "--text-muted": "#6b7280",
+    "--border-default": "#e5e7eb",
+    "--accent-primary": "#111827",
+    "--accent-hover": "#1f2937",
+  } as React.CSSProperties,
   warm: {
     "--bg-base": "#fffbf5",
     "--bg-surface": "#f5ede0",
@@ -114,16 +135,21 @@ export default async function PublicProfilePage({ params }: Props) {
   const customOverrides: Record<string, string> = {}
   if (profile.theme_bg_color)     customOverrides["--bg-base"]        = profile.theme_bg_color
   if (profile.theme_accent_color) customOverrides["--accent-primary"] = profile.theme_accent_color
-  if (profile.theme_button_color) customOverrides["--bg-surface"]     = profile.theme_button_color
   if (profile.theme_card_bg)      customOverrides["--bg-raised"]      = profile.theme_card_bg
 
   const themeStyle = { ...presetStyle, ...customOverrides } as React.CSSProperties
 
-  // Derive donate button colors directly from the resolved preset + custom overrides
+  // Derive button/card colors directly from the resolved preset + custom overrides
   // so they are never affected by Tailwind's @theme inline variable chain.
   const presetVars = presetStyle as Record<string, string>
   const donateBg   = profile.theme_accent_color ?? presetVars["--accent-primary"] ?? "#111827"
   const donateText = presetVars["--primary-foreground"] ?? "#ffffff"
+  const buttonBg   = profile.theme_button_color ?? presetVars["--bg-base"] ?? "#ffffff"
+  const buttonText = profile.theme_button_text  ?? presetVars["--text-primary"] ?? "#111827"
+  const cardBg     = profile.theme_card_bg      ?? presetVars["--bg-base"] ?? "#ffffff"
+  const cardText   = profile.theme_card_text    ?? presetVars["--text-primary"] ?? "#111827"
+
+  const fontClass = FONT_CLASS[profile.theme_font ?? "geist"] ?? ""
 
   const isPro = (["PRO", "BUSINESS", "CONTENT_HOUSE"] as string[]).includes(user.tier)
   const showBranding = !isPro || !profile.hide_branding
@@ -131,7 +157,7 @@ export default async function PublicProfilePage({ params }: Props) {
   return (
     <main
       style={themeStyle}
-      className="min-h-screen bg-background flex flex-col items-center px-4 py-12"
+      className={["min-h-screen bg-background flex flex-col items-center px-4 py-12", fontClass].join(" ")}
     >
       <PageViewTracker username={username} />
       <Suspense><ReferrerTracker /></Suspense>
@@ -167,6 +193,8 @@ export default async function PublicProfilePage({ params }: Props) {
                       href={link.url}
                       linkId={link.id}
                       meta={link.smart_card_meta as unknown as SmartCardMeta}
+                      cardBg={cardBg}
+                      cardText={cardText}
                     />
                   )
                 }
@@ -175,8 +203,9 @@ export default async function PublicProfilePage({ params }: Props) {
                     key={link.id}
                     href={link.url}
                     linkId={link.id}
+                    style={{ backgroundColor: buttonBg, color: buttonText }}
                     className={[
-                      "flex items-center justify-center gap-2.5 w-full px-4 py-3 text-sm font-medium border border-border bg-background hover:bg-surface transition-colors duration-150",
+                      "flex items-center justify-center gap-2.5 w-full px-4 py-3 text-sm font-medium border border-border transition-colors duration-150",
                       buttonClass,
                     ].join(" ")}
                   >
