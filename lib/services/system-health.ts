@@ -1,8 +1,34 @@
 import { prisma } from "@/lib/db"
 import { fetchSmartCardMeta } from "@/lib/services/smart-links"
-import { checkMtnHealth } from "@/lib/services/momo/mtn"
 import { checkAirtelHealth } from "@/lib/services/momo/airtel"
 import { checkPesapalHealth } from "@/lib/services/payments/pesapal"
+
+const MTN_BASE_URLS: Record<string, string> = {
+  sandbox: "https://sandbox.momodeveloper.mtn.com",
+  mtnuganda: "https://proxy.momoapi.mtn.com",
+}
+
+// Self-contained rather than imported from lib/services/momo/mtn.ts, so this
+// check doesn't depend on that file's export surface — fetches an OAuth
+// token only, moves no money.
+async function checkMtnHealth(): Promise<void> {
+  const env = process.env.MTN_MOMO_ENVIRONMENT ?? "sandbox"
+  const baseUrl = MTN_BASE_URLS[env] ?? MTN_BASE_URLS.sandbox
+  const credentials = Buffer.from(
+    `${process.env.MTN_MOMO_API_USER}:${process.env.MTN_MOMO_API_KEY}`,
+  ).toString("base64")
+
+  const res = await fetch(`${baseUrl}/collection/token/`, {
+    method: "POST",
+    headers: {
+      Authorization: `Basic ${credentials}`,
+      "Ocp-Apim-Subscription-Key": process.env.MTN_MOMO_SUBSCRIPTION_KEY ?? "",
+      "X-Target-Environment": env,
+    },
+  })
+
+  if (!res.ok) throw new Error(`MTN MoMo token error: ${res.status} ${await res.text()}`)
+}
 
 export type HealthStatus = "ok" | "down" | "unconfigured"
 
