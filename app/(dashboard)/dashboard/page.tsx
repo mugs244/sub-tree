@@ -2,7 +2,8 @@ import { getSession } from "@/lib/auth/session"
 import { prisma } from "@/lib/db"
 import { Link2, Heart, Eye, Smartphone, Globe, Wallet } from "lucide-react"
 import { NotificationsFeed } from "@/components/NotificationsFeed"
-import { Button } from "@/components/ui/button"
+import { getClientBalance, listClientWithdrawals } from "@/lib/services/client-wallet"
+import { WithdrawButton } from "./WithdrawButton"
 
 export default async function DashboardHomePage() {
   const session = await getSession()
@@ -21,7 +22,7 @@ export default async function DashboardHomePage() {
   const displayName = user?.profile?.display_name ?? user?.username ?? "Creator"
   const username = user?.username ?? ""
 
-  const [donationStats, topLink, providerBreakdown, referrerBreakdown] =
+  const [donationStats, topLink, providerBreakdown, referrerBreakdown, balance, withdrawals] =
     await Promise.all([
       prisma.donation.aggregate({
         where: { user_id: userId, status: "COMPLETED" },
@@ -48,6 +49,8 @@ export default async function DashboardHomePage() {
         _count: { id: true },
         _sum: { amount: true },
       }),
+      getClientBalance(userId),
+      listClientWithdrawals(userId, 5),
     ])
 
   const totalDonations = donationStats._count.id
@@ -79,19 +82,43 @@ export default async function DashboardHomePage() {
             <Wallet className="h-5 w-5 text-muted-foreground" strokeWidth={1.5} />
           </span>
           <div>
-            <p className="text-xs text-muted-foreground">Total received</p>
+            <p className="text-xs text-muted-foreground">Available to withdraw</p>
             <p className="text-3xl font-semibold tracking-tight">
-              UGX {totalUGX.toLocaleString()}
+              UGX {Math.round(balance.available).toLocaleString()}
+            </p>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              UGX {totalUGX.toLocaleString()} total received
             </p>
           </div>
         </div>
-        <div className="flex flex-col items-start sm:items-end gap-1">
-          <Button disabled size="lg" className="w-full sm:w-auto">
-            Withdraw
-          </Button>
-          <p className="text-[11px] text-muted-foreground">Coming soon</p>
-        </div>
+        <WithdrawButton available={balance.available} />
       </div>
+
+      {withdrawals.length > 0 && (
+        <div className="space-y-2">
+          <h2 className="text-sm font-medium">Recent withdrawals</h2>
+          <div className="border border-border rounded-xl overflow-hidden divide-y divide-border">
+            {withdrawals.map((w) => (
+              <div key={w.id} className="flex items-center justify-between px-4 py-3 bg-background text-sm">
+                <span className="font-mono">UGX {w.amount.toLocaleString()}</span>
+                <span
+                  className={[
+                    "text-xs font-medium px-2 py-0.5 rounded-full",
+                    w.status === "COMPLETED" ? "bg-success-bg text-success"
+                      : w.status === "FAILED" ? "bg-error-bg text-error"
+                      : "bg-warning-bg text-warning",
+                  ].join(" ")}
+                >
+                  {w.status.charAt(0) + w.status.slice(1).toLowerCase()}
+                </span>
+                <span className="text-muted-foreground text-xs">
+                  {w.created_at.toLocaleDateString("en-UG", { day: "numeric", month: "short", year: "numeric" })}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* ── Core stats ─────────────────────────────────────── */}
       <div className="grid grid-cols-3 gap-3">

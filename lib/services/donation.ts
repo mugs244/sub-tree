@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/db"
 import { sendSms } from "@/lib/sms"
 import { incrementRaisedAmount } from "@/lib/services/fundraiser"
+import { getFeeRate } from "@/lib/services/platform-settings"
 import type { MomoCallbackPayload } from "./momo/types"
 
 export async function handleMomoCallback(
@@ -11,7 +12,7 @@ export async function handleMomoCallback(
 
   const donation = await prisma.donation.findUnique({
     where: { idempotency_key: referenceId },
-    select: { id: true, status: true, fundraiser_id: true },
+    select: { id: true, status: true, fundraiser_id: true, amount: true },
   })
 
   // Unknown referenceId — ignore silently (prevents noisy logs on test pings)
@@ -22,12 +23,26 @@ export async function handleMomoCallback(
 
   const newStatus = status === "SUCCESSFUL" ? "COMPLETED" : "FAILED"
 
+  // Recorded at completion time, using whatever rate is in effect right now —
+  // this is the real fee split (Pesapal/MTN/Airtel collect into Sub-tree's own
+  // merchant account; this is the ledger entry dividing it into platform
+  // revenue vs. the creator's own withdrawable balance).
+  let platformFee: number | null = null
+  let creatorAmount: number | null = null
+  if (newStatus === "COMPLETED") {
+    const feeKey = donation.fundraiser_id ? "fee_fundraiser_free" : "fee_donation_free"
+    const rate = await getFeeRate(feeKey, 0.05)
+    platformFee = Math.round(donation.amount * rate)
+    creatorAmount = donation.amount - platformFee
+  }
+
   const updatedDonation = await prisma.$transaction(async (tx) => {
     const updated = await tx.donation.update({
       where: { id: donation.id },
       data: {
         status: newStatus,
         ...(providerTxId ? { provider_tx_id: providerTxId } : {}),
+        ...(newStatus === "COMPLETED" ? { platform_fee: platformFee, creator_amount: creatorAmount } : {}),
       },
       select: { amount: true, donor_name: true, user_id: true },
     })
