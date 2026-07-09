@@ -43,7 +43,48 @@ model User {
   membership_tiers   MembershipTier[]
   sessions           Session[]
   email_verifications EmailVerification[]
+  wallet_withdrawals WalletWithdrawal[]
+  client_withdrawals ClientWithdrawal[]
 
+}
+
+model WalletWithdrawal {
+  id           Int              @id @default(autoincrement())
+  amount       BigInt           // UGX — platform fee revenue only, never donor/creator principal
+  status       WithdrawalStatus @default(PENDING)
+  requested_by Int
+  note         String?
+  created_at   DateTime         @default(now())
+  completed_at DateTime?
+
+  admin        User             @relation(fields: [requested_by], references: [id], onDelete: Restrict)
+
+  @@index([status])
+  @@index([requested_by])
+}
+
+// Deliberately a separate table from WalletWithdrawal — creators can only ever
+// withdraw their own creator_amount balance, admins can only ever withdraw
+// platform fee revenue. No shared code path can cross the two.
+model ClientWithdrawal {
+  id           Int              @id @default(autoincrement())
+  amount       Int              // UGX — from the creator's own creator_amount balance only
+  status       WithdrawalStatus @default(PENDING)
+  user_id      Int
+  note         String?
+  created_at   DateTime         @default(now())
+  completed_at DateTime?
+
+  user         User             @relation(fields: [user_id], references: [id], onDelete: Restrict)
+
+  @@index([status])
+  @@index([user_id])
+}
+
+enum WithdrawalStatus {
+  PENDING
+  COMPLETED
+  FAILED
 }
 
 model Profile {
@@ -240,6 +281,8 @@ model Donation {
   note             String?
   referrer_source  String?
   fundraiser_id    Int?
+  platform_fee     Int?           // recorded at completion time — null for donations settled before this existed
+  creator_amount   Int?           // amount - platform_fee, the creator's withdrawable share
   created_at       DateTime       @default(now())
   updated_at       DateTime       @updatedAt
 
