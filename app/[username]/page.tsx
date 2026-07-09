@@ -108,6 +108,14 @@ export default async function PublicProfilePage({ params }: Props) {
       ? "rounded-full"
       : "rounded-lg"
 
+  // Smart cards stack an image over text, so full pill rounding (fine on a
+  // single-line button) would clip the whole card into a stadium shape.
+  const cardClass = profile.button_style === "sharp"
+    ? "rounded-none"
+    : profile.button_style === "pill"
+      ? "rounded-3xl"
+      : "rounded-lg"
+
   const presetStyle = THEME_VARS[profile.theme_preset] ?? {}
 
   // CSS custom properties need a plain object with string index — cast once here
@@ -167,7 +175,7 @@ export default async function PublicProfilePage({ params }: Props) {
                       href={link.url}
                       linkId={link.id}
                       meta={link.smart_card_meta as unknown as SmartCardMeta}
-                      buttonClass={buttonClass}
+                      buttonClass={cardClass}
                     />
                   )
                 }
