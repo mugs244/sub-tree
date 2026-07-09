@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { verifySigninCode } from "@/lib/auth/email"
 import { createSession, applySessionCookie } from "@/lib/auth/session"
+import { isAdmin } from "@/lib/services/admin"
 import { z } from "zod"
 
 const schema = z.object({
@@ -21,7 +22,7 @@ export async function POST(req: Request) {
     if (!valid) return NextResponse.json({ error: "Invalid or expired code" }, { status: 400 })
 
     const { token, expires_at } = await createSession(userId)
-    const res = NextResponse.json({ ok: true })
+    const res = NextResponse.json({ ok: true, isAdmin: isAdmin(userId) })
     return applySessionCookie(res, token, expires_at)
   } catch (err) {
     console.error("Verify signin OTP error:", err)

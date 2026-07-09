@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import { prisma } from "@/lib/db"
 import { verifyPassword } from "@/lib/auth/password"
 import { createSession, applySessionCookie } from "@/lib/auth/session"
+import { isAdmin } from "@/lib/services/admin"
 import { z } from "zod"
 
 const schema = z.object({
@@ -38,7 +39,7 @@ export async function POST(req: Request) {
     }
 
     const { token, expires_at } = await createSession(user.id)
-    const res = NextResponse.json({ ok: true })
+    const res = NextResponse.json({ ok: true, isAdmin: isAdmin(user.id) })
     return applySessionCookie(res, token, expires_at)
   } catch (err) {
     console.error("Signin error:", err)

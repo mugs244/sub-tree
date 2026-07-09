@@ -11,7 +11,7 @@ import { Label } from "@/components/ui/label"
 function SignInForm() {
   const router = useRouter()
   const params = useSearchParams()
-  const next = params.get("next") ?? "/dashboard"
+  const explicitNext = params.get("next")
 
   const [mode, setMode] = useState<"password" | "otp-send" | "otp-verify">("password")
   const [email, setEmail] = useState("")
@@ -40,7 +40,7 @@ function SignInForm() {
       setError(data.error ?? "Something went wrong")
       return
     }
-    router.push(next)
+    router.push(explicitNext ?? (data.isAdmin ? "/admin" : "/dashboard"))
   }
 
   async function handleSendCode(e: React.FormEvent) {
@@ -71,7 +71,7 @@ function SignInForm() {
     const data = await res.json()
     setLoading(false)
     if (!res.ok) { setError(data.error ?? "Invalid code"); return }
-    router.push(next)
+    router.push(explicitNext ?? (data.isAdmin ? "/admin" : "/dashboard"))
   }
 
   return (
