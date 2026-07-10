@@ -1,10 +1,12 @@
 import { NextResponse } from "next/server"
 import { getSession } from "@/lib/auth/session"
 import { requestClientWithdrawal, ClientWalletError } from "@/lib/services/client-wallet"
+import { WithdrawalOtpError } from "@/lib/services/withdrawal-otp"
 import { z } from "zod"
 
 const schema = z.object({
   amount: z.number().positive(),
+  code: z.string().length(6),
 })
 
 export async function POST(req: Request): Promise<NextResponse> {
@@ -26,10 +28,10 @@ export async function POST(req: Request): Promise<NextResponse> {
   }
 
   try {
-    await requestClientWithdrawal(session.userId, parsed.data.amount)
+    await requestClientWithdrawal(session.userId, parsed.data.amount, parsed.data.code)
     return NextResponse.json({ data: null }, { status: 201 })
   } catch (err) {
-    if (err instanceof ClientWalletError) {
+    if (err instanceof ClientWalletError || err instanceof WithdrawalOtpError) {
       return NextResponse.json({ error: err.code, message: err.message }, { status: 400 })
     }
     throw err

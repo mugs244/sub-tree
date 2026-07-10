@@ -1,18 +1,13 @@
 import { NextResponse } from "next/server"
 import { getSession } from "@/lib/auth/session"
-import { isAdmin } from "@/lib/services/admin"
-import { requestWithdrawal, WalletError } from "@/lib/services/wallet"
-import { WithdrawalOtpError } from "@/lib/services/withdrawal-otp"
+import { sendWithdrawalOtp, WithdrawalOtpError } from "@/lib/services/withdrawal-otp"
 import { z } from "zod"
 
-const schema = z.object({
-  amount: z.number().positive(),
-  code: z.string().length(6),
-})
+const schema = z.object({ amount: z.number().positive() })
 
 export async function POST(req: Request): Promise<NextResponse> {
   const session = await getSession()
-  if (!session || !isAdmin(session.userId)) {
+  if (!session) {
     return NextResponse.json({ error: "UNAUTHORIZED" }, { status: 401 })
   }
 
@@ -29,10 +24,10 @@ export async function POST(req: Request): Promise<NextResponse> {
   }
 
   try {
-    await requestWithdrawal(session.userId, parsed.data.amount, parsed.data.code)
-    return NextResponse.json({ data: null }, { status: 201 })
+    await sendWithdrawalOtp(session.userId, parsed.data.amount)
+    return NextResponse.json({ data: null })
   } catch (err) {
-    if (err instanceof WalletError || err instanceof WithdrawalOtpError) {
+    if (err instanceof WithdrawalOtpError) {
       return NextResponse.json({ error: err.code, message: err.message }, { status: 400 })
     }
     throw err

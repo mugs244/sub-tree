@@ -3,7 +3,10 @@ import { getSession } from "@/lib/auth/session"
 import { isAdmin } from "@/lib/services/admin"
 import { prisma } from "@/lib/db"
 import { computePlatformRevenue, getAvailableBalance, listWithdrawals } from "@/lib/services/wallet"
+import { listAllClientWithdrawals } from "@/lib/services/client-wallet"
+import { getFeeRate } from "@/lib/services/platform-settings"
 import { WithdrawButton } from "./WithdrawButton"
+import { WithdrawalActions } from "./WithdrawalActions"
 
 export const metadata = { title: "Wallet — Admin" }
 export const dynamic = "force-dynamic"
@@ -12,10 +15,11 @@ export default async function AdminWalletPage() {
   const session = await getSession()
   if (!session || !isAdmin(session.userId)) redirect("/")
 
-  const [revenue, balance, withdrawals, recentOrders] = await Promise.all([
+  const [revenue, balance, withdrawals, clientWithdrawals, recentOrders, processorFeeRate] = await Promise.all([
     computePlatformRevenue(),
     getAvailableBalance(),
     listWithdrawals(),
+    listAllClientWithdrawals(),
     prisma.order.findMany({
       where: { payment_confirmed: true },
       orderBy: { created_at: "desc" },
@@ -29,6 +33,7 @@ export default async function AdminWalletPage() {
         seller: { select: { username: true, email: true } },
       },
     }),
+    getFeeRate("fee_withdrawal_processor", 0.01),
   ])
 
   return (
@@ -41,7 +46,7 @@ export default async function AdminWalletPage() {
             Platform fee revenue across every source — donations, fundraisers, and shop sales.
           </p>
         </div>
-        <WithdrawButton available={balance.available} />
+        <WithdrawButton available={balance.available} processorFeeRate={processorFeeRate} />
       </div>
 
       {/* ── Summary ────────────────────────────────────────── */}
@@ -50,14 +55,16 @@ export default async function AdminWalletPage() {
         <SummaryCard label="Already withdrawn" value={balance.withdrawn} sublabel={`${withdrawals.length} request${withdrawals.length !== 1 ? "s" : ""}`} muted />
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
         <SummaryCard label="Shop fees" value={revenue.shopFeeRevenue} sublabel={`${revenue.shopOrderCount} orders`} />
         <SummaryCard label="Donation fees (est.)" value={revenue.donationFeeEstimate} sublabel={`${revenue.directDonationCount} donations`} />
         <SummaryCard label="Fundraiser fees (est.)" value={revenue.fundraiserFeeEstimate} sublabel={`${revenue.fundraiserDonationCount} donations`} />
+        <SummaryCard label="Withdrawal fees" value={revenue.withdrawalFeeRevenue} sublabel={`${revenue.withdrawalCount} withdrawals`} />
       </div>
 
       <p className="text-xs text-muted-foreground bg-surface border border-border rounded-lg p-3">
-        Shop fees are exact — <code className="font-mono">platform_fee</code> is stored per order.
+        Shop and withdrawal fees are exact — <code className="font-mono">platform_fee</code>/
+        <code className="font-mono">platform_fee_amount</code> are stored per order/withdrawal.
         Donation and fundraiser fees are <strong>estimated</strong>: individual donations don&apos;t store
         their own fee amount, so each donation is priced against whatever <code className="font-mono">fee_donation_free</code> /{" "}
         <code className="font-mono">fee_fundraiser_free</code>{" "}
@@ -82,25 +89,84 @@ export default async function AdminWalletPage() {
                 <th className="text-left px-4 py-3 text-xs font-medium text-muted-foreground">Status</th>
                 <th className="text-left px-4 py-3 text-xs font-medium text-muted-foreground">Requested by</th>
                 <th className="text-left px-4 py-3 text-xs font-medium text-muted-foreground">Date</th>
+                <th className="px-4 py-3" />
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
               {withdrawals.length === 0 && (
                 <tr>
-                  <td colSpan={4} className="px-4 py-8 text-center text-muted-foreground text-sm">
+                  <td colSpan={5} className="px-4 py-8 text-center text-muted-foreground text-sm">
                     No withdrawals yet.
                   </td>
                 </tr>
               )}
               {withdrawals.map((w) => (
                 <tr key={w.id} className="bg-background hover:bg-surface transition-colors duration-100">
-                  <td className="px-4 py-3 font-mono">UGX {Number(w.amount).toLocaleString()}</td>
+                  <td className="px-4 py-3">
+                    <p className="font-mono">UGX {Number(w.amount).toLocaleString()}</p>
+                    <p className="text-[11px] text-muted-foreground">
+                      UGX {Number(w.net_amount).toLocaleString()} net after transfer cost
+                    </p>
+                  </td>
                   <td className="px-4 py-3">
                     <WithdrawalStatusBadge status={w.status} />
                   </td>
                   <td className="px-4 py-3 text-muted-foreground">{w.admin.username ?? w.admin.email}</td>
                   <td className="px-4 py-3 text-muted-foreground text-xs">
                     {w.created_at.toLocaleDateString("en-UG", { day: "numeric", month: "short", year: "numeric" })}
+                  </td>
+                  <td className="px-4 py-3">
+                    {w.status === "PENDING" && <WithdrawalActions id={w.id} kind="platform" />}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* ── Creator withdrawals ────────────────────────────── */}
+      <div className="space-y-3">
+        <h2 className="text-sm font-medium">Creator withdrawals</h2>
+        <p className="text-xs text-muted-foreground -mt-2">
+          Every creator&apos;s withdrawal request, across all accounts. Mark complete once you&apos;ve sent the funds manually.
+        </p>
+        <div className="border border-border rounded-xl overflow-hidden">
+          <table className="w-full text-sm">
+            <thead className="bg-surface border-b border-border">
+              <tr>
+                <th className="text-left px-4 py-3 text-xs font-medium text-muted-foreground">Creator</th>
+                <th className="text-left px-4 py-3 text-xs font-medium text-muted-foreground">Amount</th>
+                <th className="text-left px-4 py-3 text-xs font-medium text-muted-foreground">Status</th>
+                <th className="text-left px-4 py-3 text-xs font-medium text-muted-foreground">Date</th>
+                <th className="px-4 py-3" />
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-border">
+              {clientWithdrawals.length === 0 && (
+                <tr>
+                  <td colSpan={5} className="px-4 py-8 text-center text-muted-foreground text-sm">
+                    No creator withdrawal requests yet.
+                  </td>
+                </tr>
+              )}
+              {clientWithdrawals.map((w) => (
+                <tr key={w.id} className="bg-background hover:bg-surface transition-colors duration-100">
+                  <td className="px-4 py-3 text-muted-foreground">{w.user.username ?? w.user.email}</td>
+                  <td className="px-4 py-3">
+                    <p className="font-mono">UGX {w.amount.toLocaleString()}</p>
+                    <p className="text-[11px] text-muted-foreground">
+                      UGX {w.net_amount.toLocaleString()} net after fees
+                    </p>
+                  </td>
+                  <td className="px-4 py-3">
+                    <WithdrawalStatusBadge status={w.status} />
+                  </td>
+                  <td className="px-4 py-3 text-muted-foreground text-xs">
+                    {w.created_at.toLocaleDateString("en-UG", { day: "numeric", month: "short", year: "numeric" })}
+                  </td>
+                  <td className="px-4 py-3">
+                    {w.status === "PENDING" && <WithdrawalActions id={w.id} kind="client" />}
                   </td>
                 </tr>
               ))}

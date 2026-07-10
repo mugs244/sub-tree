@@ -1,5 +1,21 @@
 import { prisma } from "@/lib/db"
-import { getRateHistory, rateAtTime } from "@/lib/services/platform-settings"
+import { getRateHistory, rateAtTime, getFeeRate } from "@/lib/services/platform-settings"
+import { notifyWithdrawalRequested, notifyWithdrawalCompleted, notifyWithdrawalFailed } from "@/lib/services/withdrawal-notify"
+import { verifyWithdrawalOtp } from "@/lib/services/withdrawal-otp"
+
+export interface WithdrawalFeeBreakdown {
+  amount: number
+  processorFee: number
+  netAmount: number
+}
+
+// The admin sweep is Sub-tree's own money, so only the payment processor's
+// real transfer cost applies — no additional platform markup on itself.
+export async function computeSweepFees(amountUgx: number): Promise<WithdrawalFeeBreakdown> {
+  const processorRate = await getFeeRate("fee_withdrawal_processor", 0.01)
+  const processorFee = Math.round(amountUgx * processorRate)
+  return { amount: amountUgx, processorFee, netAmount: amountUgx - processorFee }
+}
 
 export class WalletError extends Error {
   constructor(
@@ -28,6 +44,8 @@ export interface PlatformRevenue {
   directDonationCount: number
   fundraiserFeeEstimate: number
   fundraiserDonationCount: number
+  withdrawalFeeRevenue: number
+  withdrawalCount: number
   totalDonationVolume: number
   totalPlatformRevenue: number
 }
@@ -35,9 +53,10 @@ export interface PlatformRevenue {
 // Total fee revenue Sub-tree has collected across every source. Shop fees are
 // exact (platform_fee is stored per order); donation/fundraiser fees are
 // estimated by pricing each donation against whatever rate was actually in
-// effect on its date (see platform-settings.getRateHistory).
+// effect on its date (see platform-settings.getRateHistory). Withdrawal fees
+// are exact — platform_fee_amount is stored per ClientWithdrawal request.
 export async function computePlatformRevenue(): Promise<PlatformRevenue> {
-  const [shopAgg, completedDonations] = await Promise.all([
+  const [shopAgg, completedDonations, withdrawalAgg] = await Promise.all([
     prisma.order.aggregate({
       where: { payment_confirmed: true },
       _sum: { platform_fee: true, amount_paid: true },
@@ -46,6 +65,11 @@ export async function computePlatformRevenue(): Promise<PlatformRevenue> {
     prisma.donation.findMany({
       where: { status: "COMPLETED" },
       select: { amount: true, created_at: true, fundraiser_id: true },
+    }),
+    prisma.clientWithdrawal.aggregate({
+      where: { status: { in: ["PENDING", "COMPLETED"] } },
+      _sum: { platform_fee_amount: true },
+      _count: { id: true },
     }),
   ])
 
@@ -60,6 +84,7 @@ export async function computePlatformRevenue(): Promise<PlatformRevenue> {
   const shopFeeRevenue = Number(shopAgg._sum.platform_fee ?? BigInt(0))
   const shopVolume = Number(shopAgg._sum.amount_paid ?? BigInt(0))
   const totalDonationVolume = completedDonations.reduce((sum, d) => sum + d.amount, 0)
+  const withdrawalFeeRevenue = withdrawalAgg._sum.platform_fee_amount ?? 0
 
   return {
     shopFeeRevenue,
@@ -69,8 +94,10 @@ export async function computePlatformRevenue(): Promise<PlatformRevenue> {
     directDonationCount: directDonations.length,
     fundraiserFeeEstimate,
     fundraiserDonationCount: fundraiserDonations.length,
+    withdrawalFeeRevenue,
+    withdrawalCount: withdrawalAgg._count.id,
     totalDonationVolume,
-    totalPlatformRevenue: shopFeeRevenue + donationFeeEstimate + fundraiserFeeEstimate,
+    totalPlatformRevenue: shopFeeRevenue + donationFeeEstimate + fundraiserFeeEstimate + withdrawalFeeRevenue,
   }
 }
 
@@ -98,6 +125,8 @@ export async function listWithdrawals(limit = 20) {
     select: {
       id: true,
       amount: true,
+      processor_fee_amount: true,
+      net_amount: true,
       status: true,
       note: true,
       created_at: true,
@@ -110,10 +139,14 @@ export async function listWithdrawals(limit = 20) {
 // Records the request only — no external API call yet. The real Pesapal
 // payout call gets wired in here once that integration is provided; until
 // then this is fulfilled manually and marked COMPLETED/FAILED by hand.
-export async function requestWithdrawal(adminUserId: number, amountUgx: number): Promise<void> {
+// otpCode must be a valid, unexpired, unconsumed code sent via
+// sendWithdrawalOtp — throws WithdrawalOtpError otherwise.
+export async function requestWithdrawal(adminUserId: number, amountUgx: number, otpCode: string): Promise<void> {
   if (!Number.isFinite(amountUgx) || amountUgx <= 0) {
     throw new WalletError("INVALID_AMOUNT", "Amount must be a positive number")
   }
+
+  await verifyWithdrawalOtp(adminUserId, otpCode)
 
   const { available } = await getAvailableBalance()
   if (amountUgx > available) {
@@ -123,10 +156,47 @@ export async function requestWithdrawal(adminUserId: number, amountUgx: number):
     )
   }
 
+  const rounded = Math.round(amountUgx)
+  const fees = await computeSweepFees(rounded)
+
   await prisma.walletWithdrawal.create({
     data: {
-      amount: BigInt(Math.round(amountUgx)),
+      amount: BigInt(rounded),
+      processor_fee_amount: BigInt(fees.processorFee),
+      net_amount: BigInt(fees.netAmount),
       requested_by: adminUserId,
     },
   })
+
+  await notifyWithdrawalRequested({
+    userId: adminUserId,
+    amount: rounded,
+    platformFee: 0,
+    processorFee: fees.processorFee,
+    netAmount: fees.netAmount,
+  })
+}
+
+export async function markWithdrawalCompleted(withdrawalId: number): Promise<void> {
+  const withdrawal = await prisma.walletWithdrawal.update({
+    where: { id: withdrawalId, status: "PENDING" },
+    data: { status: "COMPLETED", completed_at: new Date() },
+  })
+
+  await notifyWithdrawalCompleted({
+    userId: withdrawal.requested_by,
+    amount: Number(withdrawal.amount),
+    platformFee: 0,
+    processorFee: Number(withdrawal.processor_fee_amount),
+    netAmount: Number(withdrawal.net_amount),
+  })
+}
+
+export async function markWithdrawalFailed(withdrawalId: number): Promise<void> {
+  const withdrawal = await prisma.walletWithdrawal.update({
+    where: { id: withdrawalId, status: "PENDING" },
+    data: { status: "FAILED", completed_at: new Date() },
+  })
+
+  await notifyWithdrawalFailed(withdrawal.requested_by, Number(withdrawal.amount))
 }

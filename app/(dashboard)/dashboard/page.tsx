@@ -3,6 +3,7 @@ import { prisma } from "@/lib/db"
 import { Link2, Heart, Eye, Smartphone, Globe, Wallet } from "lucide-react"
 import { NotificationsFeed } from "@/components/NotificationsFeed"
 import { getClientBalance, listClientWithdrawals } from "@/lib/services/client-wallet"
+import { getFeeRate } from "@/lib/services/platform-settings"
 import { WithdrawButton } from "./WithdrawButton"
 
 export default async function DashboardHomePage() {
@@ -22,7 +23,7 @@ export default async function DashboardHomePage() {
   const displayName = user?.profile?.display_name ?? user?.username ?? "Creator"
   const username = user?.username ?? ""
 
-  const [donationStats, topLink, providerBreakdown, referrerBreakdown, balance, withdrawals] =
+  const [donationStats, topLink, providerBreakdown, referrerBreakdown, balance, withdrawals, creatorFeeRate, processorFeeRate] =
     await Promise.all([
       prisma.donation.aggregate({
         where: { user_id: userId, status: "COMPLETED" },
@@ -51,6 +52,8 @@ export default async function DashboardHomePage() {
       }),
       getClientBalance(userId),
       listClientWithdrawals(userId, 5),
+      getFeeRate("fee_withdrawal_creator", 0.02),
+      getFeeRate("fee_withdrawal_processor", 0.01),
     ])
 
   const totalDonations = donationStats._count.id
@@ -91,7 +94,7 @@ export default async function DashboardHomePage() {
             </p>
           </div>
         </div>
-        <WithdrawButton available={balance.available} />
+        <WithdrawButton available={balance.available} creatorFeeRate={creatorFeeRate} processorFeeRate={processorFeeRate} />
       </div>
 
       {withdrawals.length > 0 && (
@@ -100,7 +103,12 @@ export default async function DashboardHomePage() {
           <div className="border border-border rounded-xl overflow-hidden divide-y divide-border">
             {withdrawals.map((w) => (
               <div key={w.id} className="flex items-center justify-between px-4 py-3 bg-background text-sm">
-                <span className="font-mono">UGX {w.amount.toLocaleString()}</span>
+                <div>
+                  <span className="font-mono">UGX {w.amount.toLocaleString()}</span>
+                  <p className="text-[11px] text-muted-foreground">
+                    UGX {w.net_amount.toLocaleString()} net after fees
+                  </p>
+                </div>
                 <span
                   className={[
                     "text-xs font-medium px-2 py-0.5 rounded-full",

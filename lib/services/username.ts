@@ -1,6 +1,7 @@
 import { Prisma } from "@prisma/client"
 import { prisma } from "@/lib/db"
 import { usernameSchema } from "@/lib/validators/username"
+import { sendWelcomeEmail } from "@/lib/auth/email"
 
 export type UsernameAvailability =
   | { status: "available" }
@@ -32,14 +33,15 @@ export async function claimUsername(userId: number, username: string): Promise<v
     throw new UsernameError("INVALID_USERNAME", parseResult.error.issues[0]?.message ?? "Invalid username")
   }
 
+  let email: string
   try {
-    await prisma.$transaction(async (tx) => {
-      const user = await tx.user.findUnique({
+    const user = await prisma.$transaction(async (tx) => {
+      const existing = await tx.user.findUnique({
         where: { id: userId },
-        select: { id: true, username: true },
+        select: { id: true, username: true, email: true },
       })
-      if (!user) throw new UsernameError("ALREADY_HAS_USERNAME", "User already has a username")
-      if (user.username) throw new UsernameError("ALREADY_HAS_USERNAME", "User already has a username")
+      if (!existing) throw new UsernameError("ALREADY_HAS_USERNAME", "User already has a username")
+      if (existing.username) throw new UsernameError("ALREADY_HAS_USERNAME", "User already has a username")
 
       const [taken, reserved] = await Promise.all([
         tx.user.findUnique({ where: { username }, select: { id: true } }),
@@ -49,11 +51,13 @@ export async function claimUsername(userId: number, username: string): Promise<v
       if (taken) throw new UsernameError("USERNAME_TAKEN", `@${username} is already taken`)
       if (reserved) throw new UsernameError("USERNAME_RESERVED", `@${username} is a reserved username`)
 
-      await tx.user.update({
+      return tx.user.update({
         where: { id: userId },
         data: { username },
+        select: { email: true },
       })
     })
+    email = user.email
   } catch (err) {
     if (err instanceof UsernameError) throw err
     if (
@@ -64,6 +68,12 @@ export async function claimUsername(userId: number, username: string): Promise<v
       throw new UsernameError("USERNAME_TAKEN", `@${username} is already taken`)
     }
     throw err
+  }
+
+  try {
+    await sendWelcomeEmail(email, username)
+  } catch (err) {
+    console.error("Welcome email send failed", { userId, err })
   }
 }
 
