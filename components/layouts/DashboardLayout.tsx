@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
-import { Home, Link2, Heart, Palette, Settings, ExternalLink, LogOut } from "lucide-react"
+import { Home, Link2, Heart, Palette, Settings, ExternalLink, LogOut, MessageCircle } from "lucide-react"
 import { Logo } from "@/components/brand/Logo"
 
 interface NavItem {
@@ -16,6 +16,7 @@ const NAV_ITEMS: NavItem[] = [
   { label: "Links",      href: "/dashboard/links",      icon: Link2 },
   { label: "Donations",  href: "/dashboard/donations",  icon: Heart },
   { label: "Appearance", href: "/dashboard/appearance", icon: Palette },
+  { label: "Support",    href: "/dashboard/support",    icon: MessageCircle },
   { label: "Settings",   href: "/dashboard/settings",   icon: Settings },
 ]
 

@@ -245,7 +245,7 @@ export default async function DashboardHomePage() {
 
       {/* ── Notification feed ──────────────────────────────── */}
       <div className="space-y-3">
-        <h2 className="text-sm font-medium">Donation notifications</h2>
+        <h2 className="text-sm font-medium">Notifications</h2>
         <p className="text-xs text-muted-foreground -mt-1">Updates every 30 seconds</p>
         <NotificationsFeed />
       </div>

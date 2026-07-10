@@ -2,6 +2,7 @@ import { prisma } from "@/lib/db"
 import { sendSms } from "@/lib/sms"
 import { incrementRaisedAmount } from "@/lib/services/fundraiser"
 import { getFeeRate } from "@/lib/services/platform-settings"
+import { createNotification } from "@/lib/services/notification"
 import type { MomoCallbackPayload } from "./momo/types"
 
 export async function handleMomoCallback(
@@ -71,10 +72,19 @@ export async function handleMomoCallback(
       where: { id: updatedDonation.user_id },
       select: { phone: true },
     })
+    const donor = updatedDonation.donor_name ?? "Someone"
+    const amount = updatedDonation.amount.toLocaleString()
+
     if (creator?.phone) {
-      const donor = updatedDonation.donor_name ?? "Someone"
-      const amount = updatedDonation.amount.toLocaleString()
       await sendSms(creator.phone, `${donor} just donated UGX ${amount} to you on Sub-tree. 🎉`)
     }
+
+    await createNotification({
+      userId: updatedDonation.user_id,
+      type: "DONATION_RECEIVED",
+      title: `${donor} donated UGX ${amount}`,
+      body: `${donor} just donated UGX ${amount} to you on Sub-tree.`,
+      metadata: { donationId: donation.id, amount: updatedDonation.amount },
+    })
   }
 }

@@ -2,6 +2,11 @@ import { prisma } from "@/lib/db"
 import { getRateHistory, rateAtTime, getFeeRate } from "@/lib/services/platform-settings"
 import { notifyWithdrawalRequested, notifyWithdrawalCompleted, notifyWithdrawalFailed } from "@/lib/services/withdrawal-notify"
 import { verifyWithdrawalOtp } from "@/lib/services/withdrawal-otp"
+import { createNotification } from "@/lib/services/notification"
+
+function fmt(v: number): string {
+  return `UGX ${Math.round(v).toLocaleString()}`
+}
 
 export interface WithdrawalFeeBreakdown {
   amount: number
@@ -175,6 +180,14 @@ export async function requestWithdrawal(adminUserId: number, amountUgx: number, 
     processorFee: fees.processorFee,
     netAmount: fees.netAmount,
   })
+
+  await createNotification({
+    userId: adminUserId,
+    type: "WITHDRAWAL_REQUESTED",
+    title: `Platform sweep submitted — ${fmt(rounded)}`,
+    body: `Your request to sweep ${fmt(rounded)} to the Pesapal wallet is pending.`,
+    metadata: { amount: rounded, netAmount: fees.netAmount },
+  })
 }
 
 export async function markWithdrawalCompleted(withdrawalId: number): Promise<void> {
@@ -190,6 +203,14 @@ export async function markWithdrawalCompleted(withdrawalId: number): Promise<voi
     processorFee: Number(withdrawal.processor_fee_amount),
     netAmount: Number(withdrawal.net_amount),
   })
+
+  await createNotification({
+    userId: withdrawal.requested_by,
+    type: "WITHDRAWAL_COMPLETED",
+    title: `Platform sweep complete — ${fmt(Number(withdrawal.net_amount))}`,
+    body: `Your sweep of ${fmt(Number(withdrawal.amount))} to the Pesapal wallet is complete.`,
+    metadata: { withdrawalId, amount: Number(withdrawal.amount) },
+  })
 }
 
 export async function markWithdrawalFailed(withdrawalId: number): Promise<void> {
@@ -199,4 +220,12 @@ export async function markWithdrawalFailed(withdrawalId: number): Promise<void> 
   })
 
   await notifyWithdrawalFailed(withdrawal.requested_by, Number(withdrawal.amount))
+
+  await createNotification({
+    userId: withdrawal.requested_by,
+    type: "WITHDRAWAL_FAILED",
+    title: `Platform sweep failed — ${fmt(Number(withdrawal.amount))}`,
+    body: `Your sweep of ${fmt(Number(withdrawal.amount))} could not be completed.`,
+    metadata: { withdrawalId, amount: Number(withdrawal.amount) },
+  })
 }

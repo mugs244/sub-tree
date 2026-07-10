@@ -46,7 +46,56 @@ model User {
   wallet_withdrawals WalletWithdrawal[]
   client_withdrawals ClientWithdrawal[]
   withdrawal_otps    WithdrawalOtp[]
+  notifications      Notification[]
+  support_threads     SupportMessage[] @relation("support_thread_owner")
+  support_messages_sent SupportMessage[] @relation("support_message_sender")
 
+}
+
+// Generic, extensible notification feed — donation/withdrawal events today,
+// anything else later (chat, admin announcements, etc.) without a new table.
+model Notification {
+  id         Int              @id @default(autoincrement())
+  user_id    Int
+  type       NotificationType
+  title      String
+  body       String
+  metadata   Json?
+  read_at    DateTime?
+  created_at DateTime         @default(now())
+
+  user       User             @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@index([user_id])
+  @@index([user_id, read_at])
+}
+
+enum NotificationType {
+  DONATION_RECEIVED
+  WITHDRAWAL_REQUESTED
+  WITHDRAWAL_COMPLETED
+  WITHDRAWAL_FAILED
+  SUPPORT_MESSAGE
+}
+
+// One flat support conversation per creator with Sub-tree admin — not a
+// general multi-party chat. user_id is whose conversation this belongs to
+// (always the creator); sender_id is who actually wrote this message
+// (the creator or whichever admin replied).
+model SupportMessage {
+  id            Int       @id @default(autoincrement())
+  user_id       Int
+  sender_id     Int
+  is_from_admin Boolean   @default(false)
+  body          String
+  read_at       DateTime?
+  created_at    DateTime  @default(now())
+
+  user          User      @relation("support_thread_owner", fields: [user_id], references: [id], onDelete: Cascade)
+  sender        User      @relation("support_message_sender", fields: [sender_id], references: [id], onDelete: Cascade)
+
+  @@index([user_id])
+  @@index([user_id, created_at])
 }
 
 // Deliberately separate from EmailVerification (signup/signin codes) — a

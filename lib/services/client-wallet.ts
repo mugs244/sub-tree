@@ -2,6 +2,11 @@ import { prisma } from "@/lib/db"
 import { getRateHistory, rateAtTime, getFeeRate } from "@/lib/services/platform-settings"
 import { notifyWithdrawalRequested, notifyWithdrawalCompleted, notifyWithdrawalFailed } from "@/lib/services/withdrawal-notify"
 import { verifyWithdrawalOtp } from "@/lib/services/withdrawal-otp"
+import { createNotification } from "@/lib/services/notification"
+
+function fmt(v: number): string {
+  return `UGX ${Math.round(v).toLocaleString()}`
+}
 
 export interface WithdrawalFeeBreakdown {
   amount: number
@@ -133,6 +138,14 @@ export async function requestClientWithdrawal(userId: number, amountUgx: number,
     processorFee: fees.processorFee,
     netAmount: fees.netAmount,
   })
+
+  await createNotification({
+    userId,
+    type: "WITHDRAWAL_REQUESTED",
+    title: `Withdrawal request submitted — ${fmt(rounded)}`,
+    body: `Your request to withdraw ${fmt(rounded)} is pending. You'll receive ${fmt(fees.netAmount)} after fees.`,
+    metadata: { amount: rounded, netAmount: fees.netAmount },
+  })
 }
 
 // Admin-facing: every creator's withdrawal requests, for manual fulfillment
@@ -162,6 +175,14 @@ export async function markClientWithdrawalCompleted(withdrawalId: number): Promi
     processorFee: withdrawal.processor_fee_amount,
     netAmount: withdrawal.net_amount,
   })
+
+  await createNotification({
+    userId: withdrawal.user_id,
+    type: "WITHDRAWAL_COMPLETED",
+    title: `Withdrawal complete — ${fmt(withdrawal.net_amount)}`,
+    body: `Your withdrawal of ${fmt(withdrawal.amount)} is complete. ${fmt(withdrawal.net_amount)} was sent after fees.`,
+    metadata: { withdrawalId, amount: withdrawal.amount, netAmount: withdrawal.net_amount },
+  })
 }
 
 export async function markClientWithdrawalFailed(withdrawalId: number): Promise<void> {
@@ -171,4 +192,12 @@ export async function markClientWithdrawalFailed(withdrawalId: number): Promise<
   })
 
   await notifyWithdrawalFailed(withdrawal.user_id, withdrawal.amount)
+
+  await createNotification({
+    userId: withdrawal.user_id,
+    type: "WITHDRAWAL_FAILED",
+    title: `Withdrawal failed — ${fmt(withdrawal.amount)}`,
+    body: `Your withdrawal of ${fmt(withdrawal.amount)} could not be completed. Please check your details or contact support.`,
+    metadata: { withdrawalId, amount: withdrawal.amount },
+  })
 }
