@@ -87,6 +87,8 @@ const DEFAULT_PLATFORM_SETTINGS: Array<{ key: string; value: string; description
   { key: "fee_shop_content_house",             value: "0.08",  description: "Shop sale platform fee — Content House" },
   { key: "fee_fundraiser_free",                value: "0.05",  description: "Fundraiser platform fee — Free tier" },
   { key: "fee_fundraiser_pro",                 value: "0.03",  description: "Fundraiser platform fee — Pro+" },
+  { key: "fee_withdrawal_creator",             value: "0.02",  description: "Sub-tree's own fee on creator withdrawals" },
+  { key: "fee_withdrawal_processor",           value: "0.01",  description: "Pesapal/OpenFloat's real transfer cost — applies to creator withdrawals and the admin platform-revenue sweep" },
   { key: "fee_subscription_default",           value: "0.05",  description: "Subscription fee — default flat rate" },
   { key: "fee_subscription_progressive_enabled", value: "false", description: "Toggle progressive subscription fees" },
   { key: "fee_subscription_tier_1_threshold", value: "100",   description: "Subscribers before lower rate kicks in" },

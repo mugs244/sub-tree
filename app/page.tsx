@@ -61,7 +61,7 @@ interface Tier {
   features: { label: string; value: FeatureValue }[]
 }
 
-function buildTiers(donationFeePct: string): Tier[] {
+function buildTiers(donationFeePct: string, withdrawalFeePct: string): Tier[] {
   return [
     {
       id: "free",
@@ -73,6 +73,7 @@ function buildTiers(donationFeePct: string): Tier[] {
       highlight: true,
       features: [
         { label: "Donation fee",      value: donationFeePct },
+        { label: "Withdrawal fee",    value: withdrawalFeePct },
         { label: "Themes",            value: "5 presets" },
         { label: "Links",             value: "Unlimited" },
         { label: "Analytics",         value: "Page views + clicks" },
@@ -81,6 +82,10 @@ function buildTiers(donationFeePct: string): Tier[] {
       ],
     },
   ]
+}
+
+function formatPct(rate: number): string {
+  return `${(rate * 100).toFixed(rate * 100 % 1 === 0 ? 0 : 1)}%`
 }
 
 export const metadata = {
@@ -93,9 +98,14 @@ export const metadata = {
 }
 
 export default async function LandingPage() {
-  const donationFeeRate = await getFeeRate("fee_donation_free", 0.05)
-  const donationFeePct = `${(donationFeeRate * 100).toFixed(donationFeeRate * 100 % 1 === 0 ? 0 : 1)}%`
-  const TIERS = buildTiers(donationFeePct)
+  const [donationFeeRate, withdrawalCreatorRate, withdrawalProcessorRate] = await Promise.all([
+    getFeeRate("fee_donation_free", 0.05),
+    getFeeRate("fee_withdrawal_creator", 0.02),
+    getFeeRate("fee_withdrawal_processor", 0.01),
+  ])
+  const donationFeePct = formatPct(donationFeeRate)
+  const withdrawalFeePct = formatPct(withdrawalCreatorRate + withdrawalProcessorRate)
+  const TIERS = buildTiers(donationFeePct, withdrawalFeePct)
 
   return (
     <div className="flex flex-col min-h-screen bg-background text-foreground">

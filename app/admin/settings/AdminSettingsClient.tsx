@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useTransition } from "react"
+import { FeeCalculator } from "./FeeCalculator"
 
 type Setting = {
   id: number
@@ -24,12 +25,21 @@ type AuditLog = {
 type Props = {
   settings: Setting[]
   auditLogs: AuditLog[]
+  donationRate: number
+  withdrawalCreatorRate: number
+  withdrawalProcessorRate: number
 }
 
 type Confirm = { key: string; from: string; to: string } | null
 
-export function AdminSettingsClient({ settings: initial, auditLogs: initialLogs }: Props) {
-  const [tab, setTab] = useState<"settings" | "audit">("settings")
+export function AdminSettingsClient({
+  settings: initial,
+  auditLogs: initialLogs,
+  donationRate,
+  withdrawalCreatorRate,
+  withdrawalProcessorRate,
+}: Props) {
+  const [tab, setTab] = useState<"settings" | "audit" | "calculator">("settings")
   const [settings, setSettings] = useState(initial)
   const [auditLogs, setAuditLogs] = useState(initialLogs)
   const [editing, setEditing] = useState<Record<string, string>>({})
@@ -138,7 +148,25 @@ export function AdminSettingsClient({ settings: initial, auditLogs: initialLogs 
         >
           Audit Log
         </button>
+        <button
+          onClick={() => setTab("calculator")}
+          className={`pb-2 px-1 text-sm font-medium transition-colors border-b-2 ${
+            tab === "calculator"
+              ? "border-primary text-foreground"
+              : "border-transparent text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          Calculator
+        </button>
       </div>
+
+      {tab === "calculator" && (
+        <FeeCalculator
+          initialDonationRate={donationRate}
+          initialWithdrawalCreatorRate={withdrawalCreatorRate}
+          initialWithdrawalProcessorRate={withdrawalProcessorRate}
+        />
+      )}
 
       {tab === "settings" && (
         <div className="rounded-md border overflow-hidden">

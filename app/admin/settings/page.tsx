@@ -2,6 +2,7 @@ import { redirect } from "next/navigation"
 import { getSession } from "@/lib/auth/session"
 import { isAdmin } from "@/lib/services/admin"
 import { prisma } from "@/lib/db"
+import { getFeeRate } from "@/lib/services/platform-settings"
 import { AdminSettingsClient } from "./AdminSettingsClient"
 
 export const metadata = { title: "Settings — Admin" }
@@ -10,12 +11,15 @@ export default async function AdminSettingsPage() {
   const session = await getSession()
   if (!session || !isAdmin(session.userId)) redirect("/")
 
-  const [settings, auditLogs] = await Promise.all([
+  const [settings, auditLogs, donationRate, withdrawalCreatorRate, withdrawalProcessorRate] = await Promise.all([
     prisma.platformSetting.findMany({ orderBy: { key: "asc" } }),
     prisma.platformSettingAuditLog.findMany({
       orderBy: { changed_at: "desc" },
       take: 200,
     }),
+    getFeeRate("fee_donation_free", 0.05),
+    getFeeRate("fee_withdrawal_creator", 0.02),
+    getFeeRate("fee_withdrawal_processor", 0.01),
   ])
 
   const serializedSettings = settings.map((s) => ({
@@ -38,7 +42,13 @@ export default async function AdminSettingsPage() {
           Fee rates and platform-wide configuration. Changes take effect within 5 minutes.
         </p>
       </div>
-      <AdminSettingsClient settings={serializedSettings} auditLogs={serializedLogs} />
+      <AdminSettingsClient
+        settings={serializedSettings}
+        auditLogs={serializedLogs}
+        donationRate={donationRate}
+        withdrawalCreatorRate={withdrawalCreatorRate}
+        withdrawalProcessorRate={withdrawalProcessorRate}
+      />
     </div>
   )
 }

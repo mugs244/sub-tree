@@ -45,17 +45,36 @@ model User {
   email_verifications EmailVerification[]
   wallet_withdrawals WalletWithdrawal[]
   client_withdrawals ClientWithdrawal[]
+  withdrawal_otps    WithdrawalOtp[]
 
 }
 
+// Deliberately separate from EmailVerification (signup/signin codes) — a
+// withdrawal code being requested must never invalidate a pending sign-in
+// code, or vice versa.
+model WithdrawalOtp {
+  id          Int       @id @default(autoincrement())
+  user_id     Int
+  code        String
+  expires_at  DateTime
+  consumed_at DateTime?
+  created_at  DateTime  @default(now())
+
+  user        User      @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@index([user_id])
+}
+
 model WalletWithdrawal {
-  id           Int              @id @default(autoincrement())
-  amount       BigInt           // UGX — platform fee revenue only, never donor/creator principal
-  status       WithdrawalStatus @default(PENDING)
-  requested_by Int
-  note         String?
-  created_at   DateTime         @default(now())
-  completed_at DateTime?
+  id                    Int              @id @default(autoincrement())
+  amount                BigInt           // UGX — platform fee revenue only, never donor/creator principal
+  processor_fee_amount  BigInt           @default(0) // Pesapal/OpenFloat's real transfer cost, not Sub-tree revenue
+  net_amount            BigInt           @default(0) // amount - processor_fee_amount — what actually lands in the outside wallet
+  status                WithdrawalStatus @default(PENDING)
+  requested_by          Int
+  note                  String?
+  created_at            DateTime         @default(now())
+  completed_at          DateTime?
 
   admin        User             @relation(fields: [requested_by], references: [id], onDelete: Restrict)
 
@@ -67,9 +86,12 @@ model WalletWithdrawal {
 // withdraw their own creator_amount balance, admins can only ever withdraw
 // platform fee revenue. No shared code path can cross the two.
 model ClientWithdrawal {
-  id           Int              @id @default(autoincrement())
-  amount       Int              // UGX — from the creator's own creator_amount balance only
-  status       WithdrawalStatus @default(PENDING)
+  id                    Int              @id @default(autoincrement())
+  amount                Int              // UGX — reserved from the creator's own creator_amount balance
+  platform_fee_amount   Int              @default(0) // Sub-tree's own withdrawal fee — real platform revenue
+  processor_fee_amount  Int              @default(0) // Pesapal/OpenFloat's real transfer cost, not Sub-tree revenue
+  net_amount            Int              @default(0) // amount - both fees — what the creator actually receives
+  status                WithdrawalStatus @default(PENDING)
   user_id      Int
   note         String?
   created_at   DateTime         @default(now())

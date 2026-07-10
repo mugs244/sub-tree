@@ -31,6 +31,24 @@ export async function sendVerificationEmail(userId: number, email: string): Prom
   })
 }
 
+export async function sendWelcomeEmail(email: string, username: string): Promise<void> {
+  await resend.emails.send({
+    from: FROM,
+    to: email,
+    subject: `Welcome to Subtree, @${username}! 🌿`,
+    html: `
+      <div style="font-family:sans-serif;max-width:420px;margin:0 auto;padding:24px">
+        <p>Hi @${username},</p>
+        <p style="color:#374151">Welcome to Subtree!</p>
+        <p style="color:#374151">We are so happy to have you as part of our branch. Whether you are here to grow your portfolio, connect, or explore new tools, you are in the right place.</p>
+        <p style="color:#374151">Our team is dedicated to providing you with the best possible experience as you get started. If you ever need guidance or just want to say hello, we are always just a message away.</p>
+        <p style="color:#374151">Thank you for choosing Subtree. Let&apos;s grow together!</p>
+        <p style="margin-top:24px">Warmly,<br/><strong>The Subtree Team</strong></p>
+      </div>
+    `,
+  })
+}
+
 export async function sendSigninCode(userId: number, email: string): Promise<void> {
   const code = generateCode()
   const expires_at = new Date(Date.now() + CODE_TTL_MINUTES * 60 * 1000)
