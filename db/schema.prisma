@@ -141,6 +141,8 @@ model ClientWithdrawal {
   processor_fee_amount  Int              @default(0) // Pesapal/OpenFloat's real transfer cost, not Sub-tree revenue
   net_amount            Int              @default(0) // amount - both fees — what the creator actually receives
   status                WithdrawalStatus @default(PENDING)
+  idempotency_key       String?          @unique // OpenFloat payout reference — set at request time
+  provider_tx_id        String?          // OpenFloat's transaction id, set once the payout is accepted/confirmed
   user_id      Int
   note         String?
   created_at   DateTime         @default(now())
@@ -154,6 +156,7 @@ model ClientWithdrawal {
 
 enum WithdrawalStatus {
   PENDING
+  PROCESSING
   COMPLETED
   FAILED
 }

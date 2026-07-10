@@ -1,8 +1,7 @@
 import { NextResponse } from "next/server"
 import { getSession } from "@/lib/auth/session"
 import { isAdmin } from "@/lib/services/admin"
-import { markClientWithdrawalCompleted } from "@/lib/services/client-wallet"
-import { Prisma } from "@prisma/client"
+import { markClientWithdrawalCompleted, ClientWalletError } from "@/lib/services/client-wallet"
 
 type Params = { params: Promise<{ id: string }> }
 
@@ -20,7 +19,7 @@ export async function POST(_req: Request, { params }: Params): Promise<NextRespo
     await markClientWithdrawalCompleted(withdrawalId)
     return NextResponse.json({ data: null })
   } catch (err) {
-    if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2025") {
+    if (err instanceof ClientWalletError && err.code === "NOT_FOUND") {
       return NextResponse.json({ error: "NOT_FOUND", message: "Withdrawal not found or already processed" }, { status: 404 })
     }
     throw err

@@ -1,4 +1,4 @@
-// OpenFloat Collections client
+// OpenFloat Collections + Payouts client
 // Docs: https://openfloat.co — contact OpenFloat support for API documentation
 //
 // Required env vars:
@@ -6,11 +6,23 @@
 //   OPENFLOAT_WEBHOOK_SECRET  — HMAC-SHA256 secret for webhook signature verification
 //   OPENFLOAT_ENVIRONMENT     — "sandbox" | "production"
 //
-// Webhook URL to register in OpenFloat dashboard:
-//   https://sub-tree.vercel.app/api/webhooks/payments/openfloat
+// Webhook URLs to register in OpenFloat dashboard:
+//   Collections: https://sub-tree.vercel.app/api/webhooks/payments/openfloat
+//   Payouts:     https://sub-tree.vercel.app/api/webhooks/payments/openfloat/payout
+//
+// The payout() endpoint path and response shape below are assumed pending
+// OpenFloat's actual payout/B2C API docs — adjust once confirmed, same as
+// requestToPay above.
 
 import { createHmac, timingSafeEqual } from "crypto"
-import type { MomoProvider, MomoRequestToPayParams, MomoRequestToPayResult, MomoCallbackPayload } from "../momo/types"
+import type {
+  MomoProvider,
+  MomoRequestToPayParams,
+  MomoRequestToPayResult,
+  MomoCallbackPayload,
+  MomoTransferParams,
+  MomoTransferResult,
+} from "../momo/types"
 
 const BASE_URLS: Record<string, string> = {
   sandbox: "https://sandbox.openfloat.co/api/v1",
@@ -45,6 +57,33 @@ async function requestToPay(params: MomoRequestToPayParams): Promise<MomoRequest
   if (!res.ok) throw new Error(`OpenFloat requestToPay error: ${res.status} ${await res.text()}`)
   const data = (await res.json()) as { transaction_id?: string; id?: string; error?: unknown }
   if (data.error) throw new Error(`OpenFloat requestToPay: ${JSON.stringify(data.error)}`)
+
+  return { providerTxId: data.transaction_id ?? data.id }
+}
+
+async function payout(params: MomoTransferParams): Promise<MomoTransferResult> {
+  // OpenFloat expects international format without leading 0
+  const phone = "256" + params.phone.replace(/^0/, "")
+
+  const res = await fetch(`${baseUrl()}/payouts/request`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${process.env.OPENFLOAT_API_KEY ?? ""}`,
+      "Content-Type": "application/json",
+      Accept: "application/json",
+    },
+    body: JSON.stringify({
+      reference: params.referenceId,
+      amount: params.amount,
+      currency: "UGX",
+      phone,
+      description: params.payerMessage ?? "Sub-tree withdrawal",
+    }),
+  })
+
+  if (!res.ok) throw new Error(`OpenFloat payout error: ${res.status} ${await res.text()}`)
+  const data = (await res.json()) as { transaction_id?: string; id?: string; error?: unknown }
+  if (data.error) throw new Error(`OpenFloat payout: ${JSON.stringify(data.error)}`)
 
   return { providerTxId: data.transaction_id ?? data.id }
 }
@@ -85,3 +124,8 @@ function verifyCallback(rawBody: string, signature: string): MomoCallbackPayload
 }
 
 export const openFloat: MomoProvider = { requestToPay, verifyCallback }
+
+// Payout side reuses the same signature scheme as collections — separate
+// export so the payout webhook route doesn't pull in the (currently
+// unimplemented) MomoProvider.validateAccountHolder requirement.
+export const openFloatPayout = { payout, verifyCallback }

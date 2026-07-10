@@ -1,12 +1,18 @@
+import { randomUUID } from "crypto"
+import { Prisma } from "@prisma/client"
 import { prisma } from "@/lib/db"
 import { getRateHistory, rateAtTime, getFeeRate } from "@/lib/services/platform-settings"
 import { notifyWithdrawalRequested, notifyWithdrawalCompleted, notifyWithdrawalFailed } from "@/lib/services/withdrawal-notify"
 import { verifyWithdrawalOtp } from "@/lib/services/withdrawal-otp"
 import { createNotification } from "@/lib/services/notification"
+import { openFloatPayout } from "@/lib/services/payments/openfloat"
+import type { MomoCallbackPayload } from "@/lib/services/momo/types"
 
 function fmt(v: number): string {
   return `UGX ${Math.round(v).toLocaleString()}`
 }
+
+type Db = typeof prisma | Prisma.TransactionClient
 
 export interface WithdrawalFeeBreakdown {
   amount: number
@@ -30,7 +36,7 @@ export async function computeWithdrawalFees(amountUgx: number): Promise<Withdraw
 
 export class ClientWalletError extends Error {
   constructor(
-    public readonly code: "INVALID_AMOUNT" | "INSUFFICIENT_BALANCE",
+    public readonly code: "INVALID_AMOUNT" | "INSUFFICIENT_BALANCE" | "NOT_FOUND",
     message: string,
   ) {
     super(message)
@@ -65,23 +71,23 @@ async function creatorShareOf(donations: DonationRow[]): Promise<number> {
   }, 0)
 }
 
-async function getWithdrawnTotal(userId: number): Promise<number> {
-  const agg = await prisma.clientWithdrawal.aggregate({
-    where: { user_id: userId, status: { in: ["PENDING", "COMPLETED"] } },
+async function getWithdrawnTotal(userId: number, db: Db): Promise<number> {
+  const agg = await db.clientWithdrawal.aggregate({
+    where: { user_id: userId, status: { in: ["PENDING", "PROCESSING", "COMPLETED"] } },
     _sum: { amount: true },
   })
   return agg._sum.amount ?? 0
 }
 
-export async function getClientBalance(userId: number): Promise<{ earned: number; withdrawn: number; available: number }> {
-  const donations = await prisma.donation.findMany({
+export async function getClientBalance(userId: number, db: Db = prisma): Promise<{ earned: number; withdrawn: number; available: number }> {
+  const donations = await db.donation.findMany({
     where: { user_id: userId, status: "COMPLETED" },
     select: { amount: true, created_at: true, fundraiser_id: true, creator_amount: true },
   })
 
   const [earned, withdrawn] = await Promise.all([
     creatorShareOf(donations),
-    getWithdrawnTotal(userId),
+    getWithdrawnTotal(userId, db),
   ])
 
   return { earned, withdrawn, available: earned - withdrawn }
@@ -99,10 +105,12 @@ export async function listClientWithdrawals(userId: number, limit = 20) {
   })
 }
 
-// Records the request only — no OpenFloat payout call yet, same as the admin
-// wallet, until that integration is provided. otpCode must be a valid,
-// unexpired, unconsumed code sent via sendWithdrawalOtp — throws
-// WithdrawalOtpError otherwise.
+// otpCode must be a valid, unexpired, unconsumed code sent via
+// sendWithdrawalOtp — throws WithdrawalOtpError otherwise. The balance check
+// and insert run inside a Postgres advisory lock scoped to this user, so two
+// concurrent requests can never both pass the check against the same funds —
+// the second waits for the first's transaction to commit, then reads its
+// up-to-date withdrawn total.
 export async function requestClientWithdrawal(userId: number, amountUgx: number, otpCode: string): Promise<void> {
   if (!Number.isFinite(amountUgx) || amountUgx <= 0) {
     throw new ClientWalletError("INVALID_AMOUNT", "Amount must be a positive number")
@@ -110,25 +118,30 @@ export async function requestClientWithdrawal(userId: number, amountUgx: number,
 
   await verifyWithdrawalOtp(userId, otpCode)
 
-  const { available } = await getClientBalance(userId)
-  if (amountUgx > available) {
-    throw new ClientWalletError(
-      "INSUFFICIENT_BALANCE",
-      `Only UGX ${Math.round(available).toLocaleString()} is available to withdraw`,
-    )
-  }
-
   const rounded = Math.round(amountUgx)
   const fees = await computeWithdrawalFees(rounded)
 
-  await prisma.clientWithdrawal.create({
-    data: {
-      amount: rounded,
-      platform_fee_amount: fees.platformFee,
-      processor_fee_amount: fees.processorFee,
-      net_amount: fees.netAmount,
-      user_id: userId,
-    },
+  const withdrawal = await prisma.$transaction(async (tx) => {
+    await tx.$executeRaw`SELECT pg_advisory_xact_lock(${userId})`
+
+    const { available } = await getClientBalance(userId, tx)
+    if (rounded > available) {
+      throw new ClientWalletError(
+        "INSUFFICIENT_BALANCE",
+        `Only UGX ${Math.round(available).toLocaleString()} is available to withdraw`,
+      )
+    }
+
+    return tx.clientWithdrawal.create({
+      data: {
+        amount: rounded,
+        platform_fee_amount: fees.platformFee,
+        processor_fee_amount: fees.processorFee,
+        net_amount: fees.netAmount,
+        user_id: userId,
+        idempotency_key: randomUUID(),
+      },
+    })
   })
 
   await notifyWithdrawalRequested({
@@ -146,6 +159,81 @@ export async function requestClientWithdrawal(userId: number, amountUgx: number,
     body: `Your request to withdraw ${fmt(rounded)} is pending. You'll receive ${fmt(fees.netAmount)} after fees.`,
     metadata: { amount: rounded, netAmount: fees.netAmount },
   })
+
+  await attemptClientWithdrawalPayout(withdrawal.id)
+}
+
+// Fires the real OpenFloat payout right after a withdrawal is recorded, so
+// creators no longer wait on admin approval. Falls back to leaving the
+// request PENDING for manual admin fulfillment when OpenFloat isn't
+// configured in this environment (same graceful-degradation pattern used by
+// the donation collection chain) — everything else (bad/missing payout
+// number, a synchronous provider error) fails the withdrawal outright so the
+// creator is notified immediately instead of waiting indefinitely.
+async function attemptClientWithdrawalPayout(withdrawalId: number): Promise<void> {
+  const withdrawal = await prisma.clientWithdrawal.findUnique({
+    where: { id: withdrawalId },
+    select: { user_id: true, net_amount: true, idempotency_key: true },
+  })
+  if (!withdrawal) return
+
+  const user = await prisma.user.findUnique({
+    where: { id: withdrawal.user_id },
+    select: { momo_number: true, phone: true },
+  })
+  const phone = user?.momo_number ?? user?.phone
+
+  if (!phone) {
+    await markClientWithdrawalFailed(
+      withdrawalId,
+      "No mobile money number on file — add one in Settings and request the withdrawal again.",
+    )
+    return
+  }
+
+  if (!process.env.OPENFLOAT_API_KEY) {
+    console.error("Client withdrawal payout skipped — OpenFloat not configured", withdrawalId)
+    return
+  }
+
+  try {
+    const result = await openFloatPayout.payout({
+      amount: withdrawal.net_amount,
+      phone,
+      referenceId: withdrawal.idempotency_key!,
+      payerMessage: "Sub-tree withdrawal",
+    })
+
+    await prisma.clientWithdrawal.updateMany({
+      where: { id: withdrawalId, status: "PENDING" },
+      data: { status: "PROCESSING", ...(result.providerTxId ? { provider_tx_id: result.providerTxId } : {}) },
+    })
+  } catch (err) {
+    console.error("Client withdrawal payout failed to initiate", withdrawalId, err)
+    await markClientWithdrawalFailed(withdrawalId, "Could not reach the payment processor — please contact support.")
+  }
+}
+
+// OpenFloat payout webhook entry point — looks the withdrawal up by the
+// idempotency_key we sent as the payout reference, same pattern as
+// handleMomoCallback for donations. Idempotent: unknown or already-settled
+// references are ignored so provider webhook retries can't double-process.
+export async function handleClientWithdrawalPayoutCallback(payload: MomoCallbackPayload): Promise<void> {
+  const { referenceId, status, providerTxId, reason } = payload
+
+  const withdrawal = await prisma.clientWithdrawal.findUnique({
+    where: { idempotency_key: referenceId },
+    select: { id: true, status: true },
+  })
+  if (!withdrawal) return
+
+  if (withdrawal.status === "COMPLETED" || withdrawal.status === "FAILED") return
+
+  if (status === "SUCCESSFUL") {
+    await markClientWithdrawalCompleted(withdrawal.id, providerTxId)
+  } else {
+    await markClientWithdrawalFailed(withdrawal.id, reason ?? "The payment processor reported the transfer failed.")
+  }
 }
 
 // Admin-facing: every creator's withdrawal requests, for manual fulfillment
@@ -162,10 +250,32 @@ export async function listAllClientWithdrawals(limit = 50) {
   })
 }
 
-export async function markClientWithdrawalCompleted(withdrawalId: number): Promise<void> {
-  const withdrawal = await prisma.clientWithdrawal.update({
-    where: { id: withdrawalId, status: "PENDING" },
-    data: { status: "COMPLETED", completed_at: new Date() },
+// Guards the transition against a stale/duplicate call (webhook retry, or an
+// admin acting on a request the webhook already resolved) — throws NOT_FOUND
+// instead of silently double-processing when the withdrawal isn't in an
+// actionable state.
+async function transitionClientWithdrawal(
+  withdrawalId: number,
+  data: Prisma.ClientWithdrawalUpdateManyMutationInput,
+) {
+  const result = await prisma.clientWithdrawal.updateMany({
+    where: { id: withdrawalId, status: { in: ["PENDING", "PROCESSING"] } },
+    data,
+  })
+  if (result.count === 0) {
+    throw new ClientWalletError("NOT_FOUND", "Withdrawal not found or already processed")
+  }
+  return prisma.clientWithdrawal.findUniqueOrThrow({ where: { id: withdrawalId } })
+}
+
+// Fired once the payout is confirmed — by the OpenFloat webhook, or by an
+// admin manually resolving a request that never got automated (no provider
+// configured, or a stuck PROCESSING request).
+export async function markClientWithdrawalCompleted(withdrawalId: number, providerTxId?: string): Promise<void> {
+  const withdrawal = await transitionClientWithdrawal(withdrawalId, {
+    status: "COMPLETED",
+    completed_at: new Date(),
+    ...(providerTxId ? { provider_tx_id: providerTxId } : {}),
   })
 
   await notifyWithdrawalCompleted({
@@ -185,10 +295,11 @@ export async function markClientWithdrawalCompleted(withdrawalId: number): Promi
   })
 }
 
-export async function markClientWithdrawalFailed(withdrawalId: number): Promise<void> {
-  const withdrawal = await prisma.clientWithdrawal.update({
-    where: { id: withdrawalId, status: "PENDING" },
-    data: { status: "FAILED", completed_at: new Date() },
+export async function markClientWithdrawalFailed(withdrawalId: number, reason?: string): Promise<void> {
+  const withdrawal = await transitionClientWithdrawal(withdrawalId, {
+    status: "FAILED",
+    completed_at: new Date(),
+    ...(reason ? { note: reason } : {}),
   })
 
   await notifyWithdrawalFailed(withdrawal.user_id, withdrawal.amount)
@@ -197,7 +308,9 @@ export async function markClientWithdrawalFailed(withdrawalId: number): Promise<
     userId: withdrawal.user_id,
     type: "WITHDRAWAL_FAILED",
     title: `Withdrawal failed — ${fmt(withdrawal.amount)}`,
-    body: `Your withdrawal of ${fmt(withdrawal.amount)} could not be completed. Please check your details or contact support.`,
+    body: reason
+      ? `Your withdrawal of ${fmt(withdrawal.amount)} could not be completed: ${reason}`
+      : `Your withdrawal of ${fmt(withdrawal.amount)} could not be completed. Please check your details or contact support.`,
     metadata: { withdrawalId, amount: withdrawal.amount },
   })
 }

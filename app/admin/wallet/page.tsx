@@ -129,7 +129,9 @@ export default async function AdminWalletPage() {
       <div className="space-y-3">
         <h2 className="text-sm font-medium">Creator withdrawals</h2>
         <p className="text-xs text-muted-foreground -mt-2">
-          Every creator&apos;s withdrawal request, across all accounts. Mark complete once you&apos;ve sent the funds manually.
+          Every creator&apos;s withdrawal request, across all accounts. Payouts are sent automatically —
+          use the actions below only to resolve a request stuck in Processing or one OpenFloat couldn&apos;t
+          reach automatically.
         </p>
         <div className="border border-border rounded-xl overflow-hidden">
           <table className="w-full text-sm">
@@ -166,7 +168,7 @@ export default async function AdminWalletPage() {
                     {w.created_at.toLocaleDateString("en-UG", { day: "numeric", month: "short", year: "numeric" })}
                   </td>
                   <td className="px-4 py-3">
-                    {w.status === "PENDING" && <WithdrawalActions id={w.id} kind="client" />}
+                    {(w.status === "PENDING" || w.status === "PROCESSING") && <WithdrawalActions id={w.id} kind="client" />}
                   </td>
                 </tr>
               ))}
@@ -221,6 +223,7 @@ export default async function AdminWalletPage() {
 function WithdrawalStatusBadge({ status }: { status: string }) {
   const map: Record<string, string> = {
     PENDING: "bg-warning-bg text-warning",
+    PROCESSING: "bg-warning-bg text-warning",
     COMPLETED: "bg-success-bg text-success",
     FAILED: "bg-error-bg text-error",
   }
