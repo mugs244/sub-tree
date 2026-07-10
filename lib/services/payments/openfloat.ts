@@ -15,14 +15,21 @@
 // requestToPay above.
 
 import { createHmac, timingSafeEqual } from "crypto"
-import type {
-  MomoProvider,
-  MomoRequestToPayParams,
-  MomoRequestToPayResult,
-  MomoCallbackPayload,
-  MomoTransferParams,
-  MomoTransferResult,
-} from "../momo/types"
+import type { MomoProvider, MomoRequestToPayParams, MomoRequestToPayResult, MomoCallbackPayload } from "../momo/types"
+
+// Kept local rather than imported from ../momo/types — that file is a
+// separate in-progress MTN integration and shouldn't be a dependency for the
+// OpenFloat payout path.
+export interface OpenFloatPayoutParams {
+  amount: number          // UGX, integer
+  phone: string           // normalized Ugandan number (07XXXXXXXX)
+  referenceId: string     // UUID — our idempotency key
+  payerMessage?: string
+}
+
+export interface OpenFloatPayoutResult {
+  providerTxId?: string
+}
 
 const BASE_URLS: Record<string, string> = {
   sandbox: "https://sandbox.openfloat.co/api/v1",
@@ -61,7 +68,7 @@ async function requestToPay(params: MomoRequestToPayParams): Promise<MomoRequest
   return { providerTxId: data.transaction_id ?? data.id }
 }
 
-async function payout(params: MomoTransferParams): Promise<MomoTransferResult> {
+async function payout(params: OpenFloatPayoutParams): Promise<OpenFloatPayoutResult> {
   // OpenFloat expects international format without leading 0
   const phone = "256" + params.phone.replace(/^0/, "")
 
