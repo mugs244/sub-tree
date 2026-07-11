@@ -29,6 +29,6 @@ export async function POST(req: Request) {
     return applySessionCookie(res, token, expires_at)
   } catch (err) {
     console.error("Verify-email error:", err)
-    return NextResponse.json({ error: "Internal server error", detail: String(err) }, { status: 500 })
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
 }

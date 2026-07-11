@@ -45,6 +45,6 @@ export async function PATCH(req: Request, { params }: Params) {
     data.account_type = parsed.data.account_type
   }
 
-  await prisma.user.update({ where: { id }, data })
+  await prisma.user.update({ where: { id }, data, select: { id: true } })
   return NextResponse.json({ ok: true })
 }
