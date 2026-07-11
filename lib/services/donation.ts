@@ -1,6 +1,5 @@
 import { prisma } from "@/lib/db"
 import { sendSms } from "@/lib/sms"
-import { incrementRaisedAmount } from "@/lib/services/fundraiser"
 import { getFeeRate } from "@/lib/services/platform-settings"
 import { createNotification } from "@/lib/services/notification"
 import type { MomoCallbackPayload } from "./momo/types"
@@ -31,8 +30,7 @@ export async function handleMomoCallback(
   let platformFee: number | null = null
   let creatorAmount: number | null = null
   if (newStatus === "COMPLETED") {
-    const feeKey = donation.fundraiser_id ? "fee_fundraiser_free" : "fee_donation_free"
-    const rate = await getFeeRate(feeKey, 0.05)
+    const rate = await getFeeRate("fee_donation_free", 0.05)
     platformFee = Math.round(donation.amount * rate)
     creatorAmount = donation.amount - platformFee
   }
@@ -59,10 +57,6 @@ export async function handleMomoCallback(
         },
       },
     })
-
-    if (newStatus === "COMPLETED" && donation.fundraiser_id) {
-      await incrementRaisedAmount(donation.fundraiser_id, updated.amount, tx)
-    }
 
     return updated
   })
