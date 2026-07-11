@@ -1,6 +1,6 @@
 import { getSession } from "@/lib/auth/session"
 import { prisma } from "@/lib/db"
-import { Link2, Heart, Eye, Smartphone, Globe, Wallet } from "lucide-react"
+import { Link2, Heart, Eye, Smartphone, Globe, Wallet, CreditCard } from "lucide-react"
 import { NotificationsFeed } from "@/components/NotificationsFeed"
 import { DonationLaunchNotice } from "@/components/DonationLaunchNotice"
 import { getClientBalance, listClientWithdrawals } from "@/lib/services/client-wallet"
@@ -62,6 +62,7 @@ export default async function DashboardHomePage() {
 
   const mtnCount = providerBreakdown.find((p) => p.provider === "MTN_MOMO")?._count.id ?? 0
   const airtelCount = providerBreakdown.find((p) => p.provider === "AIRTEL_MONEY")?._count.id ?? 0
+  const cardCount = providerBreakdown.find((p) => p.provider === "CARD")?._count.id ?? 0
 
   const topReferrers = referrerBreakdown
     .filter((r) => r.referrer_source)
@@ -182,6 +183,14 @@ export default async function DashboardHomePage() {
                       icon={Smartphone}
                       label="Airtel Money"
                       count={airtelCount}
+                      total={totalDonations}
+                    />
+                  )}
+                  {cardCount > 0 && (
+                    <BreakdownRow
+                      icon={CreditCard}
+                      label="Card"
+                      count={cardCount}
                       total={totalDonations}
                     />
                   )}

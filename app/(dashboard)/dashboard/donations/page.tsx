@@ -60,7 +60,7 @@ export default async function DonationsPage() {
               <tr key={d.id} className="bg-background hover:bg-surface transition-colors duration-100">
                 <td className="px-4 py-3">
                   <p className="font-medium">{d.donor_name ?? "Anonymous"}</p>
-                  <p className="text-xs text-muted-foreground font-mono">{d.donor_phone}</p>
+                  <p className="text-xs text-muted-foreground font-mono">{d.donor_phone ?? "Card payment"}</p>
                 </td>
                 <td className="px-4 py-3 font-mono">
                   {d.currency} {d.amount.toLocaleString()}

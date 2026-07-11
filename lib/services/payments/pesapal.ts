@@ -6,12 +6,33 @@
 //   PESAPAL_CONSUMER_SECRET   — from Pesapal merchant dashboard
 //   PESAPAL_IPN_ID            — UUID returned when you register your IPN URL in the dashboard
 //   PESAPAL_ENVIRONMENT       — "sandbox" | "production"
-//   PESAPAL_CALLBACK_URL      — full URL shown to buyer after payment (e.g. https://sub-tree.vercel.app/donate/complete)
 //
 // IPN URL to register in Pesapal dashboard:
 //   https://sub-tree.vercel.app/api/webhooks/payments/pesapal
+//
+// Pesapal does NOT do a silent STK push — SubmitOrderRequest returns a
+// redirect_url to Pesapal's own hosted checkout page, where the payer picks
+// a method (mobile money, card, etc.) and completes payment there. The
+// donor must actually be sent to that URL (embedded in an iframe on our
+// donate page). See submitOrder() below — requestToPay()/MomoProvider is
+// kept only for interface conformance and is NOT used for the real flow.
 
 import type { MomoProvider, MomoRequestToPayParams, MomoRequestToPayResult, MomoCallbackPayload } from "../momo/types"
+
+export interface PesapalOrderResult {
+  orderTrackingId?: string
+  redirectUrl?: string
+}
+
+// Local, not MomoRequestToPayParams — phone is optional because a card payer
+// never enters one on our form at all; Pesapal's own hosted checkout collects
+// card/billing details directly, so we don't need a valid number to submit.
+export interface PesapalOrderParams {
+  amount: number
+  phone?: string
+  referenceId: string
+  payerMessage?: string
+}
 
 const BASE_URLS: Record<string, string> = {
   sandbox: "https://cybqa.pesapal.com/pesapalv3",
@@ -38,10 +59,14 @@ async function getToken(): Promise<string> {
   return data.token
 }
 
-async function requestToPay(params: MomoRequestToPayParams): Promise<MomoRequestToPayResult> {
+// The real entry point for the donation flow — callbackUrl is built per-request
+// by the caller (it embeds our idempotency_key so /donate/complete knows which
+// donation to show) rather than a single static env var.
+export async function submitOrder(params: PesapalOrderParams, callbackUrl: string): Promise<PesapalOrderResult> {
   const token = await getToken()
-  // Pesapal expects international format without leading 0
-  const phone = "256" + params.phone.replace(/^0/, "")
+  // Pesapal expects international format without leading 0 — omitted
+  // entirely for card payers, who never provide one on our form
+  const phone = params.phone ? "256" + params.phone.replace(/^0/, "") : ""
 
   const res = await fetch(`${baseUrl()}/api/Transactions/SubmitOrderRequest`, {
     method: "POST",
@@ -55,7 +80,7 @@ async function requestToPay(params: MomoRequestToPayParams): Promise<MomoRequest
       currency: "UGX",
       amount: params.amount,
       description: params.payerMessage ?? "Sub-tree donation",
-      callback_url: process.env.PESAPAL_CALLBACK_URL ?? "",
+      callback_url: callbackUrl,
       notification_id: process.env.PESAPAL_IPN_ID ?? "",
       billing_address: {
         phone_number: phone,
@@ -74,11 +99,19 @@ async function requestToPay(params: MomoRequestToPayParams): Promise<MomoRequest
   })
 
   if (!res.ok) throw new Error(`Pesapal SubmitOrderRequest error: ${res.status} ${await res.text()}`)
-  const data = (await res.json()) as { order_tracking_id?: string; error?: unknown }
+  const data = (await res.json()) as { order_tracking_id?: string; redirect_url?: string; error?: unknown }
   if (data.error) throw new Error(`Pesapal SubmitOrderRequest: ${JSON.stringify(data.error)}`)
 
-  // order_tracking_id is Pesapal's reference; Pesapal triggers STK push to the phone
-  return { providerTxId: data.order_tracking_id }
+  return { orderTrackingId: data.order_tracking_id, redirectUrl: data.redirect_url }
+}
+
+// Kept only so `pesapal` still satisfies MomoProvider for callers that expect
+// the generic STK-push shape — NOT used by the real donation flow, which
+// calls submitOrder() directly to capture redirect_url. Uses a generic
+// (non-per-donation) callback since nothing currently exercises this path.
+async function requestToPay(params: MomoRequestToPayParams): Promise<MomoRequestToPayResult> {
+  const result = await submitOrder(params, "https://sub-tree.vercel.app/donate/complete")
+  return { providerTxId: result.orderTrackingId }
 }
 
 // Called by the webhook route after Pesapal IPN fires

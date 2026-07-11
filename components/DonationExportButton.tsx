@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button"
 interface DonationRow {
   id: number
   donor_name: string | null
-  donor_phone: string
+  donor_phone: string | null
   amount: number
   currency: string
   status: string
@@ -21,7 +21,7 @@ function toCSV(rows: DonationRow[]): string {
   const lines = rows.map((d) => [
     d.id,
     d.donor_name ?? "Anonymous",
-    d.donor_phone,
+    d.donor_phone ?? "",
     d.amount,
     d.currency,
     d.provider,

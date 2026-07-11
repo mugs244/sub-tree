@@ -1,7 +1,10 @@
 import { NextResponse } from "next/server"
 import type { NextRequest } from "next/server"
 
-const PROTECTED = ["/dashboard", "/onboarding", "/admin", "/fan", "/api/admin", "/api/links", "/api/posts", "/api/notifications", "/api/creator", "/api/donations", "/api/account", "/api/profile", "/api/onboarding", "/api/views", "/api/fan", "/api/payments", "/api/subscriptions"]
+// /api/payments is deliberately NOT protected — POST /api/payments/initiate
+// is the public donation endpoint, called by anonymous donors on a
+// creator's public profile page. Gating it here would break every donation.
+const PROTECTED = ["/dashboard", "/onboarding", "/admin", "/fan", "/api/admin", "/api/links", "/api/posts", "/api/notifications", "/api/creator", "/api/donations", "/api/account", "/api/profile", "/api/onboarding", "/api/views", "/api/fan", "/api/subscriptions"]
 
 export function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl

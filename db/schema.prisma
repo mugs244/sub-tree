@@ -345,7 +345,7 @@ enum ClaimStatus {
 model Donation {
   id              Int            @id @default(autoincrement())
   user_id         Int
-  donor_phone     String
+  donor_phone     String?        // null for CARD donations — no mobile money number collected
   donor_name      String?
   amount          Int
   currency        String         @default("UGX")
@@ -636,6 +636,7 @@ enum DonationStatus {
 enum MomoProvider {
   MTN_MOMO
   AIRTEL_MONEY
+  CARD // Visa/Mastercard via Pesapal's hosted checkout — not actually "momo", kept in this enum to avoid a larger rename
 }
 
 model PlatformSetting {
