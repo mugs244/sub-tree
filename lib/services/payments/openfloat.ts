@@ -7,8 +7,8 @@
 //   OPENFLOAT_ENVIRONMENT     — "sandbox" | "production"
 //
 // Webhook URLs to register in OpenFloat dashboard:
-//   Collections: https://sub-tree.vercel.app/api/webhooks/payments/openfloat
-//   Payouts:     https://sub-tree.vercel.app/api/webhooks/payments/openfloat/payout
+//   Collections: https://sub-tree.com/api/webhooks/payments/openfloat
+//   Payouts:     https://sub-tree.com/api/webhooks/payments/openfloat/payout
 //
 // The payout() endpoint path and response shape below are assumed pending
 // OpenFloat's actual payout/B2C API docs — adjust once confirmed, same as

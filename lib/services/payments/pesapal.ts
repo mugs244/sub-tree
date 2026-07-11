@@ -7,8 +7,8 @@
 //   PESAPAL_IPN_ID            — UUID returned when you register your IPN URL in the dashboard
 //   PESAPAL_ENVIRONMENT       — "sandbox" | "production"
 //
-// IPN URL to register in Pesapal dashboard:
-//   https://sub-tree.vercel.app/api/webhooks/payments/pesapal
+// IPN URL registered in Pesapal dashboard:
+//   https://sub-tree.com/api/webhooks/payments/pesapal
 //
 // Pesapal does NOT do a silent STK push — SubmitOrderRequest returns a
 // redirect_url to Pesapal's own hosted checkout page, where the payer picks
@@ -110,7 +110,7 @@ export async function submitOrder(params: PesapalOrderParams, callbackUrl: strin
 // calls submitOrder() directly to capture redirect_url. Uses a generic
 // (non-per-donation) callback since nothing currently exercises this path.
 async function requestToPay(params: MomoRequestToPayParams): Promise<MomoRequestToPayResult> {
-  const result = await submitOrder(params, "https://sub-tree.vercel.app/donate/complete")
+  const result = await submitOrder(params, "https://sub-tree.com/donate/complete")
   return { providerTxId: result.orderTrackingId }
 }
 

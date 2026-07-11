@@ -2,11 +2,12 @@ import { NextResponse } from "next/server"
 import { z } from "zod"
 import { prisma } from "@/lib/db"
 import { randomUUID } from "crypto"
-import { checkRateLimit } from "@/lib/rateLimit"
+import { checkRateLimit, getClientIp } from "@/lib/rateLimit"
 import { submitOrder as submitPesapalOrder } from "@/lib/services/payments/pesapal"
 import { openFloat } from "@/lib/services/payments/openfloat"
 import { mtnMomo } from "@/lib/services/momo/mtn"
 import { airtelMoney } from "@/lib/services/momo/airtel"
+import { getDonationLaunchStatus } from "@/lib/services/donation-launch"
 import type { MomoProvider } from "@/lib/services/momo/types"
 
 const initiateSchema = z
@@ -42,6 +43,17 @@ export async function POST(req: Request): Promise<NextResponse> {
   }
 
   const { username, amount, payment_method, phone, donor_name, note, referrer_source, fundraiser_id } = parsed.data
+
+  // The dashboard/public-profile UI already greys out the donate button
+  // based on this, but that's cosmetic only — this is the real gate. Without
+  // it the endpoint is fully live regardless of the admin toggle.
+  const { enabled: donationsEnabled } = await getDonationLaunchStatus()
+  if (!donationsEnabled) {
+    return NextResponse.json(
+      { error: "DONATIONS_NOT_LIVE", message: "Donations aren't open yet — check back soon." },
+      { status: 403 },
+    )
+  }
 
   const user = await prisma.user.findUnique({
     where: { username },
@@ -79,7 +91,7 @@ export async function POST(req: Request): Promise<NextResponse> {
   }
 
   // 3 donation attempts per phone (or IP, for card) per 10 minutes
-  const rateLimitKey = normalized ?? req.headers.get("x-forwarded-for") ?? req.headers.get("x-real-ip") ?? "unknown"
+  const rateLimitKey = normalized ?? getClientIp(req)
   const rl = checkRateLimit(`donate:${rateLimitKey}`, { windowMs: 10 * 60 * 1000, max: 3 })
   if (!rl.allowed) {
     const retryAfterSecs = Math.ceil(rl.retryAfterMs / 1000)
@@ -132,7 +144,7 @@ export async function POST(req: Request): Promise<NextResponse> {
   const pesapalConfigured = !!(process.env.PESAPAL_CONSUMER_KEY && process.env.PESAPAL_CONSUMER_SECRET)
   if (pesapalConfigured) {
     try {
-      const callbackUrl = `https://sub-tree.vercel.app/donate/complete?ref=${idempotencyKey}`
+      const callbackUrl = `https://sub-tree.com/donate/complete?ref=${idempotencyKey}`
       const result = await submitPesapalOrder(stkParams, callbackUrl)
       if (result.redirectUrl) {
         return NextResponse.json(

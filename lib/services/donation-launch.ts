@@ -89,7 +89,7 @@ async function notifyPendingSubscribers(): Promise<number> {
           <div style="font-family:sans-serif;max-width:420px;margin:0 auto;padding:24px">
             <p>Hi there,</p>
             <p style="color:#374151">Good news — mobile money donations are now live on Sub-tree. Supporters can send you money directly through your Sub-tree page.</p>
-            <a href="https://sub-tree.vercel.app" style="display:inline-block;margin-top:12px;padding:10px 20px;background:#111827;color:#ffffff;text-decoration:none;border-radius:8px;font-size:14px">Go to Sub-tree</a>
+            <a href="https://sub-tree.com" style="display:inline-block;margin-top:12px;padding:10px 20px;background:#111827;color:#ffffff;text-decoration:none;border-radius:8px;font-size:14px">Go to Sub-tree</a>
             <p style="margin-top:24px">Best regards,<br/><strong>The Sub-tree Team</strong></p>
           </div>
         `,

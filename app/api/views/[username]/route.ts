@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server"
 import { getSession } from "@/lib/auth/session"
 import { prisma } from "@/lib/db"
-import { checkRateLimit } from "@/lib/rateLimit"
+import { checkRateLimit, getClientIp } from "@/lib/rateLimit"
 
 type Params = { params: Promise<{ username: string }> }
 
@@ -9,8 +9,7 @@ export async function POST(req: Request, { params }: Params): Promise<NextRespon
   const { username } = await params
 
   // Rate limit by IP
-  const ip = req.headers.get("x-forwarded-for") || req.headers.get("x-real-ip") || "unknown"
-  const rl = checkRateLimit(`view:${ip}`, { windowMs: 60_000, max: 10 })
+  const rl = checkRateLimit(`view:${getClientIp(req)}`, { windowMs: 60_000, max: 10 })
   if (!rl.allowed) {
     return new NextResponse(null, { status: 429, headers: { "Retry-After": "60" } })
   }
