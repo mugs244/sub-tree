@@ -19,6 +19,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://sub-tree.vercel.app"),
   title: "Sub-tree",
   description: "Your links, your way — built for East African creators.",
 };
