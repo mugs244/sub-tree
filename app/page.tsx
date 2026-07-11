@@ -97,6 +97,11 @@ export const metadata = {
   },
 }
 
+// Reads live fee rates from the DB — must not be statically prerendered at
+// build time (build machines aren't guaranteed DB connectivity), and the
+// rates shown here should reflect whatever an admin has configured right now.
+export const dynamic = "force-dynamic"
+
 export default async function LandingPage() {
   const [donationFeeRate, withdrawalCreatorRate, withdrawalProcessorRate] = await Promise.all([
     getFeeRate("fee_donation_free", 0.05),
