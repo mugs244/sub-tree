@@ -7,7 +7,9 @@ import { PageViewTracker } from "@/components/PageViewTracker"
 import { PlatformIcon } from "@/components/PlatformIcon"
 import { ReferrerTracker } from "@/components/ReferrerTracker"
 import { SmartLinkCard } from "@/components/SmartLinkCard"
+import { DonationLaunchNotice } from "@/components/DonationLaunchNotice"
 import { detectPlatform } from "@/lib/utils/platform"
+import { getDonationLaunchStatus } from "@/lib/services/donation-launch"
 import type { SmartCardMeta } from "@/lib/services/smart-links"
 
 type Props = { params: Promise<{ username: string }> }
@@ -73,6 +75,10 @@ const THEME_VARS: Record<string, React.CSSProperties> = {
   } as React.CSSProperties,
 }
 
+// Reads the admin-toggleable donations_enabled flag (in addition to links,
+// which already need to stay fresh) — must not be cached after first render.
+export const dynamic = "force-dynamic"
+
 export async function generateMetadata({ params }: Props) {
   const { username } = await params
   const profile = await prisma.profile.findFirst({
@@ -122,6 +128,7 @@ export default async function PublicProfilePage({ params }: Props) {
   if (!user || user.deleted_at || !user.profile) notFound()
 
   const { profile, links } = user
+  const { enabled: donationsEnabled } = await getDonationLaunchStatus()
 
   const buttonClass = profile.button_style === "sharp"
     ? "rounded-none"
@@ -221,16 +228,33 @@ export default async function PublicProfilePage({ params }: Props) {
         </div>
 
         <div className="pt-2">
-          <a
-            href={`/${username}/donate`}
-            style={{ backgroundColor: donateBg, color: donateText }}
-            className={[
-              "flex items-center justify-center w-full px-4 py-3 text-sm font-medium transition-colors duration-150",
-              buttonClass,
-            ].join(" ")}
-          >
-            Support {profile.display_name} 💛
-          </a>
+          {donationsEnabled ? (
+            <a
+              href={`/${username}/donate`}
+              style={{ backgroundColor: donateBg, color: donateText }}
+              className={[
+                "flex items-center justify-center w-full px-4 py-3 text-sm font-medium transition-colors duration-150",
+                buttonClass,
+              ].join(" ")}
+            >
+              Support {profile.display_name} 💛
+            </a>
+          ) : (
+            <>
+              <div
+                aria-disabled="true"
+                className={[
+                  "flex items-center justify-center w-full px-4 py-3 text-sm font-medium bg-muted text-muted-foreground cursor-not-allowed select-none",
+                  buttonClass,
+                ].join(" ")}
+              >
+                Support {profile.display_name}
+              </div>
+              <div className="mt-3">
+                <DonationLaunchNotice compact />
+              </div>
+            </>
+          )}
         </div>
 
         {showBranding && (

@@ -3,7 +3,9 @@ import { getSession } from "@/lib/auth/session"
 import { isAdmin } from "@/lib/services/admin"
 import { prisma } from "@/lib/db"
 import { getFeeRate } from "@/lib/services/platform-settings"
+import { getDonationLaunchStatus, countPendingSubscribers } from "@/lib/services/donation-launch"
 import { AdminSettingsClient } from "./AdminSettingsClient"
+import { DonationsLaunchCard } from "./DonationsLaunchCard"
 
 export const metadata = { title: "Settings — Admin" }
 
@@ -11,7 +13,7 @@ export default async function AdminSettingsPage() {
   const session = await getSession()
   if (!session || !isAdmin(session.userId)) redirect("/")
 
-  const [settings, auditLogs, donationRate, withdrawalCreatorRate, withdrawalProcessorRate] = await Promise.all([
+  const [settings, auditLogs, donationRate, withdrawalCreatorRate, withdrawalProcessorRate, donationLaunch, pendingSubscribers] = await Promise.all([
     prisma.platformSetting.findMany({ orderBy: { key: "asc" } }),
     prisma.platformSettingAuditLog.findMany({
       orderBy: { changed_at: "desc" },
@@ -20,6 +22,8 @@ export default async function AdminSettingsPage() {
     getFeeRate("fee_donation_free", 0.05),
     getFeeRate("fee_withdrawal_creator", 0.02),
     getFeeRate("fee_withdrawal_processor", 0.01),
+    getDonationLaunchStatus(),
+    countPendingSubscribers(),
   ])
 
   const serializedSettings = settings.map((s) => ({
@@ -42,6 +46,11 @@ export default async function AdminSettingsPage() {
           Fee rates and platform-wide configuration. Changes take effect within 5 minutes.
         </p>
       </div>
+      <DonationsLaunchCard
+        initialEnabled={donationLaunch.enabled}
+        initialLaunchAt={donationLaunch.launchAt?.toISOString() ?? null}
+        initialPendingSubscribers={pendingSubscribers}
+      />
       <AdminSettingsClient
         settings={serializedSettings}
         auditLogs={serializedLogs}

@@ -1,6 +1,7 @@
 import Link from "next/link"
 import { Logo } from "@/components/brand/Logo"
 import { PlatformIcon } from "@/components/PlatformIcon"
+import { DonationLaunchNotice } from "@/components/DonationLaunchNotice"
 import { Link2, Heart, BarChart2, ArrowRight, Globe, Smartphone, Check, Minus } from "lucide-react"
 import type { Platform } from "@/lib/utils/platform"
 import { getFeeRate } from "@/lib/services/platform-settings"
@@ -138,6 +139,11 @@ export default async function LandingPage() {
       </header>
 
       <main className="flex-1">
+        {/* ── Donation launch notice ──────────────────────── */}
+        <section className="mx-auto max-w-5xl px-4 sm:px-6 pt-8">
+          <DonationLaunchNotice />
+        </section>
+
         {/* ── Hero ────────────────────────────────────────── */}
         <section className="mx-auto max-w-5xl px-4 sm:px-6 pt-16 pb-20 md:pt-24 md:pb-28">
           <div className="flex flex-col md:flex-row md:items-center gap-12 md:gap-16">

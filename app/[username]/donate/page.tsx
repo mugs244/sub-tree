@@ -1,8 +1,13 @@
-import { notFound } from "next/navigation"
+import { notFound, redirect } from "next/navigation"
 import { prisma } from "@/lib/db"
 import { DonateForm } from "@/components/DonateForm"
+import { getDonationLaunchStatus } from "@/lib/services/donation-launch"
 
 type Props = { params: Promise<{ username: string }> }
+
+// Reads the admin-toggleable donations_enabled flag — must not be cached
+// after first render.
+export const dynamic = "force-dynamic"
 
 export async function generateMetadata({ params }: Props) {
   const { username } = await params
@@ -26,6 +31,9 @@ export default async function DonatePage({ params }: Props) {
   })
 
   if (!user || user.deleted_at || !user.profile) notFound()
+
+  const { enabled: donationsEnabled } = await getDonationLaunchStatus()
+  if (!donationsEnabled) redirect(`/${username}`)
 
   return (
     <main className="min-h-screen bg-surface flex flex-col items-center px-4 py-12">

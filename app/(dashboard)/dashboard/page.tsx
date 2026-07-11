@@ -2,6 +2,7 @@ import { getSession } from "@/lib/auth/session"
 import { prisma } from "@/lib/db"
 import { Link2, Heart, Eye, Smartphone, Globe, Wallet } from "lucide-react"
 import { NotificationsFeed } from "@/components/NotificationsFeed"
+import { DonationLaunchNotice } from "@/components/DonationLaunchNotice"
 import { getClientBalance, listClientWithdrawals } from "@/lib/services/client-wallet"
 import { getFeeRate } from "@/lib/services/platform-settings"
 import { WithdrawButton } from "./WithdrawButton"
@@ -77,6 +78,8 @@ export default async function DashboardHomePage() {
           sub-tree.com/<span className="font-mono">{username}</span>
         </p>
       </div>
+
+      <DonationLaunchNotice />
 
       {/* ── Balance ────────────────────────────────────────── */}
       <div className="bg-surface border border-border rounded-xl p-6 flex flex-col sm:flex-row sm:items-center gap-5 sm:gap-0 sm:justify-between">

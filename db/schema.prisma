@@ -49,6 +49,7 @@ model User {
   notifications      Notification[]
   support_threads     SupportMessage[] @relation("support_thread_owner")
   support_messages_sent SupportMessage[] @relation("support_message_sender")
+  donation_launch_subscriptions DonationLaunchSubscriber[]
 
 }
 
@@ -801,4 +802,19 @@ model EmailVerification {
   user       User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
 
   @@index([user_id])
+}
+
+// Opt-in list for the "donations aren't live yet" gate — anyone (logged in
+// or anonymous) can ask to be emailed once an admin flips donations_enabled
+// on via the PlatformSetting-backed donation-launch toggle.
+model DonationLaunchSubscriber {
+  id          Int       @id @default(autoincrement())
+  email       String    @unique
+  user_id     Int?
+  notified_at DateTime?
+  created_at  DateTime  @default(now())
+
+  user        User?     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@index([notified_at])
 }
