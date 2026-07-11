@@ -1,7 +1,9 @@
 import { redirect } from "next/navigation"
+import { headers } from "next/headers"
 import { getSession } from "@/lib/auth/session"
 import { prisma } from "@/lib/db"
-import { touchUserLastActive } from "@/lib/services/user-activity"
+import { touchUserLastActive, backfillProfileCountry } from "@/lib/services/user-activity"
+import { getCountryFromHeaders } from "@/lib/utils/geo"
 import { DashboardLayout } from "@/components/layouts/DashboardLayout"
 
 export default async function DashboardRootLayout({
@@ -14,6 +16,7 @@ export default async function DashboardRootLayout({
   const userId = session.userId
 
   await touchUserLastActive(userId)
+  await backfillProfileCountry(userId, getCountryFromHeaders(await headers()))
 
   const user = await prisma.user.findUnique({
     where: { id: userId },

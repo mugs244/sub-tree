@@ -14,6 +14,7 @@ export class ProfileError extends Error {
 export async function saveProfile(
   userId: number,
   input: unknown,
+  countryCode?: string | null,
 ): Promise<void> {
   const parsed = saveProfileSchema.safeParse(input)
   if (!parsed.success) {
@@ -28,6 +29,9 @@ export async function saveProfile(
         display_name: parsed.data.display_name,
         bio: parsed.data.bio ?? null,
         avatar_url: parsed.data.avatar_url ?? null,
+        // Snapshot at first profile creation only — never overwritten on
+        // subsequent edits, so a later VPN/travel session can't clobber it.
+        country_code: countryCode ?? null,
       },
       update: {
         display_name: parsed.data.display_name,

@@ -15,7 +15,7 @@ export default function AdminGeoMap({ countries, totalUsers }: Props) {
     <div style={{ border: '1px solid #ddd', borderRadius: 12, padding: 24, minHeight: 360 }}>
       <h2>User Geography Map</h2>
       <p style={{ color: '#666', marginTop: 4 }}>
-        Users are grouped by country code. Add `country_code` to user profiles to track geography.
+        Users are grouped by country, detected automatically from IP at signup.
       </p>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginTop: 24 }}>
         <div style={{ minHeight: 260, background: '#f8f8f8', borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
