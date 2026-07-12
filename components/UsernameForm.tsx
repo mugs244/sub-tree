@@ -17,9 +17,23 @@ type CheckState =
   | { state: "invalid"; reason: string }
   | { state: "error" }
 
-export function UsernameForm({ nextPath = "/onboarding/profile" }: { nextPath?: string }) {
+interface UsernameFormProps {
+  nextPath?: string
+  mode?: "claim" | "rename"
+  initialUsername?: string
+  onSaved?: (username: string) => void
+  onCancel?: () => void
+}
+
+export function UsernameForm({
+  nextPath = "/onboarding/profile",
+  mode = "claim",
+  initialUsername = "",
+  onSaved,
+  onCancel,
+}: UsernameFormProps) {
   const router = useRouter()
-  const [username, setUsername] = useState("")
+  const [username, setUsername] = useState(mode === "rename" ? initialUsername : "")
   const [check, setCheck] = useState<CheckState>({ state: "idle" })
   const [submitting, setSubmitting] = useState(false)
   const [requestingReserved, setRequestingReserved] = useState(false)
@@ -32,7 +46,7 @@ export function UsernameForm({ nextPath = "/onboarding/profile" }: { nextPath?: 
     if (abortRef.current) abortRef.current.abort()
 
     const trimmed = username.trim()
-    if (!trimmed) {
+    if (!trimmed || (mode === "rename" && trimmed === initialUsername)) {
       setCheck({ state: "idle" })
       return
     }
@@ -61,7 +75,7 @@ export function UsernameForm({ nextPath = "/onboarding/profile" }: { nextPath?: 
       if (debounceRef.current) clearTimeout(debounceRef.current)
       if (abortRef.current) abortRef.current.abort()
     }
-  }, [username])
+  }, [username, mode, initialUsername])
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -69,7 +83,7 @@ export function UsernameForm({ nextPath = "/onboarding/profile" }: { nextPath?: 
 
     setSubmitting(true)
     try {
-      const res = await fetch("/api/onboarding/claim-username", {
+      const res = await fetch(mode === "rename" ? "/api/account/username" : "/api/onboarding/claim-username", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ username: username.trim() }),
@@ -83,7 +97,11 @@ export function UsernameForm({ nextPath = "/onboarding/profile" }: { nextPath?: 
         return
       }
 
-      router.push(nextPath)
+      if (mode === "rename") {
+        onSaved?.(username.trim())
+      } else {
+        router.push(nextPath)
+      }
     } catch {
       setCheck({ state: "error" })
     } finally {
@@ -173,20 +191,35 @@ export function UsernameForm({ nextPath = "/onboarding/profile" }: { nextPath?: 
         </p>
       )}
 
-      <Button type="submit" className="w-full" disabled={!canSubmit}>
-        {submitting ? (
-          <>
-            <Loader2 className="h-4 w-4 animate-spin mr-2" />
-            Claiming…
-          </>
-        ) : (
-          "Claim username"
+      <div className={mode === "rename" ? "flex gap-2" : ""}>
+        <Button type="submit" className="w-full" disabled={!canSubmit}>
+          {submitting ? (
+            <>
+              <Loader2 className="h-4 w-4 animate-spin mr-2" />
+              {mode === "rename" ? "Saving…" : "Claiming…"}
+            </>
+          ) : mode === "rename" ? (
+            "Save username"
+          ) : (
+            "Claim username"
+          )}
+        </Button>
+        {mode === "rename" && onCancel && (
+          <Button type="button" variant="ghost" disabled={submitting} onClick={onCancel}>
+            Cancel
+          </Button>
         )}
-      </Button>
+      </div>
 
-      <p className="text-xs text-center text-[color:var(--text-muted)]">
-        You can change your username later from account settings.
-      </p>
+      {mode === "rename" ? (
+        <p className="text-xs text-center text-[color:var(--text-muted)]">
+          Your old link (sub-tree.com/{initialUsername}) stops working the moment you save — there&apos;s no redirect.
+        </p>
+      ) : (
+        <p className="text-xs text-center text-[color:var(--text-muted)]">
+          You can change your username later from account settings.
+        </p>
+      )}
     </form>
   )
 }

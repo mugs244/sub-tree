@@ -3,6 +3,8 @@ import { redirect } from "next/navigation"
 import { prisma } from "@/lib/db"
 import { EditProfileForm } from "@/components/EditProfileForm"
 import { DeleteAccountButton } from "@/components/DeleteAccountButton"
+import { GiftMeToggle } from "@/components/GiftMeToggle"
+import { UsernameSettingsField } from "@/components/UsernameSettingsField"
 
 export default async function SettingsPage() {
   const session = await getSession()
@@ -18,7 +20,7 @@ export default async function SettingsPage() {
       tier: true,
       created_at: true,
       momo_number: true,
-      profile: { select: { display_name: true, bio: true, avatar_url: true } },
+      profile: { select: { display_name: true, bio: true, avatar_url: true, gift_me_enabled: true } },
     },
   })
 
@@ -41,7 +43,11 @@ export default async function SettingsPage() {
       <section className="space-y-4">
         <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Account</h2>
         <div className="bg-surface border border-border rounded-xl divide-y divide-border">
-          <Row label="Username" value={`@${user?.username ?? "—"}`} mono />
+          {user?.username ? (
+            <UsernameSettingsField initialUsername={user.username} />
+          ) : (
+            <Row label="Username" value="—" mono />
+          )}
           <Row label="Email" value={user?.email ?? "—"} />
           <Row label="Auth phone" value={user?.phone ?? "—"} mono />
           <Row label="Donation number" value={user?.momo_number ?? "Not set"} mono />
@@ -52,6 +58,13 @@ export default async function SettingsPage() {
               ? new Date(user.created_at).toLocaleDateString("en-UG", { month: "long", year: "numeric" })
               : "—"}
           />
+        </div>
+      </section>
+
+      <section className="space-y-4">
+        <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Gift me</h2>
+        <div className="bg-surface border border-border rounded-xl">
+          <GiftMeToggle initialEnabled={user?.profile?.gift_me_enabled ?? false} />
         </div>
       </section>
 

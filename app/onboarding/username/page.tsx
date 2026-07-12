@@ -24,8 +24,8 @@ export default async function UsernameOnboardingPage() {
   }
 
   const subtitle = isFan
-    ? "Pick a handle for your fan profile. This is your permanent Sub-tree username."
-    : "This is your permanent Sub-tree handle. Choose carefully — it will be your public URL."
+    ? "Pick a handle for your fan profile. This will be your public Sub-tree username."
+    : "This will be your public Sub-tree handle and URL. You can change it later in settings."
 
   return (
     <main className="min-h-screen flex items-center justify-center px-6 py-12 md:py-16">

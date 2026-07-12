@@ -77,6 +77,49 @@ export async function claimUsername(userId: number, username: string): Promise<v
   }
 }
 
+// Unlike claimUsername (onboarding, requires no existing username and sends
+// a welcome email), this is the settings-page rename path: requires an
+// existing username, no welcome email. The old username isn't reserved —
+// overwriting the unique column frees it immediately for anyone (including
+// this same user later) to claim.
+export async function renameUsername(userId: number, username: string): Promise<void> {
+  const parseResult = usernameSchema.safeParse(username)
+  if (!parseResult.success) {
+    throw new UsernameError("INVALID_USERNAME", parseResult.error.issues[0]?.message ?? "Invalid username")
+  }
+
+  try {
+    await prisma.$transaction(async (tx) => {
+      const existing = await tx.user.findUnique({
+        where: { id: userId },
+        select: { username: true },
+      })
+      if (!existing?.username) throw new UsernameError("NO_EXISTING_USERNAME", "No existing username to rename")
+      if (existing.username === username) return
+
+      const [taken, reserved] = await Promise.all([
+        tx.user.findUnique({ where: { username }, select: { id: true } }),
+        tx.reservedUsername.findUnique({ where: { username }, select: { id: true } }),
+      ])
+
+      if (taken) throw new UsernameError("USERNAME_TAKEN", `@${username} is already taken`)
+      if (reserved) throw new UsernameError("USERNAME_RESERVED", `@${username} is a reserved username`)
+
+      await tx.user.update({ where: { id: userId }, data: { username } })
+    })
+  } catch (err) {
+    if (err instanceof UsernameError) throw err
+    if (
+      err instanceof Prisma.PrismaClientKnownRequestError &&
+      err.code === "P2002" &&
+      (err.meta?.target as string[] | undefined)?.includes("username")
+    ) {
+      throw new UsernameError("USERNAME_TAKEN", `@${username} is already taken`)
+    }
+    throw err
+  }
+}
+
 export async function requestReservedUsername(userId: number, username: string): Promise<void> {
   const parseResult = usernameSchema.safeParse(username)
   if (!parseResult.success) {
@@ -104,7 +147,8 @@ export class UsernameError extends Error {
       | "USERNAME_TAKEN"
       | "USERNAME_RESERVED"
       | "USERNAME_NOT_RESERVED"
-      | "ALREADY_HAS_USERNAME",
+      | "ALREADY_HAS_USERNAME"
+      | "NO_EXISTING_USERNAME",
     message: string,
   ) {
     super(message)
