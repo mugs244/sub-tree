@@ -8,6 +8,7 @@ import { PlatformIcon } from "@/components/PlatformIcon"
 import { ReferrerTracker } from "@/components/ReferrerTracker"
 import { SmartLinkCard } from "@/components/SmartLinkCard"
 import { DonationLaunchNotice } from "@/components/DonationLaunchNotice"
+import { GiftMeSection } from "@/components/GiftMeSection"
 import { detectPlatform } from "@/lib/utils/platform"
 import { getDonationLaunchStatus } from "@/lib/services/donation-launch"
 import type { SmartCardMeta } from "@/lib/services/smart-links"
@@ -115,6 +116,7 @@ export default async function PublicProfilePage({ params }: Props) {
           theme_card_text: true,
           theme_font: true,
           hide_branding: true,
+          gift_me_enabled: true,
         },
       },
       links: {
@@ -256,6 +258,10 @@ export default async function PublicProfilePage({ params }: Props) {
             </>
           )}
         </div>
+
+        {profile.gift_me_enabled && (
+          <GiftMeSection displayName={profile.display_name} />
+        )}
 
         {showBranding && (
           <p className="text-center text-xs text-muted-foreground pt-4">

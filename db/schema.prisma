@@ -183,6 +183,9 @@ model Profile {
   theme_font         String?
   hide_branding      Boolean @default(false)
 
+  // Gift Me — visibility toggle only; catalog/fulfillment not built yet (see docs/pending.md)
+  gift_me_enabled    Boolean @default(false)
+
   created_at    DateTime @default(now())
   updated_at    DateTime @updatedAt
 
