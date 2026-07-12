@@ -121,6 +121,65 @@ recurring billing rail.
 
 ---
 
+## Bank Withdrawal
+
+**What it is:** Creators choose "mobile money" or "bank" (plus an amount)
+when withdrawing their balance, instead of always paying out to their
+registered momo number. Requires bank account details (bank name, account
+number, account name) captured somewhere on the creator's account.
+
+**Code that exists:** None. The current withdraw flow
+(`app/api/wallet/withdraw/route.ts` → `lib/services/client-wallet.ts` →
+`lib/services/payments/openfloat.ts`'s `payout()`) only takes amount + OTP and
+always pays to `User.momo_number`. `payout()`'s request shape is itself
+explicitly commented as an assumption pending OpenFloat's real payout API
+docs — it has never been confirmed against real disbursement documentation,
+mobile or bank.
+
+**Why parked:** No confirmed API docs for paying out to a Ugandan bank
+account via OpenFloat or Pesapal (or any other rail). Building the bank
+detail fields and a "mobile or bank" choice in the withdraw UI without a
+working payout path behind it would mean the option either silently fails or
+misleads creators into thinking a bank payout succeeded.
+
+**Re-enable when:** Real OpenFloat and/or Pesapal disbursement-to-bank API
+docs are available and the existing OpenFloat mobile-money payout() shape
+itself has been verified against real docs (or replaced).
+
+---
+
+## Gift Me
+
+**What it is:** Creators list specific items they want fans to buy for them —
+WiFi, mobile data, and airtime (each with monthly / weekly / daily cadence
+options), plus DSTV and other TV subscriptions. Each item has creator-filled
+details (e.g. account/meter number, package). Monthly items must be paid in
+full — no partial or installment payments. Unlike a normal donation, the money
+is never handed to the creator as cash: the platform is meant to automatically
+purchase the actual utility/subscription on the creator's behalf using the
+details they provided.
+
+**Code that exists:**
+- Schema: `Profile.gift_me_enabled` (visibility toggle only)
+- Dashboard: Settings toggle to show/hide the section on the public profile
+- Public profile: coming-soon placeholder section, shown only when the toggle
+  is on
+
+**Why parked:** Automated fulfillment requires a confirmed bill-payment /
+utility API (WiFi, mobile data, airtime, DSTV) that the platform can call to
+actually purchase the item — no such integration exists yet. Building the
+catalog and payment collection without real fulfillment would mean either
+silently failing to deliver the item or defeating the point of the feature by
+paying the creator directly instead, which the creator explicitly does not
+want. Only the visibility toggle exists so creators can preview the feature;
+the underlying catalog, payment, and fulfillment pipeline are not built.
+
+**Re-enable when:** A bill-payment/utility API is confirmed and integrated
+(e.g. an aggregator covering WiFi, mobile data, airtime, and DSTV top-ups in
+Uganda).
+
+---
+
 ## Fundraiser Campaigns
 
 **What it is:** Creators run fundraiser campaigns with a goal amount, deadline,
