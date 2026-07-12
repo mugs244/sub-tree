@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
+import { AvatarUpload } from "@/components/AvatarUpload"
 
 type FieldErrors = Partial<Record<"display_name" | "bio" | "avatar_url" | "momo_number", string>>
 
@@ -61,6 +62,8 @@ export function ProfileForm() {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-5">
+      <AvatarUpload value={avatarUrl} onChange={setAvatarUrl} />
+
       <div className="space-y-1.5">
         <Label htmlFor="display_name" className="text-sm font-medium">
           Display name <span className="text-[color:var(--state-error)]">*</span>
@@ -95,23 +98,6 @@ export function ProfileForm() {
           className="resize-none"
         />
         <p className="text-xs text-[color:var(--text-muted)] text-right">{bio.length}/300</p>
-      </div>
-
-      <div className="space-y-1.5">
-        <Label htmlFor="avatar_url" className="text-sm font-medium">
-          Avatar URL <span className="text-[color:var(--text-muted)] font-normal">(optional)</span>
-        </Label>
-        <Input
-          id="avatar_url"
-          type="url"
-          placeholder="https://…"
-          value={avatarUrl}
-          onChange={(e) => setAvatarUrl(e.target.value)}
-          className={errors.avatar_url ? "border-[color:var(--state-error)] focus-visible:ring-[color:var(--state-error)]/20" : ""}
-        />
-        {errors.avatar_url && (
-          <p className="text-xs text-[color:var(--state-error)]">{errors.avatar_url}</p>
-        )}
       </div>
 
       <div className="space-y-1.5">

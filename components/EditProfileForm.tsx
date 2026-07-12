@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
+import { AvatarUpload } from "@/components/AvatarUpload"
 
 interface EditProfileFormProps {
   initialDisplayName: string
@@ -70,6 +71,8 @@ export function EditProfileForm({
 
   return (
     <form onSubmit={handleSave} className="space-y-4">
+      <AvatarUpload value={avatarUrl} onChange={setAvatarUrl} />
+
       <div className="space-y-1.5">
         <Label htmlFor="edit-display-name" className="text-sm font-medium">
           Display name <span className="text-destructive">*</span>
@@ -98,19 +101,6 @@ export function EditProfileForm({
           className="resize-none"
         />
         <p className="text-xs text-muted-foreground text-right">{bio.length}/300</p>
-      </div>
-
-      <div className="space-y-1.5">
-        <Label htmlFor="edit-avatar" className="text-sm font-medium">
-          Avatar URL <span className="text-muted-foreground font-normal">(optional)</span>
-        </Label>
-        <Input
-          id="edit-avatar"
-          type="url"
-          value={avatarUrl}
-          onChange={(e) => setAvatarUrl(e.target.value)}
-          placeholder="https://…"
-        />
       </div>
 
       <div className="space-y-1.5">
