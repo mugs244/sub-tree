@@ -10,6 +10,36 @@ update `PROGRESS.md`.
 
 ---
 
+## Multi-Currency Donations (USD, GBP, EUR)
+
+**What it is:** Donors pay in USD, GBP, or EUR instead of only UGX, via
+Pesapal card checkout (already used for UGX card donations). Fee stack would
+be the existing 5% platform donation fee plus a separate, visible currency
+conversion fee on top — mirroring how withdrawals already stack a platform
+fee + processor fee rather than blending them into one number.
+
+**Code that exists:** None. `Donation.currency` is hardcoded to `"UGX"` at
+creation (`app/api/payments/initiate/route.ts`); the existing Pesapal
+integration (`lib/services/payments/pesapal.ts`) has only ever been built
+and tested for UGX card charges.
+
+**Why parked:** Unconfirmed whether Pesapal's card checkout can actually
+charge a card in USD/GBP/EUR directly (letting Pesapal/the card network
+handle FX, settling to Sub-tree in UGX) — or whether Sub-tree would need to
+source a live FX rate itself, lock it at donation time, and submit the
+UGX-equivalent to Pesapal. Those are very different amounts of work, and
+guessing wrong here has the same failure mode as the original card-donations
+bug: silently building against the wrong shape.
+
+**Re-enable when:** Real Pesapal documentation (or dashboard evidence)
+confirms multi-currency card charging is possible — and separately, once the
+OpenFloat integration is confirmed connected and working with real API docs
+(see the OpenFloat discussion elsewhere in this session), revisit this
+alongside it as part of the same "get all payment rails on confirmed real
+docs" pass.
+
+---
+
 ## Posts & Post Composer
 
 **What it is:** Creator post composer with text + links, visibility levels
