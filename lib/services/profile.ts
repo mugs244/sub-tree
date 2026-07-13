@@ -21,26 +21,21 @@ export async function saveProfile(
     throw new ProfileError("VALIDATION_ERROR", parsed.error.issues[0]?.message ?? "Invalid input")
   }
 
-  await prisma.$transaction([
-    prisma.profile.upsert({
-      where: { user_id: userId },
-      create: {
-        user_id: userId,
-        display_name: parsed.data.display_name,
-        bio: parsed.data.bio ?? null,
-        avatar_url: parsed.data.avatar_url ?? null,
-        // Snapshot at first profile creation only — never overwritten on
-        // subsequent edits, so a later VPN/travel session can't clobber it.
-        country_code: countryCode ?? null,
-      },
-      update: {
-        display_name: parsed.data.display_name,
-        bio: parsed.data.bio ?? null,
-        avatar_url: parsed.data.avatar_url ?? null,
-      },
-    }),
-    ...(parsed.data.momo_number !== undefined
-      ? [prisma.user.update({ where: { id: userId }, data: { momo_number: parsed.data.momo_number } })]
-      : []),
-  ])
+  await prisma.profile.upsert({
+    where: { user_id: userId },
+    create: {
+      user_id: userId,
+      display_name: parsed.data.display_name,
+      bio: parsed.data.bio ?? null,
+      avatar_url: parsed.data.avatar_url ?? null,
+      // Snapshot at first profile creation only — never overwritten on
+      // subsequent edits, so a later VPN/travel session can't clobber it.
+      country_code: countryCode ?? null,
+    },
+    update: {
+      display_name: parsed.data.display_name,
+      bio: parsed.data.bio ?? null,
+      avatar_url: parsed.data.avatar_url ?? null,
+    },
+  })
 }

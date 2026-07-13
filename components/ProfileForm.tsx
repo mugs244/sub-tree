@@ -8,15 +8,15 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { AvatarUpload } from "@/components/AvatarUpload"
+import { MomoNumberVerify } from "@/components/MomoNumberVerify"
 
-type FieldErrors = Partial<Record<"display_name" | "bio" | "avatar_url" | "momo_number", string>>
+type FieldErrors = Partial<Record<"display_name" | "bio" | "avatar_url", string>>
 
 export function ProfileForm() {
   const router = useRouter()
   const [displayName, setDisplayName] = useState("")
   const [bio, setBio] = useState("")
   const [avatarUrl, setAvatarUrl] = useState("")
-  const [momoNumber, setMomoNumber] = useState("")
   const [errors, setErrors] = useState<FieldErrors>({})
   const [submitting, setSubmitting] = useState(false)
   const [serverError, setServerError] = useState<string | null>(null)
@@ -42,7 +42,6 @@ export function ProfileForm() {
           display_name: displayName.trim(),
           bio: bio.trim() || undefined,
           avatar_url: avatarUrl.trim() || undefined,
-          momo_number: momoNumber.trim() || undefined,
         }),
       })
 
@@ -101,23 +100,13 @@ export function ProfileForm() {
       </div>
 
       <div className="space-y-1.5">
-        <Label htmlFor="momo_number" className="text-sm font-medium">
+        <Label className="text-sm font-medium">
           Donation number <span className="text-[color:var(--text-muted)] font-normal">(optional — add later in settings)</span>
         </Label>
-        <Input
-          id="momo_number"
-          type="tel"
-          placeholder="0771234567"
-          value={momoNumber}
-          onChange={(e) => setMomoNumber(e.target.value)}
-          className={errors.momo_number ? "border-[color:var(--state-error)] focus-visible:ring-[color:var(--state-error)]/20" : ""}
-        />
         <p className="text-xs text-[color:var(--text-muted)]">
-          Your MTN or Airtel number where donations will be sent.
+          Your MTN or Airtel number where donations will be sent — we&apos;ll text you a code to confirm it&apos;s yours.
         </p>
-        {errors.momo_number && (
-          <p className="text-xs text-[color:var(--state-error)]">{errors.momo_number}</p>
-        )}
+        <MomoNumberVerify />
       </div>
 
       {serverError && (

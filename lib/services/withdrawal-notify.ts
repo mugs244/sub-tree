@@ -61,18 +61,27 @@ export async function notifyWithdrawalRequested(n: WithdrawalNotification): Prom
   }
 }
 
-async function getNameAndEmail(userId: number): Promise<{ name: string; email: string | null }> {
+async function getNameEmailPhone(userId: number): Promise<{ name: string; email: string | null; phone: string | null }> {
   const user = await prisma.user.findUnique({
     where: { id: userId },
-    select: { username: true, email: true, profile: { select: { display_name: true } } },
+    select: { username: true, email: true, phone: true, profile: { select: { display_name: true } } },
   })
-  return { name: user?.profile?.display_name ?? user?.username ?? "there", email: user?.email ?? null }
+  return {
+    name: user?.profile?.display_name ?? user?.username ?? "there",
+    email: user?.email ?? null,
+    phone: user?.phone ?? null,
+  }
 }
 
 // Fired when an admin marks a withdrawal COMPLETED — the money has actually
 // been sent (manually, until the real payout API is wired in).
 export async function notifyWithdrawalCompleted(n: WithdrawalNotification): Promise<void> {
-  const { name, email } = await getNameAndEmail(n.userId)
+  const { name, email, phone } = await getNameEmailPhone(n.userId)
+
+  if (phone) {
+    await sendSms(phone, `Sub-tree: Your withdrawal of ${fmt(n.amount)} is complete. You'll receive ${fmt(n.netAmount)} after fees.`)
+  }
+
   if (!email) return
 
   try {
@@ -104,7 +113,12 @@ export async function notifyWithdrawalCompleted(n: WithdrawalNotification): Prom
 
 // Fired when an admin marks a withdrawal FAILED.
 export async function notifyWithdrawalFailed(userId: number, amount: number): Promise<void> {
-  const { name, email } = await getNameAndEmail(userId)
+  const { name, email, phone } = await getNameEmailPhone(userId)
+
+  if (phone) {
+    await sendSms(phone, `Sub-tree: Your withdrawal of ${fmt(amount)} failed. Check your payment details and try again, or contact support.`)
+  }
+
   if (!email) return
 
   try {

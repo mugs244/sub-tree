@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server"
 import { getSession, destroySession } from "@/lib/auth/session"
+import { notifyAccountDeleted } from "@/lib/services/security-notify"
 import { prisma } from "@/lib/db"
 
 export async function POST(): Promise<NextResponse> {
@@ -9,7 +10,7 @@ export async function POST(): Promise<NextResponse> {
 
   const user = await prisma.user.findUnique({
     where: { id: userId },
-    select: { id: true },
+    select: { id: true, email: true, phone: true },
   })
   if (!user) return NextResponse.json({ error: "NOT_FOUND", message: "User not found" }, { status: 404 })
 
@@ -21,6 +22,8 @@ export async function POST(): Promise<NextResponse> {
 
   // Destroy the session so the user is signed out
   await destroySession()
+
+  await notifyAccountDeleted(user.email, user.phone)
 
   return NextResponse.json({ data: null })
 }

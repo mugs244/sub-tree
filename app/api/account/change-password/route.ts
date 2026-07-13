@@ -3,6 +3,7 @@ import { cookies } from "next/headers"
 import { z } from "zod"
 import { getSession } from "@/lib/auth/session"
 import { hashPassword, verifyPassword } from "@/lib/auth/password"
+import { notifyPasswordChanged } from "@/lib/services/security-notify"
 import { prisma } from "@/lib/db"
 
 const schema = z.object({
@@ -53,6 +54,8 @@ export async function POST(req: Request): Promise<NextResponse> {
   await prisma.session.deleteMany({
     where: { user_id: session.userId, ...(currentToken ? { token: { not: currentToken } } : {}) },
   })
+
+  await notifyPasswordChanged(session.userId)
 
   return NextResponse.json({ data: null })
 }

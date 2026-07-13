@@ -3,6 +3,7 @@ import { verifySigninCode } from "@/lib/auth/email"
 import { hashPassword } from "@/lib/auth/password"
 import { createSession, applySessionCookie } from "@/lib/auth/session"
 import { isAdmin } from "@/lib/services/admin"
+import { notifyPasswordChanged } from "@/lib/services/security-notify"
 import { prisma } from "@/lib/db"
 import { z } from "zod"
 
@@ -32,6 +33,7 @@ export async function POST(req: Request) {
     // A password reset means the account may have been compromised or the
     // old password leaked — sign out every existing session, not just stale ones.
     await prisma.session.deleteMany({ where: { user_id: userId } })
+    await notifyPasswordChanged(userId)
 
     const { token, expires_at } = await createSession(userId)
     const res = NextResponse.json({ ok: true, isAdmin: isAdmin(userId) })

@@ -6,6 +6,7 @@ import { DeleteAccountButton } from "@/components/DeleteAccountButton"
 import { GiftMeToggle } from "@/components/GiftMeToggle"
 import { UsernameSettingsField } from "@/components/UsernameSettingsField"
 import { ChangePasswordForm } from "@/components/ChangePasswordForm"
+import { NumberChangeField } from "@/components/NumberChangeField"
 
 export default async function SettingsPage() {
   const session = await getSession()
@@ -36,7 +37,6 @@ export default async function SettingsPage() {
             initialDisplayName={user?.profile?.display_name ?? ""}
             initialBio={user?.profile?.bio ?? ""}
             initialAvatarUrl={user?.profile?.avatar_url ?? ""}
-            initialMomoNumber={user?.momo_number ?? ""}
           />
         </div>
       </section>
@@ -51,8 +51,20 @@ export default async function SettingsPage() {
           )}
           <ChangePasswordForm />
           <Row label="Email" value={user?.email ?? "—"} />
-          <Row label="Auth phone" value={user?.phone ?? "—"} mono />
-          <Row label="Donation number" value={user?.momo_number ?? "Not set"} mono />
+          <NumberChangeField
+            label="Auth phone"
+            initialValue={user?.phone ?? null}
+            requestUrl="/api/account/phone/request-change"
+            confirmUrl="/api/account/phone/confirm-change"
+            fieldName="new_phone"
+          />
+          <NumberChangeField
+            label="Donation number"
+            initialValue={user?.momo_number ?? null}
+            requestUrl="/api/account/momo-number/request-change"
+            confirmUrl="/api/account/momo-number/confirm-change"
+            fieldName="new_momo_number"
+          />
           <Row label="Plan" value={user?.tier === "PRO" ? "Pro" : "Free"} />
           <Row
             label="Member since"
