@@ -10,6 +10,55 @@ update `PROGRESS.md`.
 
 ---
 
+## Bank-Compliance Donation Export (CSV/XLSX)
+
+**What it is:** A professional, bank-ready transaction export, distinct from
+the existing simple per-creator CSV button. Full spec as decided so far:
+
+- **Columns, exact order:** Transaction ID, Date (`YYYY-MM-DD`), Time
+  (`HH:MM:SS`, split from Date not combined), Creator Name, Donor Name
+  (or "Anonymous"), Phone/Reference (or "Anonymous" — never leak a real
+  number on an anonymous record), Payment Provider, Status, Currency
+  (3-letter ISO), Amount (normalized number).
+- **Transaction ID field:** use `Donation.idempotency_key` (a stable UUID,
+  already unique-indexed and already the external reference tying a record
+  to the Pesapal callback flow) — not the internal sequential `id`, which is
+  guessable and not meant to be bank-facing.
+- **Anonymous donations — decided:** add a real `is_anonymous` checkbox to
+  the public `DonateForm`/donation schema (a real flag, not inferred from a
+  blank name field). When set, both Donor Name and Phone/Reference are
+  force-masked to "Anonymous" in every export, regardless of what was
+  actually captured.
+- **Filter UI:** date range (quick-select year/month dropdowns + custom
+  start/end range), filter by creator name, filter by status
+  (completed/pending/etc).
+- **File requirements:** real `.xlsx` generation (not hand-rolled CSV
+  string-joining — needs a library like `exceljs` for cell styling and
+  formulas; not currently installed), plus a totals row where the Amount
+  column uses `=SUBTOTAL(109, range)` rather than a hardcoded sum, so the
+  total recalculates live when a bank opens the file and uses Excel's native
+  AutoFilter to narrow the visible rows.
+
+**Code that exists:** `components/DonationExportButton.tsx` +
+`app/api/donations/export/route.ts` — the current simple export. 8 columns,
+CSV only, hand-rolled string-join, single-creator scope only (hardcoded to
+the signed-in creator's own donations), no filters, no anonymous handling
+beyond a display fallback (`donor_name ?? "Anonymous"` — cosmetic, not a
+real flag). This stays as-is; the new export is additional, not a
+replacement, until scope is decided (see below).
+
+**Why parked:** One open scope decision remains: should this bank-compliance
+export be **admin-only** (all creators, for platform-wide reconciliation —
+matches the "filter by creator name" requirement, which implies multiple
+creators in one export) or available to **both admins and individual
+creators** (same engine, creators just see their own data)? Deferred by the
+user pending further thought.
+
+**Re-enable when:** User decides the admin-only vs. admin+creator scope
+question and gives the go-ahead to build.
+
+---
+
 ## Multi-Currency Donations (USD, GBP, EUR)
 
 **What it is:** Donors pay in USD, GBP, or EUR instead of only UGX, via
