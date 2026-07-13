@@ -3,7 +3,7 @@ import { prisma } from "@/lib/db"
 import { getSetting, getSettingAsBool, updateSetting } from "@/lib/services/platform-settings"
 
 const resend = new Resend(process.env.RESEND_API_KEY)
-const FROM = "Sub-tree <onboarding@resend.dev>"
+const FROM = "Sub-tree <hello@sub-tree.com>"
 
 const KEY_ENABLED = "donations_enabled"
 const KEY_LAUNCH_AT = "donations_launch_at"

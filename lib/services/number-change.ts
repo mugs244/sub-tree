@@ -5,7 +5,7 @@ import { generateCode } from "@/lib/auth/email"
 import { sendPhoneVerificationCode, verifyPhoneCode } from "@/lib/services/phone-verification"
 
 const resend = new Resend(process.env.RESEND_API_KEY)
-const FROM = "Sub-tree <onboarding@resend.dev>"
+const FROM = "Sub-tree <hello@sub-tree.com>"
 const CODE_TTL_MINUTES = 15
 
 export type NumberKind = "phone" | "momo_number"

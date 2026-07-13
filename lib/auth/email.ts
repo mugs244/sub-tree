@@ -2,7 +2,7 @@ import { Resend } from "resend"
 import { prisma } from "@/lib/db"
 
 const resend = new Resend(process.env.RESEND_API_KEY)
-const FROM = "Sub-tree <onboarding@resend.dev>"
+const FROM = "Sub-tree <hello@sub-tree.com>"
 const CODE_TTL_MINUTES = 15
 
 export function generateCode(): string {

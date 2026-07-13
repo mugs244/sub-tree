@@ -3,7 +3,7 @@ import { prisma } from "@/lib/db"
 import { generateCode } from "@/lib/auth/email"
 
 const resend = new Resend(process.env.RESEND_API_KEY)
-const FROM = "Sub-tree <onboarding@resend.dev>"
+const FROM = "Sub-tree <hello@sub-tree.com>"
 const CODE_TTL_MINUTES = 10
 
 export class WithdrawalOtpError extends Error {

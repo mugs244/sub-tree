@@ -3,7 +3,7 @@ import { prisma } from "@/lib/db"
 import { sendSms } from "@/lib/sms"
 
 const resend = new Resend(process.env.RESEND_API_KEY)
-const FROM = "Sub-tree <onboarding@resend.dev>"
+const FROM = "Sub-tree <hello@sub-tree.com>"
 
 interface WithdrawalNotification {
   userId: number
