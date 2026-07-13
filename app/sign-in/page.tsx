@@ -89,7 +89,12 @@ function SignInForm() {
               <Input id="email" type="email" autoComplete="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="password">Password</Label>
+              <div className="flex items-center justify-between">
+                <Label htmlFor="password">Password</Label>
+                <Link href="/forgot-password" className="text-xs text-[color:var(--accent-primary)] hover:underline">
+                  Forgot password?
+                </Link>
+              </div>
               <Input id="password" type="password" autoComplete="current-password" required value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Your password" />
             </div>
             {error && <p className="text-sm text-red-600">{error}</p>}

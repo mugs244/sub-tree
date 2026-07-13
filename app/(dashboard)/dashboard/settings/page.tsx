@@ -5,6 +5,7 @@ import { EditProfileForm } from "@/components/EditProfileForm"
 import { DeleteAccountButton } from "@/components/DeleteAccountButton"
 import { GiftMeToggle } from "@/components/GiftMeToggle"
 import { UsernameSettingsField } from "@/components/UsernameSettingsField"
+import { ChangePasswordForm } from "@/components/ChangePasswordForm"
 
 export default async function SettingsPage() {
   const session = await getSession()
@@ -48,6 +49,7 @@ export default async function SettingsPage() {
           ) : (
             <Row label="Username" value="—" mono />
           )}
+          <ChangePasswordForm />
           <Row label="Email" value={user?.email ?? "—"} />
           <Row label="Auth phone" value={user?.phone ?? "—"} mono />
           <Row label="Donation number" value={user?.momo_number ?? "Not set"} mono />
