@@ -6,26 +6,26 @@ import { DonationLaunchNotice } from "@/components/DonationLaunchNotice"
 import { getClientBalance, listClientWithdrawals } from "@/lib/services/client-wallet"
 import { getFeeRate } from "@/lib/services/platform-settings"
 import { WithdrawButton } from "./WithdrawButton"
+import { ProfileQRCode } from "@/components/ProfileQRCode"
 
 export default async function DashboardHomePage() {
   const session = await getSession()
   const userId = session!.userId
 
-  const user = await prisma.user.findUnique({
-    where: { id: userId },
-    select: {
-      id: true,
-      username: true,
-      profile: { select: { display_name: true, view_count: true } },
-      _count: { select: { links: true } },
-    },
-  })
-
-  const displayName = user?.profile?.display_name ?? user?.username ?? "Creator"
-  const username = user?.username ?? ""
-
-  const [donationStats, topLink, providerBreakdown, referrerBreakdown, balance, withdrawals, creatorFeeRate, processorFeeRate] =
+  // Runs alongside the rest of the batch below instead of blocking it —
+  // this query doesn't depend on any of those results, so there's no reason
+  // to pay for it as a separate round trip before the batch starts.
+  const [user, donationStats, topLink, providerBreakdown, referrerBreakdown, balance, withdrawals, creatorFeeRate, processorFeeRate] =
     await Promise.all([
+      prisma.user.findUnique({
+        where: { id: userId },
+        select: {
+          id: true,
+          username: true,
+          profile: { select: { display_name: true, view_count: true } },
+          _count: { select: { links: true } },
+        },
+      }),
       prisma.donation.aggregate({
         where: { user_id: userId, status: "COMPLETED" },
         _count: { id: true },
@@ -56,6 +56,9 @@ export default async function DashboardHomePage() {
       getFeeRate("fee_withdrawal_creator", 0.02),
       getFeeRate("fee_withdrawal_processor", 0.01),
     ])
+
+  const displayName = user?.profile?.display_name ?? user?.username ?? "Creator"
+  const username = user?.username ?? ""
 
   const totalDonations = donationStats._count.id
   const totalUGX = donationStats._sum.amount ?? 0
@@ -241,16 +244,19 @@ export default async function DashboardHomePage() {
             </div>
           )}
 
-          <div className="border-t border-border pt-3 sm:pt-4">
-            <h3 className="text-xs text-muted-foreground mb-2">Your public page</h3>
-            <a
-              href={`/${username}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-sm font-medium underline underline-offset-4"
-            >
-              sub-tree.com/{username}
-            </a>
+          <div className="border-t border-border pt-3 sm:pt-4 space-y-3">
+            <div>
+              <h3 className="text-xs text-muted-foreground mb-2">Your public page</h3>
+              <a
+                href={`/${username}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-sm font-medium underline underline-offset-4"
+              >
+                sub-tree.com/{username}
+              </a>
+            </div>
+            {username && <ProfileQRCode url={`https://sub-tree.com/${username}`} />}
           </div>
         </div>
       </div>
