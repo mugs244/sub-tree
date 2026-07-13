@@ -14,10 +14,18 @@ export async function POST(): Promise<NextResponse> {
   })
   if (!user) return NextResponse.json({ error: "NOT_FOUND", message: "User not found" }, { status: 404 })
 
-  // Soft-delete: mark deleted_at, clear username so it's reclaimable
+  // Soft-delete: mark deleted_at, clear username so it's reclaimable.
+  // The email column is unique at the DB level, so it also has to be
+  // mangled here — otherwise it stays locked forever and this person could
+  // never sign up again with the same address. The original is still
+  // recoverable from the mangled value (userId + local part are preserved),
+  // just no longer usable to sign up until an admin says otherwise.
+  const [localPart, domain] = user.email.split("@")
+  const reclaimableEmail = `${localPart}+deleted-${user.id}@${domain}`
+
   await prisma.user.update({
     where: { id: user.id },
-    data: { deleted_at: new Date(), username: null },
+    data: { deleted_at: new Date(), username: null, email: reclaimableEmail },
   })
 
   // Destroy the session so the user is signed out
