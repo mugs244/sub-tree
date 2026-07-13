@@ -36,7 +36,7 @@ export default async function DonatePage({ params }: Props) {
   if (!donationsEnabled) redirect(`/${username}`)
 
   return (
-    <main className="min-h-screen bg-surface flex flex-col items-center px-4 py-12">
+    <main className="min-h-screen bg-surface flex flex-col items-center justify-center px-4 py-12">
       <div className="w-full max-w-sm space-y-6">
         <div className="text-center space-y-1">
           {user.profile.avatar_url && (

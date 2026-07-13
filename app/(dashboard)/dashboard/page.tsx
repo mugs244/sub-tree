@@ -70,7 +70,7 @@ export default async function DashboardHomePage() {
     .slice(0, 5)
 
   return (
-    <div className="px-4 py-5 md:p-8 max-w-4xl space-y-8">
+    <div className="px-4 py-5 md:p-8 max-w-4xl space-y-6 md:space-y-8">
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">
           Welcome back, {displayName}
@@ -83,7 +83,7 @@ export default async function DashboardHomePage() {
       <DonationLaunchNotice />
 
       {/* ── Balance ────────────────────────────────────────── */}
-      <div className="bg-surface border border-border rounded-xl p-6 flex flex-col sm:flex-row sm:items-center gap-5 sm:gap-0 sm:justify-between">
+      <div className="bg-surface border border-border rounded-xl p-4 sm:p-6 flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-0 sm:justify-between">
         <div className="flex items-center gap-4">
           <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-background border border-border">
             <Wallet className="h-5 w-5 text-muted-foreground" strokeWidth={1.5} />
@@ -155,13 +155,13 @@ export default async function DashboardHomePage() {
         />
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
         {/* ── Donation breakdown ──────────────────────────── */}
-        <div className="bg-surface border border-border rounded-xl p-5 space-y-4">
+        <div className="bg-surface border border-border rounded-xl p-4 sm:p-5 space-y-3 sm:space-y-4">
           <h2 className="text-sm font-medium">Donation breakdown</h2>
 
           {totalDonations === 0 ? (
-            <p className="text-sm text-muted-foreground py-4 text-center">
+            <p className="text-sm text-muted-foreground py-3 text-center">
               No completed donations yet
             </p>
           ) : (
@@ -220,7 +220,7 @@ export default async function DashboardHomePage() {
         </div>
 
         {/* ── Top link ───────────────────────────────────── */}
-        <div className="bg-surface border border-border rounded-xl p-5 space-y-4">
+        <div className="bg-surface border border-border rounded-xl p-4 sm:p-5 space-y-3 sm:space-y-4">
           <h2 className="text-sm font-medium">Top link</h2>
           {topLink ? (
             <div className="space-y-1">
@@ -230,7 +230,7 @@ export default async function DashboardHomePage() {
               <p className="text-xs text-muted-foreground">clicks</p>
             </div>
           ) : (
-            <div className="py-4 text-center">
+            <div className="py-3 text-center">
               <p className="text-sm text-muted-foreground">No link clicks yet</p>
               <a
                 href="/dashboard/links"
@@ -241,7 +241,7 @@ export default async function DashboardHomePage() {
             </div>
           )}
 
-          <div className="border-t border-border pt-4">
+          <div className="border-t border-border pt-3 sm:pt-4">
             <h3 className="text-xs text-muted-foreground mb-2">Your public page</h3>
             <a
               href={`/${username}`}

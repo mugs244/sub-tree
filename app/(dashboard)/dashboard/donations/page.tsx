@@ -25,14 +25,13 @@ export default async function DonationsPage() {
 
   if (donations.length === 0) {
     return (
-      <div className="p-6 md:p-8 max-w-3xl">
+      <div className="px-4 py-5 md:p-8 max-w-3xl">
         <h1 className="text-2xl font-semibold tracking-tight mb-6">Donations</h1>
-        <div className="flex flex-col items-center justify-center py-20 text-center space-y-3">
+        <div className="flex flex-col items-center justify-center py-12 md:py-20 text-center space-y-3">
           <Heart className="h-12 w-12 text-muted-foreground/40" strokeWidth={1} />
           <p className="text-sm font-medium">No donations yet</p>
           <p className="text-xs text-muted-foreground max-w-xs">
             Once supporters donate via your public page, they'll appear here.
-            Mobile money integration coming soon.
           </p>
         </div>
       </div>
@@ -40,7 +39,7 @@ export default async function DonationsPage() {
   }
 
   return (
-    <div className="p-6 md:p-8 max-w-3xl space-y-6">
+    <div className="px-4 py-5 md:p-8 max-w-3xl space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold tracking-tight">Donations</h1>
         <DonationExportButton />

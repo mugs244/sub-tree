@@ -70,7 +70,7 @@ export function EditProfileForm({
   }
 
   return (
-    <form onSubmit={handleSave} className="space-y-4">
+    <form onSubmit={handleSave} className="space-y-3">
       <AvatarUpload value={avatarUrl} onChange={setAvatarUrl} />
 
       <div className="space-y-1.5">
@@ -96,7 +96,7 @@ export function EditProfileForm({
           value={bio}
           onChange={(e) => setBio(e.target.value)}
           maxLength={300}
-          rows={3}
+          rows={2}
           placeholder="Tell people a little about yourself…"
           className="resize-none"
         />

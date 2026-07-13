@@ -25,12 +25,12 @@ export default async function SettingsPage() {
   })
 
   return (
-    <div className="px-4 py-5 md:p-8 max-w-2xl space-y-10">
+    <div className="px-4 py-5 md:p-8 max-w-2xl space-y-6 md:space-y-10">
       <h1 className="text-2xl font-semibold tracking-tight">Settings</h1>
 
-      <section className="space-y-4">
+      <section className="space-y-3">
         <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Profile</h2>
-        <div className="bg-surface border border-border rounded-xl p-5">
+        <div className="bg-surface border border-border rounded-xl p-4 sm:p-5">
           <EditProfileForm
             initialDisplayName={user?.profile?.display_name ?? ""}
             initialBio={user?.profile?.bio ?? ""}
@@ -40,7 +40,7 @@ export default async function SettingsPage() {
         </div>
       </section>
 
-      <section className="space-y-4">
+      <section className="space-y-3">
         <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Account</h2>
         <div className="bg-surface border border-border rounded-xl divide-y divide-border">
           {user?.username ? (
@@ -61,16 +61,16 @@ export default async function SettingsPage() {
         </div>
       </section>
 
-      <section className="space-y-4">
+      <section className="space-y-3">
         <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Gift me</h2>
         <div className="bg-surface border border-border rounded-xl">
           <GiftMeToggle initialEnabled={user?.profile?.gift_me_enabled ?? false} />
         </div>
       </section>
 
-      <section className="space-y-4">
+      <section className="space-y-3">
         <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Danger zone</h2>
-        <div className="bg-surface border border-destructive/30 rounded-xl p-5 space-y-3">
+        <div className="bg-surface border border-destructive/30 rounded-xl p-4 sm:p-5 space-y-3">
           <div>
             <p className="text-sm font-medium">Delete account</p>
             <p className="text-xs text-muted-foreground mt-0.5">

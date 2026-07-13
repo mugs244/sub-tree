@@ -166,7 +166,7 @@ export default async function PublicProfilePage({ params }: Props) {
   return (
     <main
       style={themeStyle}
-      className={["min-h-screen bg-background flex flex-col items-center px-4 py-12", fontClass].join(" ")}
+      className={["min-h-screen bg-background flex flex-col items-center justify-center px-4 py-12", fontClass].join(" ")}
     >
       <PageViewTracker username={username} />
       <Suspense><ReferrerTracker /></Suspense>

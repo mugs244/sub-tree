@@ -77,7 +77,7 @@ export function DonationLaunchNotice({ compact = false }: { compact?: boolean })
     <div
       className={[
         "rounded-xl border border-gray-200 bg-gray-50 text-center",
-        compact ? "p-4 space-y-2" : "p-6 space-y-3",
+        compact ? "p-4 space-y-2" : "p-4 sm:p-6 space-y-3",
       ].join(" ")}
     >
       <p className={compact ? "text-xs font-medium text-gray-500" : "text-sm font-medium text-gray-900"}>
