@@ -1,7 +1,7 @@
 "use client"
 
 import { useRef, useState } from "react"
-import { uploadPresigned } from "@vercel/blob/client"
+import { upload } from "@vercel/blob/client"
 import { Camera, Loader2, User as UserIcon } from "lucide-react"
 
 const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp"]
@@ -37,7 +37,7 @@ export function AvatarUpload({ value, onChange }: AvatarUploadProps) {
 
     setUploading(true)
     try {
-      const blob = await uploadPresigned(`avatars/${crypto.randomUUID()}-${file.name}`, file, {
+      const blob = await upload(`avatars/${crypto.randomUUID()}-${file.name}`, file, {
         access: "public",
         handleUploadUrl: "/api/upload/avatar",
       })
