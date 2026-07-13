@@ -258,7 +258,7 @@ export function AppearanceForm({
                           setProTheme((prev) => ({ ...prev, [key]: v.length === 7 ? v : null }))
                         }
                       }}
-                      className="flex-1 min-w-0 text-[12px] font-mono rounded border border-[color:var(--border-default)] bg-[color:var(--bg-surface)] px-2 py-1.5 placeholder:text-[color:var(--text-muted)] focus:outline-none focus:ring-1 focus:ring-[color:var(--accent)]"
+                      className="flex-1 min-w-0 text-[12px] font-mono rounded border border-[color:var(--border-default)] bg-[color:var(--bg-surface)] px-2 py-1.5 placeholder:text-[color:var(--text-muted)] focus:outline-none focus:ring-1 focus:ring-[color:var(--accent-primary)]"
                       maxLength={7}
                     />
                   </div>
@@ -279,7 +279,7 @@ export function AppearanceForm({
                       onClick={() => setProTheme((prev) => ({ ...prev, theme_font: f.value }))}
                       className={[
                         "flex items-center gap-2 px-3 py-2.5 rounded-lg border text-left transition-all",
-                        active ? "border-[color:var(--accent)] bg-[color:var(--accent)]/5" : "border-[color:var(--border-default)] hover:border-[color:var(--border-strong)]",
+                        active ? "border-[color:var(--accent-primary)] bg-[color:var(--accent-primary)]/5" : "border-[color:var(--border-default)] hover:border-[color:var(--border-strong)]",
                       ].join(" ")}
                     >
                       <span className="text-base leading-none" style={f.style}>Aa</span>
@@ -303,7 +303,7 @@ export function AppearanceForm({
                 onClick={() => setProTheme((prev) => ({ ...prev, hide_branding: !prev.hide_branding }))}
                 className={[
                   "relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2",
-                  proTheme.hide_branding ? "bg-[color:var(--accent)]" : "bg-[color:var(--border-default)]",
+                  proTheme.hide_branding ? "bg-[color:var(--accent-primary)]" : "bg-[color:var(--border-default)]",
                 ].join(" ")}
               >
                 <span

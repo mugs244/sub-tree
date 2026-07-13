@@ -17,7 +17,7 @@ export function PlanPicker({ preselected: _ }: { preselected: string | null }) {
 
   return (
     <div className="space-y-6">
-      <div className="rounded-xl border border-[color:var(--accent)] bg-[color:var(--accent)]/5 p-5 shadow-sm">
+      <div className="rounded-xl border border-[color:var(--accent-primary)] bg-[color:var(--accent-primary)]/5 p-5 shadow-sm">
         <div className="space-y-1 mb-4">
           <p className="text-[13px] font-semibold uppercase tracking-wider text-[color:var(--text-muted)]">Free</p>
           <p className="text-2xl font-semibold tracking-tight">
@@ -29,7 +29,7 @@ export function PlanPicker({ preselected: _ }: { preselected: string | null }) {
         <ul className="space-y-1.5">
           {FREE_FEATURES.map((f) => (
             <li key={f} className="flex items-center gap-2 text-[13px]">
-              <Check className="h-3.5 w-3.5 shrink-0 text-[color:var(--accent)]" />
+              <Check className="h-3.5 w-3.5 shrink-0 text-[color:var(--accent-primary)]" />
               {f}
             </li>
           ))}

@@ -76,7 +76,7 @@ function VerifyEmailForm() {
 
         <p className="text-center text-sm text-[color:var(--text-secondary)]">
           Didn&apos;t get it?{" "}
-          <button onClick={() => void handleResend()} className="font-medium text-[color:var(--accent)] hover:underline">
+          <button onClick={() => void handleResend()} className="font-medium text-[color:var(--accent-primary)] hover:underline">
             {resent ? "Sent!" : "Resend code"}
           </button>
         </p>

@@ -161,7 +161,7 @@ function SignInForm() {
 
         <p className="text-center text-sm text-[color:var(--text-secondary)]">
           Don&apos;t have an account?{" "}
-          <Link href="/sign-up" className="font-medium text-[color:var(--accent)] hover:underline">Create one</Link>
+          <Link href="/sign-up" className="font-medium text-[color:var(--accent-primary)] hover:underline">Create one</Link>
         </p>
       </div>
     </div>
