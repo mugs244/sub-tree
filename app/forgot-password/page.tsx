@@ -22,18 +22,22 @@ export default function ForgotPasswordPage() {
   const [loading, setLoading] = useState(false)
 
   async function requestCode() {
+    if (loading) return
     setError("")
     setLoading(true)
-    const res = await fetch("/api/auth/forgot-password", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email }),
-    })
-    const data = await res.json()
-    setLoading(false)
-    if (!res.ok) { setError(data.error ?? "Something went wrong"); return }
-    setUserId(data.userId)
-    setMode("reset")
+    try {
+      const res = await fetch("/api/auth/forgot-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      })
+      const data = await res.json()
+      if (!res.ok) { setError(data.error ?? "Something went wrong"); return }
+      setUserId(data.userId)
+      setMode("reset")
+    } finally {
+      setLoading(false)
+    }
   }
 
   function handleRequestCode(e: React.FormEvent) {
@@ -121,9 +125,10 @@ export default function ForgotPasswordPage() {
             <button
               type="button"
               onClick={() => { setError(""); setCode(""); void requestCode() }}
-              className="w-full text-sm text-center text-[color:var(--text-secondary)] hover:text-[color:var(--text-primary)] transition-colors"
+              disabled={loading}
+              className="w-full text-sm text-center text-[color:var(--text-secondary)] hover:text-[color:var(--text-primary)] transition-colors disabled:opacity-50"
             >
-              Resend code
+              {loading ? "Sending…" : "Resend code"}
             </button>
           </form>
         )}

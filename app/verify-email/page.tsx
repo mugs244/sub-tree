@@ -16,6 +16,7 @@ function VerifyEmailForm() {
   const [error, setError] = useState("")
   const [loading, setLoading] = useState(false)
   const [resent, setResent] = useState(false)
+  const [resending, setResending] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
 
   async function handleSubmit(e: React.FormEvent) {
@@ -34,14 +35,20 @@ function VerifyEmailForm() {
   }
 
   async function handleResend() {
+    if (resending) return
+    setResending(true)
     setResent(false)
-    await fetch("/api/auth/resend-code", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ userId }),
-    })
-    setResent(true)
-    setTimeout(() => setResent(false), 5000)
+    try {
+      await fetch("/api/auth/resend-code", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId }),
+      })
+      setResent(true)
+      setTimeout(() => setResent(false), 5000)
+    } finally {
+      setResending(false)
+    }
   }
 
   return (
@@ -76,8 +83,12 @@ function VerifyEmailForm() {
 
         <p className="text-center text-sm text-[color:var(--text-secondary)]">
           Didn&apos;t get it?{" "}
-          <button onClick={() => void handleResend()} className="font-medium text-[color:var(--accent-primary)] hover:underline">
-            {resent ? "Sent!" : "Resend code"}
+          <button
+            onClick={() => void handleResend()}
+            disabled={resending}
+            className="font-medium text-[color:var(--accent-primary)] hover:underline disabled:opacity-50 disabled:no-underline"
+          >
+            {resending ? "Sending…" : resent ? "Sent!" : "Resend code"}
           </button>
         </p>
       </div>
