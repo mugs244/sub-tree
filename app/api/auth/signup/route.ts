@@ -2,11 +2,16 @@ import { NextResponse } from "next/server"
 import { prisma } from "@/lib/db"
 import { hashPassword } from "@/lib/auth/password"
 import { sendVerificationEmail } from "@/lib/auth/email"
+import { recordTermsAcceptance } from "@/lib/services/terms-acceptance"
+import { getIpFromHeaders } from "@/lib/utils/geo"
 import { z } from "zod"
 
 const schema = z.object({
   email: z.string().email("Invalid email"),
   password: z.string().min(8, "Password must be at least 8 characters"),
+  agreedToTerms: z.literal(true, {
+    message: "You must agree to the Terms of Service",
+  }),
 })
 
 export async function POST(req: Request) {
@@ -31,6 +36,8 @@ export async function POST(req: Request) {
       data: { email, password_hash },
       select: { id: true },
     })
+
+    await recordTermsAcceptance(user.id, getIpFromHeaders(req.headers))
 
     try {
       await sendVerificationEmail(user.id, email)

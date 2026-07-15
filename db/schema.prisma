@@ -53,7 +53,23 @@ model User {
   support_threads     SupportMessage[] @relation("support_thread_owner")
   support_messages_sent SupportMessage[] @relation("support_message_sender")
   donation_launch_subscriptions DonationLaunchSubscriber[]
+  terms_acceptances  TermsAcceptance[]
 
+}
+
+// Append-only audit log — one row per acceptance, never updated or
+// overwritten, so there's a durable record of which Terms version a user
+// agreed to and when, even after the Terms are later revised.
+model TermsAcceptance {
+  id            Int      @id @default(autoincrement())
+  user_id       Int
+  terms_version String
+  ip_address    String?
+  accepted_at   DateTime @default(now())
+
+  user          User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@index([user_id])
 }
 
 // Generic, extensible notification feed — donation/withdrawal events today,

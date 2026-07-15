@@ -8,11 +8,13 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { PasswordInput } from "@/components/ui/password-input"
 import { Label } from "@/components/ui/label"
+import { Checkbox } from "@/components/ui/checkbox"
 
 export default function SignUpPage() {
   const router = useRouter()
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
+  const [agreedToTerms, setAgreedToTerms] = useState(false)
   const [error, setError] = useState("")
   const [loading, setLoading] = useState(false)
 
@@ -23,7 +25,7 @@ export default function SignUpPage() {
     const res = await fetch("/api/auth/signup", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, password }),
+      body: JSON.stringify({ email, password, agreedToTerms }),
     })
     const data = await res.json()
     setLoading(false)
@@ -49,8 +51,22 @@ export default function SignUpPage() {
             <Label htmlFor="password">Password</Label>
             <PasswordInput id="password" autoComplete="new-password" required value={password} onChange={(e) => setPassword(e.target.value)} placeholder="At least 8 characters" />
           </div>
+          <div className="flex items-start gap-2">
+            <Checkbox
+              id="agreedToTerms"
+              checked={agreedToTerms}
+              onCheckedChange={(checked) => setAgreedToTerms(checked === true)}
+              className="mt-0.5"
+            />
+            <Label htmlFor="agreedToTerms" className="text-sm font-normal leading-snug text-[color:var(--text-secondary)]">
+              I agree to the{" "}
+              <Link href="/terms" target="_blank" className="font-medium text-[color:var(--accent-primary)] hover:underline">
+                Terms of Service
+              </Link>
+            </Label>
+          </div>
           {error && <p className="text-sm text-red-600">{error}</p>}
-          <Button type="submit" className="w-full" disabled={loading}>
+          <Button type="submit" className="w-full" disabled={loading || !agreedToTerms}>
             {loading ? "Creating account…" : "Create account"}
           </Button>
         </form>
