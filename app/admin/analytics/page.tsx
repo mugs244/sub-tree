@@ -3,6 +3,18 @@ import { getSession } from "@/lib/auth/session"
 import { isAdmin } from "@/lib/services/admin"
 import { prisma } from "@/lib/db"
 import AdminGeoMap from "@/components/AdminGeoMap"
+import { TrafficTrendChart } from "@/components/TrafficTrendChart"
+import {
+  getTrafficTotals,
+  getDailyTraffic,
+  getTopPages,
+  getTopReferrers,
+  getDeviceBreakdown,
+  getOsBreakdown,
+  getBrowserBreakdown,
+  getUtmSourceBreakdown,
+  type BreakdownItem,
+} from "@/lib/services/vercel-analytics"
 
 export const metadata = { title: "Analytics — Admin" }
 
@@ -10,7 +22,22 @@ export default async function AdminAnalyticsPage() {
   const session = await getSession()
   if (!session || !isAdmin(session.userId)) redirect("/")
 
-  const [users, viewAgg, clickAgg, donationAgg, topCreatorsByViews, topLinksByClicks] = await Promise.all([
+  const [
+    users,
+    viewAgg,
+    clickAgg,
+    donationAgg,
+    topCreatorsByViews,
+    topLinksByClicks,
+    trafficTotals,
+    dailyTraffic,
+    topPages,
+    topReferrers,
+    deviceBreakdown,
+    osBreakdown,
+    browserBreakdown,
+    utmSourceBreakdown,
+  ] = await Promise.all([
     prisma.user.findMany({
       select: {
         last_active_at: true,
@@ -36,6 +63,14 @@ export default async function AdminAnalyticsPage() {
       take: 10,
       select: { label: true, clicks: true, user: { select: { username: true } } },
     }),
+    getTrafficTotals(30),
+    getDailyTraffic(14),
+    getTopPages(30),
+    getTopReferrers(30),
+    getDeviceBreakdown(30),
+    getOsBreakdown(30),
+    getBrowserBreakdown(30),
+    getUtmSourceBreakdown(30),
   ])
 
   const countryCounts = users.reduce<Record<string, number>>((acc, u) => {
@@ -69,7 +104,33 @@ export default async function AdminAnalyticsPage() {
         <StatCard label="Donation volume" value={donationAgg._sum.amount ?? 0} prefix="UGX " />
       </div>
 
+      {/* ── Real site traffic (Vercel Web Analytics) ──────────── */}
+      {trafficTotals && (
+        <div className="space-y-4">
+          <div className="grid grid-cols-2 gap-3">
+            <StatCard label="Pageviews (30d)" value={trafficTotals.pageviews} />
+            <StatCard label="Visitors (30d)" value={trafficTotals.visitors} />
+          </div>
+
+          <div className="rounded-xl border border-border bg-surface p-5">
+            <h2 className="text-sm font-medium mb-4">Daily traffic (last 14 days)</h2>
+            <TrafficTrendChart data={dailyTraffic} />
+          </div>
+        </div>
+      )}
+
       <div className="grid gap-4 md:grid-cols-2">
+        {trafficTotals && (
+          <>
+            <BreakdownList title="Top pages" items={topPages} mode="count" />
+            <BreakdownList title="Top referrers" items={topReferrers} mode="count" emptyText="No data yet — direct traffic only." />
+            <BreakdownList title="UTM sources" items={utmSourceBreakdown} mode="count" emptyText="No campaign traffic yet." />
+            <BreakdownList title="Devices" items={deviceBreakdown} mode="percent" />
+            <BreakdownList title="Operating systems" items={osBreakdown} mode="percent" />
+            <BreakdownList title="Browsers" items={browserBreakdown} mode="percent" />
+          </>
+        )}
+
         <div className="rounded-xl border border-border bg-surface p-5">
           <h2 className="text-sm font-medium mb-4">User geography</h2>
           <AdminGeoMap countries={countries} totalUsers={totalUsers} />
@@ -139,6 +200,38 @@ function StatCard({ label, value, prefix }: { label: string; value: number; pref
         {prefix}
         {value.toLocaleString()}
       </p>
+    </div>
+  )
+}
+
+function BreakdownList({
+  title,
+  items,
+  mode,
+  emptyText = "No data yet.",
+}: {
+  title: string
+  items: BreakdownItem[]
+  mode: "count" | "percent"
+  emptyText?: string
+}) {
+  return (
+    <div className="rounded-xl border border-border bg-surface p-5">
+      <h2 className="text-sm font-medium mb-4">{title}</h2>
+      {items.length === 0 ? (
+        <p className="text-sm text-muted-foreground">{emptyText}</p>
+      ) : (
+        <ul className="space-y-2">
+          {items.map((item) => (
+            <li key={item.label} className="flex items-center justify-between text-sm">
+              <span className="text-muted-foreground truncate">{item.label}</span>
+              <span className="font-mono font-medium shrink-0 ml-2">
+                {mode === "percent" ? `${item.pct}%` : item.visitors.toLocaleString()}
+              </span>
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   )
 }
