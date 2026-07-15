@@ -131,8 +131,7 @@ export default async function AdminAnalyticsPage() {
           </>
         )}
 
-        <div className="rounded-xl border border-border bg-surface p-5">
-          <h2 className="text-sm font-medium mb-4">User geography</h2>
+        <div className="md:col-span-2">
           <AdminGeoMap countries={countries} totalUsers={totalUsers} />
         </div>
 

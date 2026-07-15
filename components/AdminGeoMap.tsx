@@ -1,4 +1,5 @@
-'use client'
+import { buildWorldMap } from "@/lib/services/geo-map"
+import { WorldMap } from "@/components/WorldMap"
 
 type CountryCount = {
   code: string
@@ -11,27 +12,33 @@ type Props = {
 }
 
 export default function AdminGeoMap({ countries, totalUsers }: Props) {
+  const map = buildWorldMap(countries)
+
   return (
-    <div style={{ border: '1px solid #ddd', borderRadius: 12, padding: 24, minHeight: 360 }}>
-      <h2>User Geography Map</h2>
-      <p style={{ color: '#666', marginTop: 4 }}>
-        Users are grouped by country, detected automatically from IP at signup.
+    <div className="rounded-xl border border-border bg-surface p-5">
+      <h2 className="text-sm font-medium">User geography</h2>
+      <p className="text-xs text-muted-foreground mt-1">
+        Users grouped by country, detected automatically from IP at signup.
       </p>
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginTop: 24 }}>
-        <div style={{ minHeight: 260, background: '#f8f8f8', borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <span>World map placeholder</span>
-        </div>
+
+      <div className="grid md:grid-cols-[3fr_2fr] gap-6 mt-4">
+        <WorldMap features={map.features} width={map.width} height={map.height} />
+
         <div>
-          <p style={{ margin: 0, fontWeight: 600 }}>Total users</p>
-          <p style={{ margin: '8px 0 16px', fontSize: '1.25rem' }}>{totalUsers}</p>
-          <div style={{ display: 'grid', gap: 10 }}>
-            {countries.slice(0, 8).map((country) => (
-              <div key={country.code} style={{ display: 'flex', justifyContent: 'space-between', padding: '10px 12px', background: '#fff', borderRadius: 10, border: '1px solid #eee' }}>
-                <span>{country.code}</span>
-                <span>{country.count}</span>
-              </div>
-            ))}
-          </div>
+          <p className="text-xs text-muted-foreground">Total users</p>
+          <p className="text-xl font-semibold tracking-tight mt-1">{totalUsers.toLocaleString()}</p>
+          {countries.length === 0 ? (
+            <p className="text-sm text-muted-foreground mt-4">No data yet.</p>
+          ) : (
+            <ul className="space-y-2 mt-4">
+              {countries.slice(0, 8).map((country) => (
+                <li key={country.code} className="flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground">{country.code}</span>
+                  <span className="font-mono font-medium">{country.count.toLocaleString()}</span>
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
       </div>
     </div>
