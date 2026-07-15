@@ -1,7 +1,8 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
-import { Analytics } from "@vercel/analytics/next";
 import { Toaster } from "@/components/ui/sonner";
+import { ConditionalAnalytics } from "@/components/ConditionalAnalytics";
+import { CookieConsentBanner } from "@/components/CookieConsentBanner";
 import "./globals.css";
 
 export const viewport: Viewport = {
@@ -38,7 +39,8 @@ export default function RootLayout({
       <body className="min-h-full flex flex-col">
         {children}
         <Toaster />
-        <Analytics />
+        <ConditionalAnalytics />
+        <CookieConsentBanner />
       </body>
     </html>
   );

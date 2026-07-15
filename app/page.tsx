@@ -2,6 +2,7 @@ import Link from "next/link"
 import { Logo } from "@/components/brand/Logo"
 import { PlatformIcon } from "@/components/PlatformIcon"
 import { DonationLaunchNotice } from "@/components/DonationLaunchNotice"
+import { CookiePreferencesButton } from "@/components/CookiePreferencesButton"
 import { Link2, Heart, BarChart2, ArrowRight, Globe, Smartphone, Check, Minus } from "lucide-react"
 import type { Platform } from "@/lib/utils/platform"
 import { getFeeRate } from "@/lib/services/platform-settings"
@@ -379,6 +380,15 @@ export default async function LandingPage() {
             <a href="mailto:hello@sub-tree.com" className="text-xs text-muted-foreground hover:text-foreground transition-colors duration-150">
               Contact
             </a>
+            <Link href="/terms" className="text-xs text-muted-foreground hover:text-foreground transition-colors duration-150">
+              Terms
+            </Link>
+            <Link href="/cookies" className="text-xs text-muted-foreground hover:text-foreground transition-colors duration-150">
+              Cookies
+            </Link>
+            <CookiePreferencesButton className="text-xs text-muted-foreground hover:text-foreground transition-colors duration-150">
+              Cookie preferences
+            </CookiePreferencesButton>
           </nav>
           <p className="text-xs text-muted-foreground sm:text-right">
             &copy; {new Date().getFullYear()} Sub-tree
