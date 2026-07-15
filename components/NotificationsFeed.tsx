@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState, useCallback } from "react"
-import { Bell } from "lucide-react"
+import { Bell, Heart, Wallet, MessageCircle, Megaphone } from "lucide-react"
 
 interface NotificationItem {
   id: number
@@ -10,6 +10,15 @@ interface NotificationItem {
   body: string
   read_at: string | null
   created_at: string
+}
+
+const TYPE_ICON: Record<string, React.ElementType> = {
+  DONATION_RECEIVED: Heart,
+  WITHDRAWAL_REQUESTED: Wallet,
+  WITHDRAWAL_COMPLETED: Wallet,
+  WITHDRAWAL_FAILED: Wallet,
+  SUPPORT_MESSAGE: MessageCircle,
+  ANNOUNCEMENT: Megaphone,
 }
 
 export function NotificationsFeed() {
@@ -73,6 +82,7 @@ export function NotificationsFeed() {
     <ul className="space-y-2">
       {items.map((n) => {
         const unread = !n.read_at
+        const Icon = TYPE_ICON[n.type] ?? Bell
         const time = new Date(n.created_at).toLocaleDateString("en-UG", {
           day: "numeric",
           month: "short",
@@ -91,15 +101,13 @@ export function NotificationsFeed() {
                 : "border-border bg-background",
             ].join(" ")}
           >
-            {unread && (
-              <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-foreground" />
-            )}
-            {!unread && <span className="mt-1.5 h-2 w-2 shrink-0" />}
+            <Icon className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" strokeWidth={1.5} />
             <div className="min-w-0 flex-1">
               <p className="text-sm font-medium">{n.title}</p>
               <p className="text-xs text-muted-foreground truncate mt-0.5">{n.body}</p>
               <span className="text-xs text-muted-foreground mt-1 block">{time}</span>
             </div>
+            {unread && <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-foreground" />}
           </li>
         )
       })}

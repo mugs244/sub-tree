@@ -80,6 +80,7 @@ enum NotificationType {
   WITHDRAWAL_COMPLETED
   WITHDRAWAL_FAILED
   SUPPORT_MESSAGE
+  ANNOUNCEMENT
 }
 
 // One flat support conversation per creator with Sub-tree admin — not a

@@ -1,7 +1,6 @@
 import { getSession } from "@/lib/auth/session"
 import { prisma } from "@/lib/db"
 import { Link2, Heart, Eye, Smartphone, Globe, Wallet, CreditCard } from "lucide-react"
-import { NotificationsFeed } from "@/components/NotificationsFeed"
 import { DonationLaunchNotice } from "@/components/DonationLaunchNotice"
 import { getClientBalance, listClientWithdrawals } from "@/lib/services/client-wallet"
 import { getFeeRate } from "@/lib/services/platform-settings"
@@ -147,7 +146,7 @@ export default async function DashboardHomePage() {
           icon={Heart}
           label="Donations"
           value={totalDonations}
-          href="/dashboard/donations"
+          href="/dashboard/activity"
         />
         <StatCard
           icon={Eye}
@@ -261,12 +260,6 @@ export default async function DashboardHomePage() {
         </div>
       </div>
 
-      {/* ── Notification feed ──────────────────────────────── */}
-      <div className="space-y-3">
-        <h2 className="text-sm font-medium">Notifications</h2>
-        <p className="text-xs text-muted-foreground -mt-1">Updates every 30 seconds</p>
-        <NotificationsFeed />
-      </div>
     </div>
   )
 }

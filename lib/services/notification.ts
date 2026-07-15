@@ -45,3 +45,38 @@ export async function markNotificationRead(userId: number, notificationId: numbe
 export async function getUnreadNotificationCount(userId: number): Promise<number> {
   return prisma.notification.count({ where: { user_id: userId, read_at: null } })
 }
+
+interface BroadcastAnnouncementInput {
+  title: string
+  body: string
+  /** Omit to send to every user; set to notify just one. */
+  targetUserId?: number
+}
+
+// Returns the number of users the announcement was recorded for.
+export async function broadcastAnnouncement(input: BroadcastAnnouncementInput): Promise<number> {
+  if (input.targetUserId) {
+    await prisma.notification.create({
+      data: {
+        user_id: input.targetUserId,
+        type: "ANNOUNCEMENT",
+        title: input.title,
+        body: input.body,
+      },
+    })
+    return 1
+  }
+
+  const users = await prisma.user.findMany({ select: { id: true } })
+  if (users.length === 0) return 0
+
+  const result = await prisma.notification.createMany({
+    data: users.map((u) => ({
+      user_id: u.id,
+      type: "ANNOUNCEMENT" as const,
+      title: input.title,
+      body: input.body,
+    })),
+  })
+  return result.count
+}

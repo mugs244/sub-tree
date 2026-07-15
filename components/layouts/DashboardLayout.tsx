@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
-import { Home, Link2, Heart, Palette, Settings, ExternalLink, LogOut } from "lucide-react"
+import { Home, Link2, Activity, Palette, Settings, ExternalLink, LogOut } from "lucide-react"
 import { Logo } from "@/components/brand/Logo"
 
 interface NavItem {
@@ -16,7 +16,7 @@ interface NavItem {
 const NAV_ITEMS: NavItem[] = [
   { label: "Home",       href: "/dashboard",            icon: Home },
   { label: "Links",      href: "/dashboard/links",      icon: Link2 },
-  { label: "Donations",  href: "/dashboard/donations",  icon: Heart },
+  { label: "Activity",   href: "/dashboard/activity",   icon: Activity },
   { label: "Appearance", href: "/dashboard/appearance", icon: Palette },
   { label: "Settings",   href: "/dashboard/settings",   icon: Settings, alsoActiveOn: ["/dashboard/support"] },
 ]
@@ -30,9 +30,11 @@ function isActive(pathname: string, href: string, alsoActiveOn?: string[]) {
 interface DashboardLayoutProps {
   children: React.ReactNode
   username: string
+  /** Unread notification count — shows a dot on the Activity nav item. */
+  unreadCount?: number
 }
 
-export function DashboardLayout({ children, username }: DashboardLayoutProps) {
+export function DashboardLayout({ children, username, unreadCount = 0 }: DashboardLayoutProps) {
   const pathname = usePathname()
   const router = useRouter()
   const visibleNav = NAV_ITEMS
@@ -69,6 +71,9 @@ export function DashboardLayout({ children, username }: DashboardLayoutProps) {
               >
                 <Icon className="h-4 w-4 shrink-0" strokeWidth={active ? 2 : 1.5} />
                 {label}
+                {href === "/dashboard/activity" && unreadCount > 0 && (
+                  <span className="h-1.5 w-1.5 rounded-full bg-foreground shrink-0" aria-label="Unread notifications" />
+                )}
               </Link>
             )
           })}
@@ -130,7 +135,15 @@ export function DashboardLayout({ children, username }: DashboardLayoutProps) {
               ].join(" ")}
               aria-current={active ? "page" : undefined}
             >
-              <Icon className="h-5 w-5" strokeWidth={active ? 2 : 1.5} />
+              <span className="relative">
+                <Icon className="h-5 w-5" strokeWidth={active ? 2 : 1.5} />
+                {href === "/dashboard/activity" && unreadCount > 0 && (
+                  <span
+                    className="absolute -top-0.5 -right-0.5 h-1.5 w-1.5 rounded-full bg-foreground"
+                    aria-label="Unread notifications"
+                  />
+                )}
+              </span>
               <span className="text-[10px] font-medium">{label}</span>
             </Link>
           )
