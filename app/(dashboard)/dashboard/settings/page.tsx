@@ -1,5 +1,7 @@
 import { getSession } from "@/lib/auth/session"
 import { redirect } from "next/navigation"
+import Link from "next/link"
+import { MessageCircle, ChevronRight } from "lucide-react"
 import { prisma } from "@/lib/db"
 import { EditProfileForm } from "@/components/EditProfileForm"
 import { DeleteAccountButton } from "@/components/DeleteAccountButton"
@@ -80,6 +82,23 @@ export default async function SettingsPage() {
         <div className="bg-surface border border-border rounded-xl">
           <GiftMeToggle initialEnabled={user?.profile?.gift_me_enabled ?? false} />
         </div>
+      </section>
+
+      <section className="space-y-3">
+        <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Support</h2>
+        <Link
+          href="/dashboard/support"
+          className="flex items-center justify-between gap-3 bg-surface border border-border rounded-xl px-4 py-3.5 hover:bg-border/20 transition-colors duration-150"
+        >
+          <div className="flex items-center gap-3">
+            <MessageCircle className="h-4 w-4 text-muted-foreground shrink-0" strokeWidth={1.5} />
+            <div>
+              <p className="text-sm font-medium">Message support</p>
+              <p className="text-xs text-muted-foreground mt-0.5">We usually reply within a day.</p>
+            </div>
+          </div>
+          <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" strokeWidth={1.5} />
+        </Link>
       </section>
 
       <section className="space-y-3">

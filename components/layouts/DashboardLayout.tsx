@@ -2,13 +2,15 @@
 
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
-import { Home, Link2, Heart, Palette, Settings, ExternalLink, LogOut, MessageCircle } from "lucide-react"
+import { Home, Link2, Heart, Palette, Settings, ExternalLink, LogOut } from "lucide-react"
 import { Logo } from "@/components/brand/Logo"
 
 interface NavItem {
   label: string
   href: string
   icon: React.ElementType
+  /** Other routes that should also light up this item (e.g. sub-pages reached from within it). */
+  alsoActiveOn?: string[]
 }
 
 const NAV_ITEMS: NavItem[] = [
@@ -16,13 +18,13 @@ const NAV_ITEMS: NavItem[] = [
   { label: "Links",      href: "/dashboard/links",      icon: Link2 },
   { label: "Donations",  href: "/dashboard/donations",  icon: Heart },
   { label: "Appearance", href: "/dashboard/appearance", icon: Palette },
-  { label: "Support",    href: "/dashboard/support",    icon: MessageCircle },
-  { label: "Settings",   href: "/dashboard/settings",   icon: Settings },
+  { label: "Settings",   href: "/dashboard/settings",   icon: Settings, alsoActiveOn: ["/dashboard/support"] },
 ]
 
-function isActive(pathname: string, href: string) {
+function isActive(pathname: string, href: string, alsoActiveOn?: string[]) {
+  const matches = (h: string) => pathname === h || pathname.startsWith(h + "/")
   if (href === "/dashboard") return pathname === "/dashboard"
-  return pathname === href || pathname.startsWith(href + "/")
+  return matches(href) || (alsoActiveOn?.some(matches) ?? false)
 }
 
 interface DashboardLayoutProps {
@@ -51,8 +53,8 @@ export function DashboardLayout({ children, username }: DashboardLayoutProps) {
         </div>
 
         <nav className="flex-1 px-3 py-4 space-y-0.5" aria-label="Main navigation">
-          {visibleNav.map(({ label, href, icon: Icon }) => {
-            const active = isActive(pathname, href)
+          {visibleNav.map(({ label, href, icon: Icon, alsoActiveOn }) => {
+            const active = isActive(pathname, href, alsoActiveOn)
             return (
               <Link
                 key={href}
@@ -116,8 +118,8 @@ export function DashboardLayout({ children, username }: DashboardLayoutProps) {
         style={{ gridTemplateColumns: `repeat(${visibleNav.length}, minmax(0, 1fr))` }}
         aria-label="Mobile navigation"
       >
-        {visibleNav.map(({ label, href, icon: Icon }) => {
-          const active = isActive(pathname, href)
+        {visibleNav.map(({ label, href, icon: Icon, alsoActiveOn }) => {
+          const active = isActive(pathname, href, alsoActiveOn)
           return (
             <Link
               key={href}
