@@ -39,7 +39,10 @@ export async function POST(req: Request) {
     }
 
     const { token, expires_at } = await createSession(user.id)
-    const res = NextResponse.json({ ok: true, isAdmin: isAdmin(user.id) })
+    // `token` also goes in the body (not just the Set-Cookie header) so
+    // mobile clients, which can't rely on a browser cookie jar, can capture
+    // and store it for use as an `Authorization: Bearer` header.
+    const res = NextResponse.json({ ok: true, isAdmin: isAdmin(user.id), token })
     return applySessionCookie(res, token, expires_at)
   } catch (err) {
     console.error("Signin error:", err)

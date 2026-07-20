@@ -25,7 +25,7 @@ export async function POST(req: Request) {
     }
 
     const { token, expires_at } = await createSession(userId)
-    const res = NextResponse.json({ ok: true })
+    const res = NextResponse.json({ ok: true, token })
     return applySessionCookie(res, token, expires_at)
   } catch (err) {
     console.error("Verify-email error:", err)

@@ -17,7 +17,24 @@ export type MomoCallbackPayload = {
   reason?: string
 }
 
+export interface MomoValidateResult {
+  active: boolean
+}
+
+export interface MomoTransferParams {
+  amount: number          // UGX, integer
+  phone: string           // normalized Ugandan number (07XXXXXXXX)
+  referenceId: string     // UUID — our idempotency key
+  payerMessage?: string
+  payeeNote?: string
+}
+
+export interface MomoTransferResult {
+  providerTxId?: string
+}
+
 export interface MomoProvider {
   requestToPay(params: MomoRequestToPayParams): Promise<MomoRequestToPayResult>
   verifyCallback(rawBody: string, signature: string): MomoCallbackPayload | null
+  validateAccountHolder(phone: string): Promise<MomoValidateResult>
 }

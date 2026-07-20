@@ -22,7 +22,7 @@ export async function POST(req: Request) {
     if (!valid) return NextResponse.json({ error: "Invalid or expired code" }, { status: 400 })
 
     const { token, expires_at } = await createSession(userId)
-    const res = NextResponse.json({ ok: true, isAdmin: isAdmin(userId) })
+    const res = NextResponse.json({ ok: true, isAdmin: isAdmin(userId), token })
     return applySessionCookie(res, token, expires_at)
   } catch (err) {
     console.error("Verify signin OTP error:", err)

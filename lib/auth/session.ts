@@ -1,4 +1,4 @@
-import { cookies } from "next/headers"
+import { cookies, headers } from "next/headers"
 import { NextResponse } from "next/server"
 import { prisma } from "@/lib/db"
 import { randomBytes } from "crypto"
@@ -35,7 +35,17 @@ export function applySessionCookie<T>(res: NextResponse<T>, token: string, expir
 
 export async function getSession(): Promise<Session | null> {
   const store = await cookies()
-  const token = store.get(COOKIE)?.value
+  let token = store.get(COOKIE)?.value
+
+  // Mobile clients (no browser cookie jar) send the same token as a bearer
+  // header instead — falls back here so every existing call site stays a
+  // zero-arg `getSession()`, web and mobile both just work.
+  if (!token) {
+    const hdrs = await headers()
+    const auth = hdrs.get("authorization")
+    if (auth?.startsWith("Bearer ")) token = auth.slice(7)
+  }
+
   if (!token) return null
 
   const session = await prisma.session.findUnique({

@@ -36,7 +36,7 @@ export async function POST(req: Request) {
     await notifyPasswordChanged(userId)
 
     const { token, expires_at } = await createSession(userId)
-    const res = NextResponse.json({ ok: true, isAdmin: isAdmin(userId) })
+    const res = NextResponse.json({ ok: true, isAdmin: isAdmin(userId), token })
     return applySessionCookie(res, token, expires_at)
   } catch (err) {
     console.error("Reset password error:", err)
