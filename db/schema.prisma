@@ -54,6 +54,8 @@ model User {
   support_messages_sent SupportMessage[] @relation("support_message_sender")
   donation_launch_subscriptions DonationLaunchSubscriber[]
   terms_acceptances  TermsAcceptance[]
+  advertiser_memberships AdvertiserMember[]
+  ad_slot_bookings   AdSlotBooking[]
 
 }
 
@@ -354,6 +356,7 @@ enum AccountType {
   INDIVIDUAL
   BUSINESS
   NGO
+  ADVERTISER
 }
 
 enum Tier {
@@ -859,4 +862,185 @@ model DonationLaunchSubscriber {
   user        User?     @relation(fields: [user_id], references: [id], onDelete: Cascade)
 
   @@index([notified_at])
+}
+
+// ─── Business Tier — Advertisers & Ad Slots ─────────────────────────────────
+// Advertisers are a distinct account kind from creators (AccountType.ADVERTISER,
+// not the unrelated Tier.BUSINESS creator subscription) — a company that buys
+// ad placements shown to Sub-tree's users, rather than a creator selling their
+// own content. Deliberately its own org-style entity (not just a flag on User)
+// since a team of AdvertiserMembers shares one wallet and one slate of bookings.
+
+enum AdvertiserPlan {
+  STARTUP    // 5x cap multiplier
+  GROWTH     // 10x cap multiplier
+  ENTERPRISE // 50x cap multiplier
+}
+
+enum AdvertiserVerificationStatus {
+  UNVERIFIED // gray mark — default until onboarding is complete
+  PENDING    // onboarding info submitted, awaiting admin review
+  VERIFIED   // blue mark — Sub-tree tree logo in a blue circle
+}
+
+model Advertiser {
+  id                   Int                          @id @default(autoincrement())
+  company_name         String
+  plan                 AdvertiserPlan               @default(STARTUP)
+  verification_status  AdvertiserVerificationStatus @default(UNVERIFIED)
+  wallet_balance_ugx    BigInt                       @default(0) // cached balance — AdvertiserWalletTransaction is the source of truth
+  created_at           DateTime                     @default(now())
+  updated_at           DateTime                     @updatedAt
+
+  members              AdvertiserMember[]
+  bookings             AdSlotBooking[]
+  wallet_transactions  AdvertiserWalletTransaction[]
+  credit_purchases     AdvertiserCreditPurchase[]
+
+  @@index([verification_status])
+}
+
+enum AdvertiserRole {
+  OWNER  // billing + can remove other members
+  ADMIN  // can book slots, manage creatives, invite EDITORs
+  EDITOR // can manage creatives on bookings, cannot spend wallet or invite
+}
+
+model AdvertiserMember {
+  id            Int            @id @default(autoincrement())
+  advertiser_id Int
+  user_id       Int
+  role          AdvertiserRole @default(EDITOR)
+  invited_at    DateTime       @default(now())
+  joined_at     DateTime?
+
+  advertiser    Advertiser     @relation(fields: [advertiser_id], references: [id], onDelete: Cascade)
+  user          User           @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@unique([advertiser_id, user_id])
+  @@index([user_id])
+}
+
+enum AdSlotDurationType {
+  HOUR
+  DAY
+  WEEK
+  BIWEEKLY
+  MONTH
+}
+
+// One row per purchased placement window. A booking can exist without a
+// creative (buy now, upload later — see the spec's "book without publishing"
+// flow) — AdCreative is optional and attached once the business uploads content.
+enum AdSlotBookingStatus {
+  DRAFT     // slot purchased, no creative uploaded yet
+  READY     // creative uploaded, not yet published
+  PUBLISHED // live in its slot
+  COMPLETED // slot window has passed
+  CANCELLED
+  REFUNDED
+}
+
+model AdSlotBooking {
+  id            Int                  @id @default(autoincrement())
+  advertiser_id Int
+  booked_by     Int                  // the AdvertiserMember (User) who made the purchase
+  starts_at     DateTime
+  ends_at       DateTime
+  duration_type AdSlotDurationType
+  price_ugx     Int
+  status        AdSlotBookingStatus  @default(DRAFT)
+  created_at    DateTime             @default(now())
+  updated_at    DateTime             @updatedAt
+
+  advertiser    Advertiser           @relation(fields: [advertiser_id], references: [id], onDelete: Restrict)
+  booked_by_user User                @relation(fields: [booked_by], references: [id], onDelete: Restrict)
+  creative      AdCreative?
+  reruns        AdRerun[]
+
+  @@index([advertiser_id])
+  @@index([status])
+  @@index([starts_at, ends_at])
+}
+
+enum AdFormat {
+  BANNER
+  VIDEO
+  SLIDE_UP_POPUP
+}
+
+model AdCreative {
+  id            Int           @id @default(autoincrement())
+  booking_id    Int           @unique
+  format        AdFormat
+  media_url     String?       // banner image or video URL (Mux asset id/playback URL once wired in)
+  logo_url      String?
+  app_url       String?
+  website_url   String?
+  product_name  String?
+  product_desc  String?       @db.Text
+  published_at  DateTime?
+  created_at    DateTime      @default(now())
+  updated_at    DateTime      @updatedAt
+
+  booking       AdSlotBooking @relation(fields: [booking_id], references: [id], onDelete: Cascade)
+}
+
+// Paid extra run of an existing booking's creative on a different day —
+// a separate row per ticked day on the calendar so each can be priced,
+// rescheduled (if its original time is taken), or refunded independently.
+model AdRerun {
+  id          Int                 @id @default(autoincrement())
+  booking_id  Int
+  rerun_date  DateTime
+  price_ugx   Int
+  status      AdSlotBookingStatus @default(DRAFT)
+  created_at  DateTime            @default(now())
+
+  booking     AdSlotBooking       @relation(fields: [booking_id], references: [id], onDelete: Cascade)
+
+  @@index([booking_id])
+  @@index([rerun_date])
+}
+
+enum AdvertiserWalletTxType {
+  TOPUP
+  SLOT_PURCHASE
+  RERUN_PURCHASE
+  REFUND
+  CREDIT_PURCHASE
+}
+
+// Append-only ledger — Advertiser.wallet_balance_ugx is a cached read model,
+// this table is the source of truth, same pattern as WalletWithdrawal/
+// ClientWithdrawal for creator wallets.
+model AdvertiserWalletTransaction {
+  id                 Int                    @id @default(autoincrement())
+  advertiser_id      Int
+  type               AdvertiserWalletTxType
+  amount_ugx         Int                    // positive for top-ups/refunds, negative for spends
+  balance_after_ugx  BigInt
+  related_booking_id Int?
+  note               String?
+  created_at         DateTime               @default(now())
+
+  advertiser         Advertiser             @relation(fields: [advertiser_id], references: [id], onDelete: Restrict)
+
+  @@index([advertiser_id])
+  @@index([type])
+}
+
+// Additional caps purchased beyond the plan's included cap multiplier —
+// "limited" per the spec, so these are logged individually rather than just
+// bumping a counter, to keep an audit trail of what was bought and when.
+model AdvertiserCreditPurchase {
+  id            Int        @id @default(autoincrement())
+  advertiser_id Int
+  credits       Int
+  price_ugx     Int
+  created_at    DateTime   @default(now())
+
+  advertiser    Advertiser @relation(fields: [advertiser_id], references: [id], onDelete: Restrict)
+
+  @@index([advertiser_id])
 }
