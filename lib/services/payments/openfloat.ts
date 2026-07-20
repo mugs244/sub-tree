@@ -15,7 +15,7 @@
 // requestToPay above.
 
 import { createHmac, timingSafeEqual } from "crypto"
-import type { MomoProvider, MomoRequestToPayParams, MomoRequestToPayResult, MomoCallbackPayload } from "../momo/types"
+import type { MomoProvider, MomoRequestToPayParams, MomoRequestToPayResult, MomoCallbackPayload, MomoValidateResult } from "../momo/types"
 
 // Kept local rather than imported from ../momo/types — that file is a
 // separate in-progress MTN integration and shouldn't be a dependency for the
@@ -130,7 +130,14 @@ function verifyCallback(rawBody: string, signature: string): MomoCallbackPayload
   }
 }
 
-export const openFloat: MomoProvider = { requestToPay, verifyCallback }
+// OpenFloat doesn't expose an account-holder-lookup endpoint (or none has
+// been integrated yet) — this only exists so openFloat satisfies
+// MomoProvider (added for MTN's validateAccountHolder).
+async function validateAccountHolder(_phone: string): Promise<MomoValidateResult> {
+  throw new Error("validateAccountHolder is not implemented for OpenFloat yet")
+}
+
+export const openFloat: MomoProvider = { requestToPay, verifyCallback, validateAccountHolder }
 
 // Payout side reuses the same signature scheme as collections — separate
 // export so the payout webhook route doesn't pull in the (currently

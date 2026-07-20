@@ -8,7 +8,7 @@
 //   AIRTEL_CALLBACK_URL      — full URL of POST /api/webhooks/momo/airtel
 
 import { createHmac } from "crypto"
-import type { MomoProvider, MomoRequestToPayParams, MomoRequestToPayResult, MomoCallbackPayload } from "./types"
+import type { MomoProvider, MomoRequestToPayParams, MomoRequestToPayResult, MomoCallbackPayload, MomoValidateResult } from "./types"
 
 const BASE_URLS: Record<string, string> = {
   sandbox: "https://openapiuat.airtel.africa",
@@ -117,7 +117,14 @@ function verifyCallback(rawBody: string, signature: string): MomoCallbackPayload
   }
 }
 
-export const airtelMoney: MomoProvider = { requestToPay, verifyCallback }
+// Airtel's equivalent KYC-lookup endpoint hasn't been integrated yet — this
+// is here only so airtelMoney satisfies MomoProvider (added for MTN's
+// validateAccountHolder); callers should not route Airtel numbers through it.
+async function validateAccountHolder(_phone: string): Promise<MomoValidateResult> {
+  throw new Error("validateAccountHolder is not implemented for Airtel Money yet")
+}
+
+export const airtelMoney: MomoProvider = { requestToPay, verifyCallback, validateAccountHolder }
 
 // Exposed for system-health checks — fetches an OAuth token only, moves no money.
 export { getAccessToken as checkAirtelHealth }

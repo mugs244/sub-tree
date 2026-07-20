@@ -17,7 +17,7 @@
 // donate page). See submitOrder() below — requestToPay()/MomoProvider is
 // kept only for interface conformance and is NOT used for the real flow.
 
-import type { MomoProvider, MomoRequestToPayParams, MomoRequestToPayResult, MomoCallbackPayload } from "../momo/types"
+import type { MomoProvider, MomoRequestToPayParams, MomoRequestToPayResult, MomoCallbackPayload, MomoValidateResult } from "../momo/types"
 
 export interface PesapalOrderResult {
   orderTrackingId?: string
@@ -151,7 +151,13 @@ function verifyCallback(_rawBody: string, _signature: string): MomoCallbackPaylo
   return null
 }
 
-export const pesapal: MomoProvider = { requestToPay, verifyCallback }
+// Pesapal's hosted checkout has no MSISDN-lookup step — kept only for
+// interface conformance, like requestToPay/verifyCallback above.
+async function validateAccountHolder(_phone: string): Promise<MomoValidateResult> {
+  throw new Error("validateAccountHolder is not implemented for Pesapal")
+}
+
+export const pesapal: MomoProvider = { requestToPay, verifyCallback, validateAccountHolder }
 
 // Exposed for system-health checks — fetches an OAuth token only, moves no money.
 export { getToken as checkPesapalHealth }
