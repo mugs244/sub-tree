@@ -56,6 +56,9 @@ model User {
   terms_acceptances  TermsAcceptance[]
   advertiser_memberships AdvertiserMember[]
   ad_slot_bookings   AdSlotBooking[]
+  ad_impressions     AdImpression[]
+  advertiser_posts   AdvertiserPost[]
+  advertiser_post_comments AdvertiserPostComment[]
 
 }
 
@@ -99,6 +102,11 @@ enum NotificationType {
   WITHDRAWAL_FAILED
   SUPPORT_MESSAGE
   ANNOUNCEMENT
+  AD_SLOT_BOOKED
+  AD_SLOT_PUBLISHED
+  AD_SLOT_CANCELLED
+  AD_SLOT_REFUNDED
+  AD_SLOT_AVAILABLE
 }
 
 // One flat support conversation per creator with Sub-tree admin — not a
@@ -896,6 +904,7 @@ model Advertiser {
   bookings             AdSlotBooking[]
   wallet_transactions  AdvertiserWalletTransaction[]
   credit_purchases     AdvertiserCreditPurchase[]
+  posts                AdvertiserPost[]
 
   @@index([verification_status])
 }
@@ -957,6 +966,7 @@ model AdSlotBooking {
   booked_by_user User                @relation(fields: [booked_by], references: [id], onDelete: Restrict)
   creative      AdCreative?
   reruns        AdRerun[]
+  impressions   AdImpression[]
 
   @@index([advertiser_id])
   @@index([status])
@@ -1043,4 +1053,66 @@ model AdvertiserCreditPurchase {
   advertiser    Advertiser @relation(fields: [advertiser_id], references: [id], onDelete: Restrict)
 
   @@index([advertiser_id])
+}
+
+// One row per time a published ad was shown to a viewer — the raw event the
+// Analytics section aggregates (total views, by time period, by age group,
+// by region). Age group and region are snapshotted here rather than joined
+// from the viewer's profile at read time, so a later profile change can't
+// retroactively rewrite historical breakdowns, and so anonymous views (no
+// viewer_user_id) can still carry demographic context if the serving engine
+// has it. The ad-serving engine (Ad-tre) writes these; nothing does yet, so
+// Analytics reads real-but-empty until that lands.
+model AdImpression {
+  id             Int      @id @default(autoincrement())
+  booking_id     Int
+  viewer_user_id Int?
+  age_group      String?  // e.g. "18-24" — null when unknown (no age data collected yet)
+  region         String?  // sub-national region or country code, whatever the viewer context carries
+  viewed_at      DateTime @default(now())
+
+  booking        AdSlotBooking @relation(fields: [booking_id], references: [id], onDelete: Cascade)
+  viewer         User?         @relation(fields: [viewer_user_id], references: [id], onDelete: SetNull)
+
+  @@index([booking_id])
+  @@index([booking_id, viewed_at])
+}
+
+// Normal (non-ad) business posts. Deliberately its own model rather than the
+// creator Post model: these belong to the advertiser org (shared by the team),
+// not to one creator user, and they don't carry the creator visibility/tier
+// gating. author_id records which member wrote it.
+model AdvertiserPost {
+  id            Int        @id @default(autoincrement())
+  advertiser_id Int
+  author_id     Int
+  content       String     @db.Text
+  created_at    DateTime   @default(now())
+  updated_at    DateTime   @updatedAt
+  deleted_at    DateTime?
+
+  advertiser    Advertiser @relation(fields: [advertiser_id], references: [id], onDelete: Cascade)
+  author        User       @relation(fields: [author_id], references: [id], onDelete: Restrict)
+  comments      AdvertiserPostComment[]
+
+  @@index([advertiser_id, created_at])
+  @@index([deleted_at])
+}
+
+// Comments live inside each post (the spec's model — no standalone comment
+// section in the dashboard; the business opens a post to read them). Authored
+// by any Sub-tree user who sees the post on the public surface (deferred), so
+// author_id here is a viewer, not necessarily a team member.
+model AdvertiserPostComment {
+  id         Int       @id @default(autoincrement())
+  post_id    Int
+  author_id  Int
+  body       String    @db.Text
+  created_at DateTime  @default(now())
+  deleted_at DateTime?
+
+  post       AdvertiserPost @relation(fields: [post_id], references: [id], onDelete: Cascade)
+  author     User           @relation(fields: [author_id], references: [id], onDelete: Cascade)
+
+  @@index([post_id, created_at])
 }

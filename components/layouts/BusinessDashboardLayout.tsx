@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
-import { CalendarDays, Wallet, LogOut, BadgeCheck } from "lucide-react"
+import { CalendarDays, BarChart3, FileText, Wallet, Layers, Users, Settings, Bell, LogOut, BadgeCheck } from "lucide-react"
 import { Logo } from "@/components/brand/Logo"
 
 interface NavItem {
@@ -11,13 +11,24 @@ interface NavItem {
   icon: React.ElementType
 }
 
-// Only Ad Slots and Wallet are wired up so far — Analytics, Posts, Credits,
-// Settings, Team and Notifications are still to be built (Home is explicitly
-// deferred per the Business Tier spec). Add nav items here as each ships,
-// rather than linking to pages that don't exist yet.
+// Home is deferred per the Business Tier spec — everything else is wired up.
 const NAV_ITEMS: NavItem[] = [
   { label: "Ad slots", href: "/business/ad-slots", icon: CalendarDays },
+  { label: "Analytics", href: "/business/analytics", icon: BarChart3 },
+  { label: "Posts", href: "/business/posts", icon: FileText },
   { label: "Wallet", href: "/business/wallet", icon: Wallet },
+  { label: "Credits", href: "/business/credits", icon: Layers },
+  { label: "Notifications", href: "/business/notifications", icon: Bell },
+  { label: "Team", href: "/business/team", icon: Users },
+  { label: "Settings", href: "/business/settings", icon: Settings },
+]
+
+// The mobile bottom bar can't hold every item comfortably — show the core few.
+const MOBILE_NAV_ITEMS: NavItem[] = [
+  { label: "Ad slots", href: "/business/ad-slots", icon: CalendarDays },
+  { label: "Wallet", href: "/business/wallet", icon: Wallet },
+  { label: "Alerts", href: "/business/notifications", icon: Bell },
+  { label: "Settings", href: "/business/settings", icon: Settings },
 ]
 
 function isActive(pathname: string, href: string) {
@@ -28,9 +39,11 @@ interface BusinessDashboardLayoutProps {
   children: React.ReactNode
   companyName: string
   verified: boolean
+  /** Unread notification count — shows a dot on the Notifications nav item. */
+  unreadCount?: number
 }
 
-export function BusinessDashboardLayout({ children, companyName, verified }: BusinessDashboardLayoutProps) {
+export function BusinessDashboardLayout({ children, companyName, verified, unreadCount = 0 }: BusinessDashboardLayoutProps) {
   const pathname = usePathname()
   const router = useRouter()
 
@@ -63,6 +76,9 @@ export function BusinessDashboardLayout({ children, companyName, verified }: Bus
               >
                 <Icon className="h-4 w-4 shrink-0" strokeWidth={active ? 2 : 1.5} />
                 {label}
+                {href === "/business/notifications" && unreadCount > 0 && (
+                  <span className="ml-auto h-1.5 w-1.5 rounded-full bg-foreground shrink-0" aria-label="Unread notifications" />
+                )}
               </Link>
             )
           })}
@@ -106,10 +122,10 @@ export function BusinessDashboardLayout({ children, companyName, verified }: Bus
 
       <nav
         className="md:hidden fixed bottom-0 left-0 right-0 h-16 border-t border-border bg-background grid z-20"
-        style={{ gridTemplateColumns: `repeat(${NAV_ITEMS.length}, minmax(0, 1fr))` }}
+        style={{ gridTemplateColumns: `repeat(${MOBILE_NAV_ITEMS.length}, minmax(0, 1fr))` }}
         aria-label="Mobile business navigation"
       >
-        {NAV_ITEMS.map(({ label, href, icon: Icon }) => {
+        {MOBILE_NAV_ITEMS.map(({ label, href, icon: Icon }) => {
           const active = isActive(pathname, href)
           return (
             <Link
@@ -118,7 +134,12 @@ export function BusinessDashboardLayout({ children, companyName, verified }: Bus
               className={["flex flex-col items-center justify-center gap-1 transition-colors duration-150", active ? "text-foreground" : "text-muted-foreground"].join(" ")}
               aria-current={active ? "page" : undefined}
             >
-              <Icon className="h-5 w-5" strokeWidth={active ? 2 : 1.5} />
+              <span className="relative">
+                <Icon className="h-5 w-5" strokeWidth={active ? 2 : 1.5} />
+                {href === "/business/notifications" && unreadCount > 0 && (
+                  <span className="absolute -top-0.5 -right-0.5 h-1.5 w-1.5 rounded-full bg-foreground" aria-label="Unread notifications" />
+                )}
+              </span>
               <span className="text-[10px] font-medium">{label}</span>
             </Link>
           )

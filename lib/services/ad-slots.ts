@@ -1,7 +1,15 @@
 import { Prisma, AdSlotDurationType, AdFormat } from "@prisma/client"
 import { prisma } from "@/lib/db"
 import { getSettingAsNumber } from "@/lib/services/platform-settings"
-import { PLAN_CAP_MULTIPLIER } from "@/lib/services/advertiser"
+import { getEffectiveCap, notifyAdvertiserMembers } from "@/lib/services/advertiser"
+
+function fmtUgx(v: number): string {
+  return `UGX ${v.toLocaleString()}`
+}
+
+function fmtWindow(startsAt: Date): string {
+  return startsAt.toLocaleString("en-UG", { dateStyle: "medium", timeStyle: "short" })
+}
 
 type Db = typeof prisma | Prisma.TransactionClient
 
@@ -115,8 +123,7 @@ export async function bookAdSlot(params: {
 
     const advertiser = await tx.advertiser.findUniqueOrThrow({ where: { id: advertiserId } })
 
-    const baseCap = await getSettingAsNumber("ad_slot_base_cap", 1)
-    const cap = Math.round(baseCap * PLAN_CAP_MULTIPLIER[advertiser.plan])
+    const cap = await getEffectiveCap(advertiserId, advertiser.plan, tx)
     const activeCount = await getActiveBookingCount(advertiserId, tx)
     if (activeCount >= cap) {
       throw new AdSlotError(
@@ -174,6 +181,13 @@ export async function bookAdSlot(params: {
     })
 
     return created
+  })
+
+  await notifyAdvertiserMembers(advertiserId, {
+    type: "AD_SLOT_BOOKED",
+    title: `Ad slot booked — ${fmtWindow(startsAt)}`,
+    body: `${fmtUgx(price)} was deducted from your wallet. Upload your ad content to publish it.`,
+    metadata: { bookingId: booking.id },
   })
 
   return { bookingId: booking.id, priceUgx: price }
@@ -310,7 +324,7 @@ export async function saveAdCreative(
 export async function publishAdSlot(advertiserId: number, bookingId: number): Promise<void> {
   const booking = await prisma.adSlotBooking.findUnique({
     where: { id: bookingId },
-    select: { advertiser_id: true, status: true, creative: { select: { id: true } } },
+    select: { advertiser_id: true, status: true, starts_at: true, creative: { select: { id: true } } },
   })
   if (!booking || booking.advertiser_id !== advertiserId) {
     throw new AdSlotError("NOT_FOUND", "Booking not found")
@@ -323,6 +337,13 @@ export async function publishAdSlot(advertiserId: number, bookingId: number): Pr
     prisma.adSlotBooking.update({ where: { id: bookingId }, data: { status: "PUBLISHED" } }),
     prisma.adCreative.update({ where: { booking_id: bookingId }, data: { published_at: new Date() } }),
   ])
+
+  await notifyAdvertiserMembers(advertiserId, {
+    type: "AD_SLOT_PUBLISHED",
+    title: `Ad is live — ${fmtWindow(booking.starts_at)}`,
+    body: "Your ad has been published to its slot.",
+    metadata: { bookingId },
+  })
 }
 
 // Shared refund core for both user-initiated cancellation and system
@@ -403,6 +424,13 @@ export async function cancelAdSlot(advertiserId: number, bookingId: number): Pro
     return refundBookingInTx(tx, bookingId, advertiserId, "CANCELLED", "Booking cancelled — slot and reruns refunded")
   })
 
+  await notifyAdvertiserMembers(advertiserId, {
+    type: "AD_SLOT_CANCELLED",
+    title: "Ad slot cancelled",
+    body: `${fmtUgx(refunded)} was refunded to your wallet, and the slot is open again.`,
+    metadata: { bookingId, refundedUgx: refunded },
+  })
+
   return { refundedUgx: refunded }
 }
 
@@ -421,14 +449,22 @@ export async function autoRefundStaleDrafts(now: Date = new Date()): Promise<{ r
 
   let refundedCount = 0
   for (const b of stale) {
-    await prisma.$transaction(async (tx) => {
+    const refunded = await prisma.$transaction(async (tx) => {
       await tx.$executeRaw`SELECT pg_advisory_xact_lock(${b.advertiser_id})`
       // Re-check under the lock — a concurrent cancel/publish may have moved it.
       const fresh = await tx.adSlotBooking.findUnique({ where: { id: b.id }, select: { status: true } })
-      if (fresh?.status !== "DRAFT") return
-      await refundBookingInTx(tx, b.id, b.advertiser_id, "REFUNDED", "Auto-refunded — slot expired with no content uploaded")
-      refundedCount++
+      if (fresh?.status !== "DRAFT") return null
+      return refundBookingInTx(tx, b.id, b.advertiser_id, "REFUNDED", "Auto-refunded — slot expired with no content uploaded")
     })
+    if (refunded !== null) {
+      refundedCount++
+      await notifyAdvertiserMembers(b.advertiser_id, {
+        type: "AD_SLOT_REFUNDED",
+        title: "Ad slot auto-refunded",
+        body: `A booked slot expired with no content uploaded, so ${fmtUgx(refunded)} was refunded to your wallet.`,
+        metadata: { bookingId: b.id, refundedUgx: refunded },
+      })
+    }
   }
 
   return { refundedCount }

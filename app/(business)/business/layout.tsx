@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation"
 import { getSession } from "@/lib/auth/session"
 import { getAdvertiserForUser } from "@/lib/services/advertiser"
+import { getUnreadNotificationCount } from "@/lib/services/notification"
 import { BusinessDashboardLayout } from "@/components/layouts/BusinessDashboardLayout"
 
 export default async function BusinessRootLayout({
@@ -14,8 +15,14 @@ export default async function BusinessRootLayout({
   const advertiser = await getAdvertiserForUser(session.userId)
   if (!advertiser) redirect("/dashboard")
 
+  const unreadCount = await getUnreadNotificationCount(session.userId)
+
   return (
-    <BusinessDashboardLayout companyName={advertiser.company_name} verified={advertiser.verification_status === "VERIFIED"}>
+    <BusinessDashboardLayout
+      companyName={advertiser.company_name}
+      verified={advertiser.verification_status === "VERIFIED"}
+      unreadCount={unreadCount}
+    >
       {children}
     </BusinessDashboardLayout>
   )

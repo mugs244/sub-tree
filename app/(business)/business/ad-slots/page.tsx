@@ -1,8 +1,7 @@
 import { redirect } from "next/navigation"
 import { getSession } from "@/lib/auth/session"
-import { getAdvertiserForUser, PLAN_CAP_MULTIPLIER } from "@/lib/services/advertiser"
+import { getAdvertiserForUser, getEffectiveCap } from "@/lib/services/advertiser"
 import { listSlotCalendar, getActiveBookingCount } from "@/lib/services/ad-slots"
-import { getSettingAsNumber } from "@/lib/services/platform-settings"
 import { AdSlotsCalendar } from "@/components/business/AdSlotsCalendar"
 
 export default async function AdSlotsPage() {
@@ -15,12 +14,11 @@ export default async function AdSlotsPage() {
   const now = new Date()
   const to = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000)
 
-  const [bookings, activeCount, baseCap] = await Promise.all([
+  const [bookings, activeCount, cap] = await Promise.all([
     listSlotCalendar(now, to),
     getActiveBookingCount(advertiser.id),
-    getSettingAsNumber("ad_slot_base_cap", 1),
+    getEffectiveCap(advertiser.id, advertiser.plan),
   ])
-  const cap = Math.round(baseCap * PLAN_CAP_MULTIPLIER[advertiser.plan])
 
   return (
     <AdSlotsCalendar
