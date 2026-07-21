@@ -1067,6 +1067,7 @@ model AdImpression {
   id             Int      @id @default(autoincrement())
   booking_id     Int
   viewer_user_id Int?
+  device_id      String?  // opaque per-device token — the frequency-cap key (Ad-tre); nullable for rows recorded before device tracking
   age_group      String?  // e.g. "18-24" — null when unknown (no age data collected yet)
   region         String?  // sub-national region or country code, whatever the viewer context carries
   viewed_at      DateTime @default(now())
@@ -1076,6 +1077,7 @@ model AdImpression {
 
   @@index([booking_id])
   @@index([booking_id, viewed_at])
+  @@index([device_id, viewed_at]) // Ad-tre reads a device's recent impressions across all ads
 }
 
 // Normal (non-ad) business posts. Deliberately its own model rather than the

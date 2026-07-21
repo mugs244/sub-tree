@@ -17,7 +17,7 @@ export class AdSlotError extends Error {
   constructor(
     public readonly code:
       | "INVALID_RANGE"
-      | "SLOT_TAKEN"
+      | "WINDOW_FULL"
       | "CAP_REACHED"
       | "INSUFFICIENT_BALANCE"
       | "NOT_FOUND"
@@ -132,15 +132,25 @@ export async function bookAdSlot(params: {
       )
     }
 
-    const overlap = await tx.adSlotBooking.findFirst({
+    // Share-of-voice inventory: a window isn't monopolised by one advertiser,
+    // it holds a finite number of concurrent slots. A booking is allowed until
+    // that window's capacity is reached, at which point it's fully booked. The
+    // count of overlapping active bookings is a safe (slightly conservative)
+    // proxy for concurrency — it never oversells. Ad-tre then rations exposure
+    // among the live slots per device so viewers still aren't flooded.
+    const windowCapacity = Math.round(await getSettingAsNumber("ad_slot_window_capacity", 10))
+    const concurrent = await tx.adSlotBooking.count({
       where: {
         status: { in: [...ACTIVE_STATUSES] },
         starts_at: { lt: endsAt },
         ends_at: { gt: startsAt },
       },
     })
-    if (overlap) {
-      throw new AdSlotError("SLOT_TAKEN", "That time is no longer available — pick another slot")
+    if (concurrent >= windowCapacity) {
+      throw new AdSlotError(
+        "WINDOW_FULL",
+        `That time is fully booked — all ${windowCapacity} slots in that window are taken. Pick another window.`,
+      )
     }
 
     if (advertiser.wallet_balance_ugx < BigInt(price)) {

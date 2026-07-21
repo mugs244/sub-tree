@@ -7,6 +7,7 @@ import { prisma } from "@/lib/db"
 export async function recordAdImpression(params: {
   bookingId: number
   viewerUserId?: number
+  deviceId?: string
   ageGroup?: string
   region?: string
 }): Promise<void> {
@@ -24,6 +25,7 @@ export async function recordAdImpression(params: {
       data: {
         booking_id: params.bookingId,
         viewer_user_id: params.viewerUserId,
+        device_id: params.deviceId,
         age_group: params.ageGroup,
         region,
       },
