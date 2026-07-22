@@ -1,4 +1,4 @@
-import { Prisma, AdSlotDurationType, AdFormat } from "@prisma/client"
+import { Prisma, AdSlotDurationType, AdFormat, AdvertiserPlan } from "@prisma/client"
 import { prisma } from "@/lib/db"
 import { getSettingAsNumber } from "@/lib/services/platform-settings"
 import { getEffectiveCap, notifyAdvertiserMembers } from "@/lib/services/advertiser"
@@ -42,13 +42,29 @@ const DURATION_PRICE_DEFAULTS: Record<AdSlotDurationType, number> = {
   MONTH: 2_400_000,
 }
 
-async function priceForDuration(durationType: AdSlotDurationType): Promise<number> {
-  const key = `ad_slot_price_${durationType.toLowerCase()}`
-  return getSettingAsNumber(key, DURATION_PRICE_DEFAULTS[durationType])
+// Higher tiers pay more per slot (premium placement / larger caps). Multipliers
+// are PlatformSetting-backed so pricing can be tuned without a deploy.
+const PLAN_PRICE_MULTIPLIER_DEFAULTS: Record<AdvertiserPlan, number> = {
+  STARTUP: 1,
+  GROWTH: 1.5,
+  ENTERPRISE: 2.5,
 }
 
-async function priceForRerunDay(): Promise<number> {
-  return getSettingAsNumber("ad_slot_rerun_price_day", 40_000)
+async function priceForDuration(durationType: AdSlotDurationType, plan: AdvertiserPlan): Promise<number> {
+  const [base, multiplier] = await Promise.all([
+    getSettingAsNumber(`ad_slot_price_${durationType.toLowerCase()}`, DURATION_PRICE_DEFAULTS[durationType]),
+    getSettingAsNumber(`ad_slot_price_mult_${plan.toLowerCase()}`, PLAN_PRICE_MULTIPLIER_DEFAULTS[plan]),
+  ])
+  return Math.round(base * multiplier)
+}
+
+// Monthly-campaign bookings get a discounted per-day rerun rate (reruns are
+// "included" at a cheaper price than standalone reruns), added on top of the
+// slot price.
+async function priceForRerunDay(isCampaign: boolean): Promise<number> {
+  return isCampaign
+    ? getSettingAsNumber("ad_slot_rerun_price_campaign_day", 25_000)
+    : getSettingAsNumber("ad_slot_rerun_price_day", 40_000)
 }
 
 // Calendar read for the Ad Slots timetable — every advertiser sees the same
@@ -109,19 +125,21 @@ export async function bookAdSlot(params: {
   startsAt: Date
   endsAt: Date
   durationType: AdSlotDurationType
+  isCampaign?: boolean
 }): Promise<{ bookingId: number; priceUgx: number }> {
-  const { advertiserId, userId, startsAt, endsAt, durationType } = params
+  const { advertiserId, userId, startsAt, endsAt, durationType, isCampaign = false } = params
 
   if (endsAt <= startsAt) {
     throw new AdSlotError("INVALID_RANGE", "End time must be after start time")
   }
 
-  const price = Math.round(await priceForDuration(durationType))
-
-  const booking = await prisma.$transaction(async (tx) => {
+  const { booking, price } = await prisma.$transaction(async (tx) => {
     await tx.$executeRaw`SELECT pg_advisory_xact_lock(${advertiserId})`
 
     const advertiser = await tx.advertiser.findUniqueOrThrow({ where: { id: advertiserId } })
+
+    // Priced by duration and the advertiser's tier (higher tiers cost more).
+    const price = await priceForDuration(durationType, advertiser.plan)
 
     const cap = await getEffectiveCap(advertiserId, advertiser.plan, tx)
     const activeCount = await getActiveBookingCount(advertiserId, tx)
@@ -170,6 +188,7 @@ export async function bookAdSlot(params: {
         ends_at: endsAt,
         duration_type: durationType,
         price_ugx: price,
+        is_campaign: isCampaign,
         status: "DRAFT",
       },
     })
@@ -190,7 +209,7 @@ export async function bookAdSlot(params: {
       },
     })
 
-    return created
+    return { booking: created, price }
   })
 
   await notifyAdvertiserMembers(advertiserId, {
@@ -216,19 +235,20 @@ export async function bookAdSlotReruns(params: {
     throw new AdSlotError("INVALID_RANGE", "Pick at least one day to rerun")
   }
 
-  const pricePerDay = Math.round(await priceForRerunDay())
-  const totalUgx = pricePerDay * rerunDates.length
-
-  const rerunIds = await prisma.$transaction(async (tx) => {
+  const { rerunIds, totalUgx } = await prisma.$transaction(async (tx) => {
     await tx.$executeRaw`SELECT pg_advisory_xact_lock(${advertiserId})`
 
     const booking = await tx.adSlotBooking.findUnique({
       where: { id: bookingId },
-      select: { advertiser_id: true },
+      select: { advertiser_id: true, is_campaign: true },
     })
     if (!booking || booking.advertiser_id !== advertiserId) {
       throw new AdSlotError("NOT_FOUND", "Booking not found")
     }
+
+    // Campaign bookings get the discounted included rerun rate.
+    const pricePerDay = Math.round(await priceForRerunDay(booking.is_campaign))
+    const totalUgx = pricePerDay * rerunDates.length
 
     const advertiser = await tx.advertiser.findUniqueOrThrow({ where: { id: advertiserId } })
     if (advertiser.wallet_balance_ugx < BigInt(totalUgx)) {
@@ -257,18 +277,25 @@ export async function bookAdSlotReruns(params: {
         amount_ugx: -totalUgx,
         balance_after_ugx: balanceAfter,
         related_booking_id: bookingId,
-        note: `${rerunDates.length} rerun day(s) booked`,
+        note: `${rerunDates.length} rerun day(s) booked${booking.is_campaign ? " (campaign rate)" : ""}`,
       },
     })
 
-    return created.map((r) => r.id)
+    return { rerunIds: created.map((r) => r.id), totalUgx }
   })
 
   return { totalUgx, rerunIds }
 }
 
-export async function estimateRerunCost(rerunDates: Date[]): Promise<number> {
-  const pricePerDay = Math.round(await priceForRerunDay())
+export async function estimateRerunCost(advertiserId: number, bookingId: number, rerunDates: Date[]): Promise<number> {
+  const booking = await prisma.adSlotBooking.findUnique({
+    where: { id: bookingId },
+    select: { advertiser_id: true, is_campaign: true },
+  })
+  if (!booking || booking.advertiser_id !== advertiserId) {
+    throw new AdSlotError("NOT_FOUND", "Booking not found")
+  }
+  const pricePerDay = Math.round(await priceForRerunDay(booking.is_campaign))
   return pricePerDay * rerunDates.length
 }
 

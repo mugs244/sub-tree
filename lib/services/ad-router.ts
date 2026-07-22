@@ -10,6 +10,8 @@ export interface AdRequestContext {
   deviceId: string
   viewerUserId?: number
   now?: Date
+  /** Bookings to skip — e.g. ads already placed elsewhere in the same feed page. */
+  excludeBookingIds?: number[]
 }
 
 export interface SelectedAd {
@@ -54,13 +56,16 @@ class InHouseAdRouter implements AdRouter {
     const cfg = await loadConfig()
 
     // 1. Live inventory — published bookings currently inside their window,
-    //    that actually have a creative to render.
+    //    that actually have a creative to render, minus any explicitly excluded
+    //    (already placed elsewhere in this same feed page).
+    const exclude = ctx.excludeBookingIds ?? []
     const liveBookings = await prisma.adSlotBooking.findMany({
       where: {
         status: "PUBLISHED",
         starts_at: { lte: now },
         ends_at: { gte: now },
         creative: { isNot: null },
+        ...(exclude.length > 0 ? { id: { notIn: exclude } } : {}),
       },
       select: {
         id: true,

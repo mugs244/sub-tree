@@ -59,6 +59,7 @@ model User {
   ad_impressions     AdImpression[]
   advertiser_posts   AdvertiserPost[]
   advertiser_post_comments AdvertiserPostComment[]
+  content_items      ContentItem[]
 
 }
 
@@ -894,6 +895,9 @@ enum AdvertiserVerificationStatus {
 model Advertiser {
   id                   Int                          @id @default(autoincrement())
   company_name         String
+  tin                  String?                      // tax identification number, collected at onboarding
+  logo_url             String?                      // company logo (Vercel Blob URL)
+  phone                String?                      // company contact number (verified at onboarding)
   plan                 AdvertiserPlan               @default(STARTUP)
   verification_status  AdvertiserVerificationStatus @default(UNVERIFIED)
   wallet_balance_ugx    BigInt                       @default(0) // cached balance — AdvertiserWalletTransaction is the source of truth
@@ -958,6 +962,7 @@ model AdSlotBooking {
   ends_at       DateTime
   duration_type AdSlotDurationType
   price_ugx     Int
+  is_campaign   Boolean              @default(false) // monthly campaign — reruns get the discounted included rate
   status        AdSlotBookingStatus  @default(DRAFT)
   created_at    DateTime             @default(now())
   updated_at    DateTime             @updatedAt
@@ -1117,4 +1122,47 @@ model AdvertiserPostComment {
   author     User           @relation(fields: [author_id], references: [id], onDelete: Cascade)
 
   @@index([post_id, created_at])
+}
+
+// ─── Short-form content engine ──────────────────────────────────────────────
+// A short-form content item (TikTok/Reels-style) that makes up the scrollable
+// consumer feed. media_url is an opaque reference — a Mux playback id or plain
+// URL — so the model isn't blocked on a real video pipeline. The feed
+// (lib/services/feed.ts) assembles these and lets Ad-tre inject ads between
+// them; that's what gives the routing engine a surface to serve into.
+model ContentItem {
+  id           Int              @id @default(autoincrement())
+  creator_id   Int
+  caption      String?          @db.Text
+  media_url    String           // opaque — Mux playback id / URL
+  media_type   ContentMediaType @default(VIDEO)
+  duration_sec Int?             // for video
+  view_count   Int              @default(0)
+  created_at   DateTime         @default(now())
+  updated_at   DateTime         @updatedAt
+  deleted_at   DateTime?        // soft delete — a live item has this null
+
+  creator      User             @relation(fields: [creator_id], references: [id], onDelete: Cascade)
+
+  @@index([deleted_at, created_at]) // the feed reads live items newest-first
+  @@index([creator_id])
+}
+
+enum ContentMediaType {
+  VIDEO
+  IMAGE
+}
+
+// Rolling aggregate of platform activity by weekday × hour, for the peak-hours
+// heatmap advertisers see when buying slots. Incremented at real touchpoints
+// (feed requests, ad impressions, dashboard activity); one row per
+// (day_of_week, hour) bucket keeps it tiny and cheap to read. Times are UTC.
+model ActivityBucket {
+  id             Int      @id @default(autoincrement())
+  day_of_week    Int      // 0 = Sunday .. 6 = Saturday
+  hour           Int      // 0 .. 23
+  activity_count BigInt   @default(0)
+  updated_at     DateTime @updatedAt
+
+  @@unique([day_of_week, hour])
 }

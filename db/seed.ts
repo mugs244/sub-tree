@@ -178,6 +178,37 @@ async function seed() {
 
   await seedPlatformSettings()
   await seedProductCategories()
+  await seedActivity()
+}
+
+// Representative peak-hours activity for the advertiser slot-buying heatmap,
+// until real feed traffic accumulates. Kept inline (not importing the service)
+// to match this file's self-contained, own-PrismaClient pattern.
+async function seedActivity() {
+  function sampleCount(dayOfWeek: number, hour: number): number {
+    const isWeekend = dayOfWeek === 0 || dayOfWeek === 6
+    let base: number
+    if (hour < 6) base = 40
+    else if (hour < 11) base = 220
+    else if (hour < 17) base = 320
+    else if (hour < 23) base = 620
+    else base = 180
+    if (isWeekend) base = Math.round(base * (hour >= 20 ? 1.15 : 0.9))
+    const peakBoost = Math.max(0, 1 - Math.abs(hour - 20) / 10)
+    return Math.round(base * (0.85 + 0.3 * peakBoost))
+  }
+  let count = 0
+  for (let d = 0; d < 7; d++) {
+    for (let h = 0; h < 24; h++) {
+      await prisma.activityBucket.upsert({
+        where: { day_of_week_hour: { day_of_week: d, hour: h } },
+        create: { day_of_week: d, hour: h, activity_count: sampleCount(d, h) },
+        update: { activity_count: sampleCount(d, h) },
+      })
+      count++
+    }
+  }
+  console.log(`Activity heatmap: ${count} buckets seeded.`)
 }
 
 seed()

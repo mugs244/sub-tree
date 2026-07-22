@@ -46,10 +46,11 @@ export async function POST(req: Request): Promise<NextResponse> {
     return NextResponse.json({ error: "VALIDATION_ERROR", message: "Invalid JSON body" }, { status: 400 })
   }
 
-  const { startsAt, endsAt, durationType } = (body ?? {}) as {
+  const { startsAt, endsAt, durationType, isCampaign } = (body ?? {}) as {
     startsAt?: string
     endsAt?: string
     durationType?: string
+    isCampaign?: boolean
   }
 
   if (!startsAt || !endsAt || !durationType || !DURATION_TYPES.has(durationType as AdSlotDurationType)) {
@@ -63,6 +64,7 @@ export async function POST(req: Request): Promise<NextResponse> {
       startsAt: new Date(startsAt),
       endsAt: new Date(endsAt),
       durationType: durationType as AdSlotDurationType,
+      isCampaign: isCampaign === true,
     })
     return NextResponse.json({ data: result }, { status: 201 })
   } catch (err) {
