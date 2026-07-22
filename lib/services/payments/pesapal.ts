@@ -62,7 +62,14 @@ async function getToken(): Promise<string> {
 // The real entry point for the donation flow — callbackUrl is built per-request
 // by the caller (it embeds our idempotency_key so /donate/complete knows which
 // donation to show) rather than a single static env var.
-export async function submitOrder(params: PesapalOrderParams, callbackUrl: string): Promise<PesapalOrderResult> {
+export async function submitOrder(
+  params: PesapalOrderParams,
+  callbackUrl: string,
+  // Which registered IPN (and therefore which webhook URL) Pesapal should
+  // notify. Defaults to the shared PESAPAL_IPN_ID; advertiser payments pass a
+  // dedicated one when configured.
+  notificationId?: string,
+): Promise<PesapalOrderResult> {
   const token = await getToken()
   // Pesapal expects international format without leading 0 — omitted
   // entirely for card payers, who never provide one on our form
@@ -81,7 +88,7 @@ export async function submitOrder(params: PesapalOrderParams, callbackUrl: strin
       amount: params.amount,
       description: params.payerMessage ?? "Sub-tree donation",
       callback_url: callbackUrl,
-      notification_id: process.env.PESAPAL_IPN_ID ?? "",
+      notification_id: notificationId ?? process.env.PESAPAL_IPN_ID ?? "",
       billing_address: {
         phone_number: phone,
         country_code: "UG",

@@ -71,6 +71,10 @@ export async function initiateAdvertiserPayment(params: {
       payerMessage: kind === "SUBSCRIPTION" ? "Sub-tree advertiser subscription" : "Sub-tree wallet top-up",
     },
     callbackUrl,
+    // Use a dedicated advertiser IPN when one is registered; otherwise fall
+    // back to the shared IPN — the donation webhook dispatches to the
+    // advertiser handler too, so a single registered IPN still settles both.
+    process.env.PESAPAL_ADVERTISER_IPN_ID,
   )
 
   if (result.orderTrackingId) {
