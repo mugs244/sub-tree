@@ -82,6 +82,7 @@ export function AdSlotsCalendar({
   const [bookDate, setBookDate] = useState("")
   const [bookTime, setBookTime] = useState("09:00")
   const [bookDuration, setBookDuration] = useState<DurationType>("HOUR")
+  const [bookCampaign, setBookCampaign] = useState(false)
   const [bookError, setBookError] = useState<string | null>(null)
   const [booking, setBooking] = useState(false)
 
@@ -129,6 +130,7 @@ export function AdSlotsCalendar({
     setBookDate(date)
     setBookTime("09:00")
     setBookDuration("HOUR")
+    setBookCampaign(false)
     setBookError(null)
     setBookOpen(true)
   }
@@ -153,7 +155,7 @@ export function AdSlotsCalendar({
       const res = await fetch("/api/business/ad-slots", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ startsAt: startsAt.toISOString(), endsAt: endsAt.toISOString(), durationType: bookDuration }),
+        body: JSON.stringify({ startsAt: startsAt.toISOString(), endsAt: endsAt.toISOString(), durationType: bookDuration, isCampaign: bookDuration === "MONTH" && bookCampaign }),
       })
       const json = await res.json()
       if (!res.ok) {
@@ -298,6 +300,21 @@ export function AdSlotsCalendar({
                 <option value="MONTH">Month</option>
               </select>
             </div>
+
+            {bookDuration === "MONTH" && (
+              <label className="flex items-start gap-2.5 rounded-lg border border-border p-3 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={bookCampaign}
+                  onChange={(e) => setBookCampaign(e.target.checked)}
+                  className="mt-0.5"
+                />
+                <span className="text-xs">
+                  <span className="font-medium">Run as a campaign</span>
+                  <span className="block text-muted-foreground mt-0.5">Reruns during the month bill at the discounted campaign rate.</span>
+                </span>
+              </label>
+            )}
 
             {bookError && <p className="text-xs text-destructive">{bookError}</p>}
 

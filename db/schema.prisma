@@ -901,6 +901,7 @@ model Advertiser {
   plan                 AdvertiserPlan               @default(STARTUP)
   verification_status  AdvertiserVerificationStatus @default(UNVERIFIED)
   wallet_balance_ugx    BigInt                       @default(0) // cached balance — AdvertiserWalletTransaction is the source of truth
+  subscription_active_until DateTime?                // set when the plan subscription fee is paid; null = unpaid/expired
   created_at           DateTime                     @default(now())
   updated_at           DateTime                     @updatedAt
 
@@ -909,8 +910,42 @@ model Advertiser {
   wallet_transactions  AdvertiserWalletTransaction[]
   credit_purchases     AdvertiserCreditPurchase[]
   posts                AdvertiserPost[]
+  payments             AdvertiserPayment[]
 
   @@index([verification_status])
+}
+
+enum AdvertiserPaymentKind {
+  SUBSCRIPTION
+  WALLET_TOPUP
+}
+
+enum AdvertiserPaymentStatus {
+  PENDING
+  COMPLETED
+  FAILED
+}
+
+// A pending/settled Pesapal payment for an advertiser — subscription fee or
+// wallet top-up. idempotency_key is the Pesapal merchant reference the IPN
+// webhook looks the payment up by; provider_tx_id is Pesapal's order tracking
+// id. Mirrors the donation/subscription payment pattern.
+model AdvertiserPayment {
+  id              Int                     @id @default(autoincrement())
+  advertiser_id   Int
+  kind            AdvertiserPaymentKind
+  amount_ugx      Int
+  status          AdvertiserPaymentStatus @default(PENDING)
+  idempotency_key String                  @unique
+  provider_tx_id  String?
+  note            String?
+  created_at      DateTime                @default(now())
+  completed_at    DateTime?
+
+  advertiser      Advertiser              @relation(fields: [advertiser_id], references: [id], onDelete: Restrict)
+
+  @@index([advertiser_id])
+  @@index([status])
 }
 
 enum AdvertiserRole {
