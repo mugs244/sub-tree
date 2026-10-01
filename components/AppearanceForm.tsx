@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from "react"
 import { Check, Loader2, ExternalLink } from "lucide-react"
 import { Label } from "@/components/ui/label"
+import { PROFILE_TEMPLATES, getProfileTemplate, type ProfileTemplate } from "@/lib/profile-templates"
 
 const FREE_PRESETS = [
   { value: "default", label: "Default",  vars: { bg: "#ffffff", surface: "#f9fafb", text: "#111827", muted: "#6b7280", border: "#e5e7eb", accent: "#111827", accentFg: "#ffffff" } },
@@ -91,6 +92,7 @@ export function AppearanceForm({
 
   const activePreset = ALL_PRESETS.find((p) => p.value === theme) ?? ALL_PRESETS[0]!
   const activeButton = BUTTON_STYLES.find((s) => s.value === buttonStyle) ?? BUTTON_STYLES[0]!
+  const activeTemplate = getProfileTemplate(theme)
 
   // Resolved preview vars: custom overrides win over preset
   const previewVars = {
@@ -163,12 +165,27 @@ export function AppearanceForm({
       {/* ── Controls ──────────────────────────────────────── */}
       <div className="flex-1 space-y-8 min-w-0">
 
-        {/* Free presets */}
+        {/* Templates — whole-page designs (lib/profile-templates.ts) */}
         <div className="space-y-3">
           <div className="flex items-center justify-between">
-            <Label className="text-sm font-medium">Theme</Label>
+            <Label className="text-sm font-medium">Templates</Label>
             <SaveIndicator state={saveState} />
           </div>
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+            {PROFILE_TEMPLATES.map((tpl) => (
+              <TemplateCard
+                key={tpl.value}
+                template={tpl}
+                active={theme === tpl.value}
+                onClick={() => { navigator?.vibrate?.(20); setTheme(tpl.value) }}
+              />
+            ))}
+          </div>
+        </div>
+
+        {/* Free presets */}
+        <div className="space-y-3">
+          <Label className="text-sm font-medium">Theme</Label>
           <div className="grid grid-cols-5 gap-2">
             {FREE_PRESETS.map((preset) => (
               <PresetSwatch
@@ -294,7 +311,7 @@ export function AppearanceForm({
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-[13px] font-medium">Remove Sub-tree branding</p>
-                <p className="text-[12px] text-[color:var(--text-muted)]">Hides "Powered by Sub-tree" on your public page</p>
+                <p className="text-[12px] text-[color:var(--text-muted)]">Hides &ldquo;Powered by Sub-tree&rdquo; on your public page</p>
               </div>
               <button
                 type="button"
@@ -348,7 +365,18 @@ export function AppearanceForm({
             </span>
           </div>
 
-          {/* Profile content */}
+          {activeTemplate ? (
+            <TemplatePreview
+              template={activeTemplate}
+              radius={buttonStyle === "rounded" ? "14px" : activeButton.radius}
+              displayName={displayName}
+              username={username}
+              avatarUrl={avatarUrl}
+              bio={bio}
+              showBranding={!proTheme.hide_branding}
+            />
+          ) : (
+          /* Profile content */
           <div className="px-5 py-7 flex flex-col items-center gap-4" style={{ background: previewVars.bg }}>
             {avatarUrl ? (
               <img src={avatarUrl} alt="" className="h-14 w-14 rounded-full object-cover border" style={{ borderColor: previewVars.border }} />
@@ -393,6 +421,7 @@ export function AppearanceForm({
               <p className="text-[9px] pt-1" style={{ color: previewVars.muted }}>Powered by Sub-tree</p>
             )}
           </div>
+          )}
         </div>
 
         <p className="text-[10px] text-muted-foreground text-center mt-2">Changes save automatically</p>
@@ -430,6 +459,104 @@ function PresetSwatch({
         </span>
       )}
     </button>
+  )
+}
+
+function TemplateCard({
+  template, active, onClick,
+}: {
+  template: ProfileTemplate
+  active: boolean
+  onClick: () => void
+}) {
+  const c = template.colors
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-label={`${template.label} template`}
+      aria-pressed={active}
+      className={[
+        "group relative flex items-center gap-3 rounded-xl border-2 p-2.5 text-left transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground",
+        active ? "border-foreground shadow-sm" : "border-border hover:border-foreground/30",
+      ].join(" ")}
+    >
+      {/* Miniature of the template */}
+      <span className="flex h-20 w-16 shrink-0 rounded-lg p-1.5" style={{ background: c.canvas }} aria-hidden="true">
+        <span className="flex flex-1 flex-col items-center gap-1 rounded-md px-1.5 pt-1.5" style={{ background: c.panel }}>
+          <span className="h-3.5 w-3.5 rounded-full border" style={{ background: c.accent, borderColor: c.border }} />
+          <span className="h-1 w-6 rounded-full" style={{ background: c.text }} />
+          <span className="mt-0.5 h-2 w-full rounded border" style={{ background: c.linkBg, borderColor: c.border, boxShadow: `0 1px 0 0 ${c.ledge}` }} />
+          <span className="h-2 w-full rounded border" style={{ background: c.linkBg, borderColor: c.border, boxShadow: `0 1px 0 0 ${c.ledge}` }} />
+          <span className="h-2 w-full rounded border" style={{ background: c.accent, borderColor: c.border }} />
+        </span>
+      </span>
+      <span className="min-w-0">
+        <span className="block text-sm font-semibold">{template.label}</span>
+        <span className="block text-[11px] leading-snug text-muted-foreground">{template.blurb}</span>
+      </span>
+      {active && (
+        <span className="absolute top-1.5 right-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-foreground">
+          <Check className="h-2.5 w-2.5 text-background" strokeWidth={3} />
+        </span>
+      )}
+    </button>
+  )
+}
+
+// Live preview for a template — a scaled-down copy of the template layout in
+// app/[username]/page.tsx.
+function TemplatePreview({
+  template, radius, displayName, username, avatarUrl, bio, showBranding,
+}: {
+  template: ProfileTemplate
+  radius: string
+  displayName: string
+  username: string
+  avatarUrl?: string
+  bio?: string
+  showBranding: boolean
+}) {
+  const c = template.colors
+  return (
+    <div className="p-3" style={{ background: c.canvas }}>
+      <div className="flex flex-col items-center gap-3.5 rounded-2xl px-4 py-6" style={{ background: c.panel, color: c.text }}>
+        {avatarUrl ? (
+          <img src={avatarUrl} alt="" className="h-14 w-14 rounded-full object-cover border-2" style={{ borderColor: c.border }} />
+        ) : (
+          <div className="flex h-14 w-14 items-center justify-center rounded-full border-2 text-xl font-bold" style={{ background: c.accent, color: c.accentText, borderColor: c.border }}>
+            {displayName.charAt(0).toUpperCase()}
+          </div>
+        )}
+        <div className="text-center space-y-0.5">
+          <p className="text-base font-bold tracking-tighter">{displayName}</p>
+          <p className="text-[10px] font-semibold" style={{ color: c.handle }}>@{username}</p>
+          {bio && (
+            <p className="text-[10px] leading-relaxed max-w-[180px] mx-auto pt-0.5" style={{ color: c.muted }}>
+              {bio.length > 80 ? bio.slice(0, 80) + "…" : bio}
+            </p>
+          )}
+        </div>
+        <div className="w-full space-y-2.5">
+          {["My Website", "YouTube", "Instagram"].map((label) => (
+            <div
+              key={label}
+              className="w-full border-2 py-2 text-center text-[10px] font-semibold"
+              style={{ borderRadius: radius, background: c.linkBg, color: c.linkText, borderColor: c.border, boxShadow: `0 3px 0 0 ${c.ledge}` }}
+            >
+              {label}
+            </div>
+          ))}
+          <div
+            className="mt-1 w-full border-2 py-2 text-center text-[10px] font-bold"
+            style={{ borderRadius: radius, background: c.accent, color: c.accentText, borderColor: c.ledge, boxShadow: `0 3px 0 0 ${c.ledge}` }}
+          >
+            Support {displayName.split(" ")[0]}
+          </div>
+        </div>
+        {showBranding && <p className="text-[9px]" style={{ color: c.muted }}>Powered by Sub-tree</p>}
+      </div>
+    </div>
   )
 }
 

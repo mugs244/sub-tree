@@ -355,7 +355,7 @@ export default async function LandingPage() {
               <CardTag>Appearance</CardTag>
               <h3 className="mt-4 text-2xl sm:text-3xl font-semibold tracking-tight">Make it yours</h3>
               <p className="mt-2 text-sm text-foreground/70">
-                Five themes, your photo and your button style. Changes save as you go.
+                Bold templates, five themes, your photo and your button style. Changes save as you go.
               </p>
               <div className="mt-auto flex gap-2 pt-5" aria-hidden="true">
                 {THEME_SWATCHES.map(({ bg, accent }) => (

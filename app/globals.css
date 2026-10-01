@@ -151,6 +151,25 @@
   box-shadow: 0 0 0 0 #111827;
 }
 
+/* Profile templates (lib/profile-templates.ts): buttons sit on a solid ledge
+   whose colour comes from --pop-ledge, and press down into it. */
+.pop-press {
+  box-shadow: 0 4px 0 0 var(--pop-ledge, #111827);
+  transition: transform 120ms ease, box-shadow 120ms ease;
+}
+.pop-press:hover {
+  transform: translateY(2px);
+  box-shadow: 0 2px 0 0 var(--pop-ledge, #111827);
+}
+.pop-press:active {
+  transform: translateY(4px);
+  box-shadow: 0 0 0 0 var(--pop-ledge, #111827);
+}
+@media (prefers-reduced-motion: reduce) {
+  .pop-press, .landing-cta { transition: none; }
+  .pop-press:hover, .pop-press:active, .landing-cta:hover, .landing-cta:active { transform: none; }
+}
+
 /* ── Base styles ─────────────────────────────────────── */
 html,
 body {
