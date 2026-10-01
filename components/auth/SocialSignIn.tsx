@@ -13,6 +13,10 @@ type Provider = "google" | "apple"
 const { url: supabaseUrl, key: supabaseKey } = getSupabaseConfig()
 const CONFIGURED = Boolean(supabaseUrl && supabaseKey)
 
+// Hidden until Sign in with Apple is set up in Supabase (needs a paid Apple
+// Developer account). Flip to true once the Apple provider is enabled there.
+const APPLE_ENABLED = false
+
 export function SocialSignIn({
   next,
   disabled = false,
@@ -37,7 +41,7 @@ export function SocialSignIn({
   async function start(provider: Provider) {
     setError("")
     if (!CONFIGURED) {
-      setError("Google and Apple sign-in are coming soon. Please use your email for now.")
+      setError("Google sign-in is coming soon. Please use your email for now.")
       return
     }
     setPending(provider)
@@ -67,20 +71,22 @@ export function SocialSignIn({
         <GoogleIcon />
         {pending === "google" ? "Redirecting…" : `${action} with Google`}
       </Button>
-      <Button
-        type="button"
-        variant="outline"
-        className="h-11 w-full gap-2 rounded-xl border-2 border-foreground bg-white font-semibold hover:bg-surface"
-        disabled={disabled || pending !== null}
-        onClick={() => void start("apple")}
-      >
-        <AppleIcon />
-        {pending === "apple" ? "Redirecting…" : `${action} with Apple`}
-      </Button>
+      {APPLE_ENABLED && (
+        <Button
+          type="button"
+          variant="outline"
+          className="h-11 w-full gap-2 rounded-xl border-2 border-foreground bg-white font-semibold hover:bg-surface"
+          disabled={disabled || pending !== null}
+          onClick={() => void start("apple")}
+        >
+          <AppleIcon />
+          {pending === "apple" ? "Redirecting…" : `${action} with Apple`}
+        </Button>
+      )}
       {error && <p className="text-sm text-red-600 text-center">{error}</p>}
       {termsNotice && (
         <p className="text-xs text-center text-[color:var(--text-secondary)]">
-          By continuing with Google or Apple (which creates an account if you&apos;re new), you agree to Sub-tree&apos;s{" "}
+          By continuing with {APPLE_ENABLED ? "Google or Apple" : "Google"} (which creates an account if you&apos;re new), you agree to Sub-tree&apos;s{" "}
           <Link href="/terms" target="_blank" className="font-medium text-[color:var(--accent-primary)] hover:underline">
             Terms of Service
           </Link>

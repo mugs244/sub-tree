@@ -1,54 +1,96 @@
 import { ImageResponse } from "next/og"
+import { OG, OG_SIZE, OgFrame, OgLogo, loadOgFonts } from "@/lib/og"
 
 export const runtime = "nodejs"
-export const size = { width: 1200, height: 630 }
+export const size = OG_SIZE
 export const contentType = "image/png"
+export const alt = "Sub-tree — All your links, one page"
 
-export default function OgImage() {
+// The preview card shown when sub-tree.com (or any page without its own
+// image) is shared: headline on the left, a tilted mini profile on the right.
+export default async function OgImage() {
   return new ImageResponse(
     (
-      <div
-        style={{
-          width: "100%",
-          height: "100%",
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          justifyContent: "center",
-          backgroundColor: "#ffffff",
-          fontFamily: "sans-serif",
-          gap: "28px",
-        }}
-      >
-        <div style={{ display: "flex", alignItems: "center", gap: "20px" }}>
-          <div
-            style={{
-              width: 88,
-              height: 88,
-              borderRadius: 20,
-              background: "#111827",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-            }}
-          >
-            <svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="#ffffff" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M12 3 L9 7 L12 7 L15 7 L12 3 Z" fill="#ffffff" />
-              <path d="M8 10 L12 6 L16 10" />
-              <path d="M7 14 L12 9 L17 14" />
-              <path d="M6 18 L12 12 L18 18" />
-              <path d="M12 18 L12 21" strokeWidth="2" />
-            </svg>
+      <OgFrame>
+        <div style={{ display: "flex", flexDirection: "column", justifyContent: "space-between", flex: 1 }}>
+          <OgLogo size={50} />
+
+          <div style={{ display: "flex", flexDirection: "column" }}>
+            <div style={{ display: "flex", fontSize: 88, fontWeight: 800, letterSpacing: "-0.05em", lineHeight: 0.95, color: OG.ink }}>
+              All your links.
+            </div>
+            <div style={{ display: "flex", fontSize: 88, fontWeight: 800, letterSpacing: "-0.05em", lineHeight: 0.95, color: OG.ink }}>
+              One page.
+            </div>
+            <div style={{ display: "flex", width: 250, height: 12, borderRadius: 999, background: OG.orange, marginTop: 14, marginLeft: 4 }} />
+            <div style={{ display: "flex", fontSize: 28, fontWeight: 600, color: OG.muted, marginTop: 22, maxWidth: 540, lineHeight: 1.3 }}>
+              Share everything you create and accept mobile money donations.
+            </div>
           </div>
-          <div style={{ display: "flex", fontSize: 72, fontWeight: 600, letterSpacing: "-0.02em", color: "#111827" }}>
-            Sub<span style={{ color: "#6b7280" }}>-</span>tree
+
+          <div style={{ display: "flex", gap: 14 }}>
+            {["MTN MoMo", "Airtel Money", "Free to sign up"].map((t, i) => (
+              <div
+                key={t}
+                style={{
+                  display: "flex",
+                  padding: "12px 22px",
+                  borderRadius: 999,
+                  border: `3px solid ${OG.ink}`,
+                  background: i === 2 ? OG.orange : "#ffffff",
+                  fontSize: 24,
+                  fontWeight: 600,
+                  color: OG.ink,
+                }}
+              >
+                {t}
+              </div>
+            ))}
           </div>
         </div>
-        <div style={{ display: "flex", fontSize: 32, color: "#4b5563", textAlign: "center" }}>
-          All your links, one page
-        </div>
-      </div>
+
+        <ProfileCard />
+      </OgFrame>
     ),
-    { ...size },
+    { ...size, fonts: await loadOgFonts() },
+  )
+}
+
+function ProfileCard() {
+  return (
+    <div
+      style={{
+        position: "absolute",
+        right: 70,
+        top: 70,
+        width: 330,
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        gap: 16,
+        padding: "34px 28px",
+        background: "#ffffff",
+        border: `4px solid ${OG.ink}`,
+        borderRadius: 32,
+        boxShadow: `0 10px 0 0 ${OG.ink}`,
+        transform: "rotate(4deg)",
+      }}
+    >
+      <div style={{ display: "flex", width: 96, height: 96, borderRadius: 999, background: OG.ink, color: "#ffffff", fontSize: 44, fontWeight: 800, alignItems: "center", justifyContent: "center" }}>
+        A
+      </div>
+      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 2 }}>
+        <div style={{ display: "flex", fontSize: 30, fontWeight: 800, color: OG.ink }}>Amara Naledi</div>
+        <div style={{ display: "flex", fontSize: 20, fontWeight: 600, color: OG.orangeStrong }}>@amara</div>
+      </div>
+      {["YouTube", "Instagram", "WhatsApp"].map((l) => (
+        <div key={l} style={{ display: "flex", justifyContent: "center", width: "100%", padding: "12px 0", borderRadius: 16, border: `2px solid #e5e7eb`, fontSize: 20, fontWeight: 600, color: OG.ink }}>
+          {l}
+        </div>
+      ))}
+      <div style={{ display: "flex", justifyContent: "center", width: "100%", padding: "13px 0", borderRadius: 16, background: OG.orange, border: `3px solid ${OG.ink}`, fontSize: 20, fontWeight: 800, color: OG.ink }}>
+        Support Amara
+      </div>
+    </div>
   )
 }

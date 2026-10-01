@@ -24,6 +24,17 @@ export const metadata: Metadata = {
   metadataBase: new URL("https://sub-tree.com"),
   title: "Sub-tree",
   description: "Share everything you create and accept mobile money donations, all from one link.",
+  // Shared defaults for link previews (WhatsApp, X, Facebook, iMessage…).
+  // Pages that set their own openGraph replace this object, so they repeat
+  // siteName/type where it matters.
+  openGraph: {
+    siteName: "Sub-tree",
+    type: "website",
+    url: "/",
+    title: "Sub-tree — All your links, one page",
+    description: "Share everything you create and accept mobile money donations, all from one link.",
+  },
+  twitter: { card: "summary_large_image" },
 };
 
 export default function RootLayout({

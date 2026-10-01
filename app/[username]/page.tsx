@@ -1,3 +1,4 @@
+import Link from "next/link"
 import { Suspense } from "react"
 import { notFound } from "next/navigation"
 import { Inter, Playfair_Display, Space_Grotesk } from "next/font/google"
@@ -87,9 +88,14 @@ export async function generateMetadata({ params }: Props) {
     select: { display_name: true, bio: true },
   })
   if (!profile) return {}
+  const title = `${profile.display_name} (@${username}) — Sub-tree`
+  const description = profile.bio || `${profile.display_name}'s links on Sub-tree`
   return {
-    title: `${profile.display_name} (@${username}) — Sub-tree`,
-    description: profile.bio ?? `${profile.display_name}'s links on Sub-tree`,
+    title,
+    description,
+    // The preview image comes from ./opengraph-image.tsx automatically.
+    openGraph: { title, description, url: `/${username}`, type: "profile", siteName: "Sub-tree", username },
+    twitter: { card: "summary_large_image", title, description },
   }
 }
 
@@ -265,7 +271,7 @@ export default async function PublicProfilePage({ params }: Props) {
 
         {showBranding && (
           <p className="text-center text-xs text-muted-foreground pt-4">
-            <a href="/" className="hover:underline">Powered by Sub-tree</a>
+            <Link href="/" className="hover:underline">Powered by Sub-tree</Link>
           </p>
         )}
       </div>

@@ -121,6 +121,9 @@ export const metadata = {
   openGraph: {
     title: "Sub-tree — All your links, one page",
     description: "Share everything you create and accept mobile money donations, all from one link.",
+    url: "/",
+    siteName: "Sub-tree",
+    type: "website",
   },
 }
 

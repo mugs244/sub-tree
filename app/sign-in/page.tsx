@@ -90,7 +90,7 @@ function SignInForm() {
         <>
           <div className="mt-7 space-y-3">
             {oauthFailed && (
-              <p className="text-sm text-red-600 text-center">Google/Apple sign-in didn&apos;t complete. Please try again.</p>
+              <p className="text-sm text-red-600 text-center">Google sign-in didn&apos;t complete. Please try again.</p>
             )}
             <SocialSignIn next={explicitNext} action="Sign in" termsNotice />
           </div>
