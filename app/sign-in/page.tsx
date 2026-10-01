@@ -14,7 +14,8 @@ function SignInForm() {
   const router = useRouter()
   const params = useSearchParams()
   const explicitNext = params.get("next")
-  const oauthFailed = params.get("error") === "oauth_failed"
+  const oauthError = params.get("error")
+  const oauthFailed = oauthError === "oauth_failed" || oauthError === "oauth_unconfigured"
 
   const [mode, setMode] = useState<"password" | "otp-send" | "otp-verify">("password")
   const [email, setEmail] = useState("")
