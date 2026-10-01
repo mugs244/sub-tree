@@ -6,6 +6,7 @@ import { touchUserLastActive, backfillProfileCountry } from "@/lib/services/user
 import { getCountryFromHeaders } from "@/lib/utils/geo"
 import { getUnreadNotificationCount } from "@/lib/services/notification"
 import { DashboardLayout } from "@/components/layouts/DashboardLayout"
+import { DASH_THEME_INIT_SCRIPT } from "@/components/dashboard/theme"
 
 export default async function DashboardRootLayout({
   children,
@@ -24,7 +25,7 @@ export default async function DashboardRootLayout({
       where: { id: userId },
       select: {
         username: true,
-        profile: { select: { id: true } },
+        profile: { select: { id: true, display_name: true, avatar_url: true } },
       },
     }),
     getUnreadNotificationCount(userId),
@@ -35,8 +36,17 @@ export default async function DashboardRootLayout({
   if (!user.profile) redirect("/onboarding/profile")
 
   return (
-    <DashboardLayout username={user.username} unreadCount={unreadCount}>
-      {children}
-    </DashboardLayout>
+    <>
+      {/* Applies the saved light/dark/auto choice before first paint. */}
+      <script dangerouslySetInnerHTML={{ __html: DASH_THEME_INIT_SCRIPT }} />
+      <DashboardLayout
+        username={user.username}
+        displayName={user.profile.display_name}
+        avatarUrl={user.profile.avatar_url}
+        unreadCount={unreadCount}
+      >
+        {children}
+      </DashboardLayout>
+    </>
   )
 }

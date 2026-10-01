@@ -1,5 +1,9 @@
 @import "tailwindcss";
 
+/* `dark:` utilities apply only inside the creator dashboard when it's in dark
+   mode (see .dash-root below) — never on public pages or the landing page. */
+@custom-variant dark (&:where([data-dash-mode="dark"] .dash-root, [data-dash-mode="dark"] .dash-root *));
+
 /* ── Sub-tree Design Tokens ─────────────────────────────
    All values declared here. Components consume via Tailwind
    utilities or var() — never hardcoded hex in component files. */
@@ -149,6 +153,90 @@
 .landing-cta:active {
   transform: translateY(5px);
   box-shadow: 0 0 0 0 #111827;
+}
+
+/* ── Creator dashboard palette ──────────────────────────
+   Scoped to .dash-root (components/layouts/DashboardLayout.tsx). White and
+   orange in light mode, near-black and orange in dark. The mode comes from
+   <html data-dash-mode>, set before paint by components/dashboard/theme.ts.
+   Both the raw tokens and the Tailwind-facing ones are redefined, because
+   :root resolves var() chains once at the root. */
+.dash-root {
+  color-scheme: light;
+  --bg-base: #ffffff;
+  --bg-surface: #f4f4f0;
+  --bg-raised: #ffffff;
+  --text-primary: #111827;
+  --text-secondary: #4b5563;
+  --text-muted: #6b7280;
+  --text-placeholder: #9ca3af;
+  --accent-primary: #f97316;
+  --accent-hover: #ea580c;
+  --border-default: #e7e6e1;
+  --border-subtle: #f0efea;
+  --border-focus: #f97316;
+  --dash-canvas: #f6f6f3;
+  --dash-orange: #ff8a3d;
+  --dash-orange-soft: #fff1e6;
+  --dash-orange-text: #c2410c;
+
+  --background: var(--dash-canvas);
+  --foreground: #111827;
+  --card: #ffffff;
+  --card-foreground: #111827;
+  --popover: #ffffff;
+  --popover-foreground: #111827;
+  --primary: #ff8a3d;
+  --primary-foreground: #111827;
+  --secondary: #f4f4f0;
+  --secondary-foreground: #111827;
+  --muted: #f4f4f0;
+  --muted-foreground: #6b7280;
+  --accent: #f4f4f0;
+  --accent-foreground: #111827;
+  --border: #e7e6e1;
+  --input: #e7e6e1;
+  --ring: #f97316;
+}
+[data-dash-mode="dark"] .dash-root {
+  color-scheme: dark;
+  --bg-base: #14171f;
+  --bg-surface: #1b1f29;
+  --bg-raised: #14171f;
+  --text-primary: #f3f4f6;
+  --text-secondary: #c4c8d0;
+  --text-muted: #8b919e;
+  --text-placeholder: #5f6573;
+  --accent-primary: #ff9a4d;
+  --accent-hover: #ffad6b;
+  --border-default: #262b36;
+  --border-subtle: #1f232c;
+  --border-focus: #ff9a4d;
+  --state-error-bg: #3a1414;
+  --state-success-bg: #0f2a1b;
+  --state-warning-bg: #33230a;
+  --dash-canvas: #0b0d12;
+  --dash-orange: #ff9a4d;
+  --dash-orange-soft: #2a1a0e;
+  --dash-orange-text: #ffb47a;
+
+  --background: var(--dash-canvas);
+  --foreground: #f3f4f6;
+  --card: #14171f;
+  --card-foreground: #f3f4f6;
+  --popover: #14171f;
+  --popover-foreground: #f3f4f6;
+  --primary: #ff9a4d;
+  --primary-foreground: #111827;
+  --secondary: #1b1f29;
+  --secondary-foreground: #f3f4f6;
+  --muted: #1b1f29;
+  --muted-foreground: #8b919e;
+  --accent: #1f2430;
+  --accent-foreground: #f3f4f6;
+  --border: #262b36;
+  --input: #2d3340;
+  --ring: #ff9a4d;
 }
 
 /* Profile templates (lib/profile-templates.ts): buttons sit on a solid ledge

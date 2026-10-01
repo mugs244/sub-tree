@@ -46,6 +46,9 @@ export default function RootLayout({
     <html
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      // The dashboard's theme script sets data-dash-mode on <html> before
+      // React hydrates; this only silences that one attribute mismatch.
+      suppressHydrationWarning
     >
       <body className="min-h-full flex flex-col">
         {children}

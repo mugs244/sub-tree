@@ -77,13 +77,13 @@ export function DonationLaunchNotice({ compact = false, inline = false }: { comp
     // One slim row for the landing hero: message + countdown on the left,
     // the notify form on the right (stacked on phones).
     return (
-      <div className="flex flex-col gap-2 rounded-xl border border-gray-200 bg-white/70 px-4 py-2.5 sm:flex-row sm:items-center sm:justify-between">
-        <p className="text-sm text-gray-900">
+      <div className="flex flex-col gap-2 rounded-2xl border border-gray-200 bg-white/70 px-4 py-2.5 sm:flex-row sm:items-center sm:justify-between dark:border-white/10 dark:bg-white/[0.04]">
+        <p className="text-sm text-gray-900 dark:text-gray-100">
           <span className="font-medium">Donations aren&apos;t open yet</span>
-          {status.launchAt && <span className="text-gray-500"> · {countdown}</span>}
+          {status.launchAt && <span className="text-gray-500 dark:text-gray-400"> · {countdown}</span>}
         </p>
         {state === "done" ? (
-          <p className="text-xs text-gray-500">You&apos;ll get an email the moment donations go live.</p>
+          <p className="text-xs text-gray-500 dark:text-gray-400">You&apos;ll get an email the moment donations go live.</p>
         ) : (
           <form onSubmit={submit} className="flex gap-2">
             <label htmlFor="donation-launch-email" className="sr-only">
@@ -96,12 +96,12 @@ export function DonationLaunchNotice({ compact = false, inline = false }: { comp
               placeholder="you@email.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="min-w-0 flex-1 rounded-lg border border-gray-300 bg-white text-gray-900 px-3 py-1.5 text-sm sm:w-48 focus:outline-none focus:ring-2 focus:ring-gray-400"
+              className="min-w-0 flex-1 rounded-lg border border-gray-300 bg-white text-gray-900 px-3 py-1.5 text-sm sm:w-48 focus:outline-none focus:ring-2 focus:ring-gray-400 dark:border-white/15 dark:bg-transparent dark:text-gray-100"
             />
             <button
               type="submit"
               disabled={state === "sending"}
-              className="rounded-lg bg-gray-900 text-white text-sm font-medium px-3 py-1.5 whitespace-nowrap hover:bg-gray-800 transition-colors duration-150 disabled:opacity-50"
+              className="rounded-lg bg-gray-900 text-white text-sm font-medium px-3 py-1.5 whitespace-nowrap hover:bg-gray-800 transition-colors duration-150 disabled:opacity-50 dark:bg-[#ff9a4d] dark:text-gray-900 dark:hover:bg-[#ffad6b]"
             >
               {state === "sending" ? "…" : "Notify me"}
             </button>

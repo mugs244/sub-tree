@@ -38,10 +38,10 @@ export function Logo({
     <span
       className={cn(
         s.text,
-        "font-semibold tracking-tight text-primary leading-none"
+        "font-semibold tracking-tight text-foreground leading-none"
       )}
     >
-      Sub<span className="text-muted">-</span>tree
+      Sub<span className="text-muted-foreground">-</span>tree
     </span>
   );
 

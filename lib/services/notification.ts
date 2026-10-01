@@ -42,6 +42,14 @@ export async function markNotificationRead(userId: number, notificationId: numbe
   })
 }
 
+// Opening the Activity feed counts as reading everything in it.
+export async function markAllNotificationsRead(userId: number): Promise<void> {
+  await prisma.notification.updateMany({
+    where: { user_id: userId, read_at: null },
+    data: { read_at: new Date() },
+  })
+}
+
 export async function getUnreadNotificationCount(userId: number): Promise<number> {
   return prisma.notification.count({ where: { user_id: userId, read_at: null } })
 }
