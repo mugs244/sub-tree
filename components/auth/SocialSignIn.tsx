@@ -3,14 +3,15 @@
 import { useState } from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
-import { createSupabaseBrowserClient } from "@/lib/supabase/client"
+import { createSupabaseBrowserClient, getSupabaseConfig } from "@/lib/supabase/client"
 
 type Provider = "google" | "apple"
 
 // NEXT_PUBLIC_* values are inlined at build time. Without the Supabase keys the
 // buttons still show, but explain that this option isn't live yet instead of
 // failing.
-const CONFIGURED = Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY)
+const { url: supabaseUrl, key: supabaseKey } = getSupabaseConfig()
+const CONFIGURED = Boolean(supabaseUrl && supabaseKey)
 
 export function SocialSignIn({
   next,

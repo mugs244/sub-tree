@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { cookies } from "next/headers"
 import { createServerClient } from "@supabase/ssr"
+import { getSupabaseConfig } from "@/lib/supabase/client"
 import { createSession, applySessionCookie } from "@/lib/auth/session"
 import { findOrCreateOAuthUser } from "@/lib/auth/oauth"
 import { isAdmin } from "@/lib/services/admin"
@@ -25,16 +26,15 @@ export async function GET(req: Request) {
 
   try {
     const cookieStore = await cookies()
-    const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        cookies: {
-          getAll: () => cookieStore.getAll(),
-          setAll: (list) => list.forEach(({ name, value, options }) => cookieStore.set(name, value, options)),
-        },
+    const { url: supabaseUrl, key: supabaseKey } = getSupabaseConfig()
+    if (!supabaseUrl || !supabaseKey) return fail("oauth_unconfigured")
+
+    const supabase = createServerClient(supabaseUrl, supabaseKey, {
+      cookies: {
+        getAll: () => cookieStore.getAll(),
+        setAll: (list) => list.forEach(({ name, value, options }) => cookieStore.set(name, value, options)),
       },
-    )
+    })
 
     const { data, error } = await supabase.auth.exchangeCodeForSession(code)
     if (error || !data.user?.email) return fail("oauth_failed")
