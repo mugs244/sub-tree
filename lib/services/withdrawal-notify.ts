@@ -1,6 +1,7 @@
 import { Resend } from "resend"
 import { prisma } from "@/lib/db"
 import { sendSms } from "@/lib/sms"
+import { emailLayout, heading, greeting, p, amountCard, details, notice, securityNote, button } from "@/lib/email/template"
 
 const resend = new Resend(process.env.RESEND_API_KEY)
 const FROM = "Sub-tree <hello@sub-tree.com>"
@@ -50,37 +51,32 @@ export async function notifyWithdrawalRequested(r: WithdrawalReceiptNotification
 
   if (!email) return
   const date = new Date(r.createdAt ?? Date.now()).toLocaleString("en-UG", { timeZone: "Africa/Kampala", dateStyle: "medium", timeStyle: "short" })
-  const row = (label: string, value: string, strong = false) =>
-    `<tr><td style="padding:8px 0;color:${strong ? "#111827" : "#6b7280"};${strong ? "font-weight:700;" : ""}">${label}</td><td style="padding:8px 0;text-align:right;font-family:monospace;${strong ? "font-weight:700;font-size:16px;" : ""}">${value}</td></tr>`
+  const rows: [string, string][] = [
+    ...(r.reference ? [["Reference", r.reference] as [string, string]] : []),
+    ["Date", date],
+    ...(r.method ? [["Method", r.method === "BANK" ? "Bank transfer" : "Mobile money"] as [string, string]] : []),
+    ["Amount withdrawn", fmt(r.amount)],
+    ["Sub-tree fee", `− ${fmt(r.platformFee)}`],
+    ["Transfer cost", `− ${fmt(r.processorFee)}`],
+    ["You receive", fmt(r.netAmount)],
+  ]
 
   try {
     await resend.emails.send({
       from: FROM,
       to: email,
       subject: `Withdrawal receipt${r.reference ? ` ${r.reference}` : ""} — ${fmt(r.netAmount)}`,
-      html: `
-        <div style="font-family:sans-serif;max-width:460px;margin:0 auto;padding:24px;color:#111827">
-          <div style="background:#111827;color:#ffffff;border-radius:16px;padding:20px 22px">
-            <div style="font-size:13px;opacity:.7">Sub-tree withdrawal receipt</div>
-            <div style="font-size:30px;font-weight:800;margin-top:6px">${fmt(r.netAmount)}</div>
-            ${r.destination ? `<div style="font-size:13px;opacity:.7;margin-top:2px">to ${r.destination}</div>` : ""}
-          </div>
-          <p style="margin:20px 0 4px">Hi ${name},</p>
-          <p style="color:#4b5563;margin:0 0 12px">Here's the receipt for your withdrawal.</p>
-          <table style="width:100%;border-collapse:collapse;font-size:14px">
-            ${r.reference ? row("Reference", r.reference) : ""}
-            ${row("Date", date)}
-            ${row("Method", r.method === "BANK" ? "Bank transfer" : "Mobile money")}
-            ${row("Amount withdrawn", fmt(r.amount))}
-            ${row("Sub-tree fee", fmt(r.platformFee))}
-            ${row("Transfer cost", fmt(r.processorFee))}
-            <tr><td colspan="2" style="border-top:1px solid #e5e7eb"></td></tr>
-            ${row("You receive", fmt(r.netAmount), true)}
-          </table>
-          <p style="background:#fff1e6;border-radius:12px;padding:12px 14px;color:#9a3412;font-size:13px;margin-top:18px">${whatHappensNext(r)}</p>
-          <p style="color:#dc2626;font-size:12px;margin-top:16px">Didn't make this withdrawal? Change your password and reply to this email immediately.</p>
-        </div>
-      `,
+      html: emailLayout({
+        preheader: `You'll receive ${fmt(r.netAmount)} after ${fmt(totalFee)} in fees.`,
+        body:
+          heading("Withdrawal receipt") +
+          greeting(name) +
+          p("Here's the receipt for your withdrawal.") +
+          amountCard("You receive", fmt(r.netAmount), r.destination ? `to ${r.destination}` : undefined) +
+          details(rows, { emphasiseLast: true }) +
+          notice(whatHappensNext(r), r.status === "FAILED" ? "danger" : "info") +
+          securityNote("Didn't make this withdrawal? Change your password and reply to this email right away."),
+      }),
     })
   } catch (err) {
     console.error("Withdrawal receipt email failed", { userId: r.userId, err })
@@ -114,23 +110,23 @@ export async function notifyWithdrawalCompleted(n: WithdrawalNotification): Prom
     await resend.emails.send({
       from: FROM,
       to: email,
-      subject: `Confirmed: Your ${fmt(n.amount)} Withdrawal is Complete ✅`,
-      html: `
-        <div style="font-family:sans-serif;max-width:420px;margin:0 auto;padding:24px">
-          <p>Hi ${name},</p>
-          <p style="color:#374151">We are writing to confirm that your withdrawal request for <strong>${fmt(n.amount)}</strong> has been successfully completed. The funds are currently being processed and will be routed to your designated account.</p>
-          <p style="font-weight:600;margin-bottom:4px">Price breakdown:</p>
-          <table style="width:100%;border-collapse:collapse;font-size:14px;margin-bottom:16px">
-            <tr><td style="padding:6px 0;color:#6b7280">Gross Withdrawal Amount</td><td style="padding:6px 0;text-align:right;font-family:monospace">${fmt(n.amount)}</td></tr>
-            <tr><td style="padding:6px 0;color:#6b7280">Processing Fee</td><td style="padding:6px 0;text-align:right;font-family:monospace">-${fmt(n.platformFee)}</td></tr>
-            <tr><td style="padding:6px 0;color:#6b7280">Network/Transfer Fee</td><td style="padding:6px 0;text-align:right;font-family:monospace">-${fmt(n.processorFee)}</td></tr>
-            <tr style="border-top:1px solid #e5e7eb"><td style="padding:6px 0;font-weight:600">Total Net Payout</td><td style="padding:6px 0;text-align:right;font-family:monospace;font-weight:600">${fmt(n.netAmount)}</td></tr>
-          </table>
-          <blockquote style="color:#6b7280;font-size:13px;border-left:3px solid #e5e7eb;padding-left:12px;margin:0 0 16px">Please allow 1-3 business days for the funds to fully reflect in your account, depending on your financial institution.</blockquote>
-          <p style="color:#374151">If you have any questions regarding this transfer, please reach out to our support team.</p>
-          <p style="margin-top:24px">Best regards,<br/><strong>The Subtree Team</strong></p>
-        </div>
-      `,
+      subject: `Withdrawal complete — ${fmt(n.netAmount)} sent`,
+      html: emailLayout({
+        preheader: `${fmt(n.netAmount)} has been sent to you.`,
+        body:
+          heading("Withdrawal complete") +
+          greeting(name) +
+          p("Good news — your withdrawal has been sent.") +
+          amountCard("Sent to you", fmt(n.netAmount)) +
+          details([
+            ["Amount withdrawn", fmt(n.amount)],
+            ["Sub-tree fee", `− ${fmt(n.platformFee)}`],
+            ["Transfer cost", `− ${fmt(n.processorFee)}`],
+            ["You received", fmt(n.netAmount)],
+          ], { emphasiseLast: true }) +
+          notice("Mobile money usually arrives within minutes. A bank transfer can take up to a business day to show in your account.", "success") +
+          p("Questions about this transfer? Just reply to this email.", { muted: true, size: 13 }),
+      }),
     })
   } catch (err) {
     console.error("Withdrawal completed email send failed", { userId: n.userId, err })
@@ -151,23 +147,19 @@ export async function notifyWithdrawalFailed(userId: number, amount: number): Pr
     await resend.emails.send({
       from: FROM,
       to: email,
-      subject: `Action Required: Your Recent Transaction Failed ⚠️`,
-      html: `
-        <div style="font-family:sans-serif;max-width:420px;margin:0 auto;padding:24px">
-          <p>Hi ${name},</p>
-          <p style="color:#374151">We are reaching out to let you know that your recent transaction attempt of <strong>${fmt(amount)}</strong> was unsuccessful.</p>
-          <p style="color:#374151">We know this can be frustrating. Transactions typically fail for one of the following reasons:</p>
-          <ul style="color:#374151;font-size:14px;padding-left:20px">
-            <li>Insufficient funds or limits reached on the payment method.</li>
-            <li>A temporary network or connection timeout.</li>
-            <li>Incorrect billing details provided.</li>
-          </ul>
-          <p style="font-weight:600;margin-bottom:4px">Next Steps:</p>
-          <p style="color:#374151">Please check your payment details and ensure your account has sufficient funds, then try submitting the transaction again.</p>
-          <p style="color:#374151">If the issue persists, please reply directly to this email. We are here to help you get this sorted out right away.</p>
-          <p style="margin-top:24px">Best regards,<br/><strong>The Subtree Team</strong></p>
-        </div>
-      `,
+      subject: `Your ${fmt(amount)} withdrawal couldn't be sent`,
+      html: emailLayout({
+        preheader: "The money is back in your Sub-tree balance.",
+        body:
+          heading("Withdrawal not sent") +
+          greeting(name) +
+          p("We couldn't send your withdrawal, so nothing left your account.") +
+          amountCard("Back in your balance", fmt(amount)) +
+          p("This usually happens when the mobile money number or bank account is wrong or inactive, or the payment network had a temporary problem.") +
+          notice("Check your details in Settings → Payouts, then withdraw again from your dashboard. You'll also see the reason in your Activity feed.") +
+          button("Check payout details", "https://sub-tree.com/dashboard/settings#payouts") +
+          p("Still stuck? Reply to this email and we'll sort it out with you.", { muted: true, size: 13 }),
+      }),
     })
   } catch (err) {
     console.error("Withdrawal failed email send failed", { userId, err })

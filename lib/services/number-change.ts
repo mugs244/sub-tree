@@ -3,6 +3,7 @@ import { prisma } from "@/lib/db"
 import { sendSms } from "@/lib/sms"
 import { generateCode } from "@/lib/auth/email"
 import { sendPhoneVerificationCode, verifyPhoneCode } from "@/lib/services/phone-verification"
+import { emailLayout, heading, p, codeBox, strong, notice } from "@/lib/email/template"
 
 const resend = new Resend(process.env.RESEND_API_KEY)
 const FROM = "Sub-tree <hello@sub-tree.com>"
@@ -50,14 +51,10 @@ export async function requestNumberChange(
     from: FROM,
     to: user.email,
     subject: `${code} — confirm your new Sub-tree number`,
-    html: `
-      <div style="font-family:sans-serif;max-width:400px;margin:0 auto;padding:24px">
-        <h2 style="margin:0 0 8px">Confirm your new number</h2>
-        <p style="color:#6b7280;margin:0 0 24px">Enter this code in Sub-tree to confirm ${newNumber}:</p>
-        <div style="font-size:36px;font-weight:700;letter-spacing:8px;font-family:monospace;margin-bottom:24px">${code}</div>
-        <p style="color:#6b7280;font-size:13px">Expires in ${CODE_TTL_MINUTES} minutes. If you didn't request this, ignore this email.</p>
-      </div>
-    `,
+    html: emailLayout({
+      preheader: `Your code to confirm ${newNumber} is ${code}`,
+      body: heading("Confirm your new number") + p(`Enter this code in Sub-tree to confirm ${strong(newNumber)}:`, { html: true }) + codeBox(code, CODE_TTL_MINUTES) + p("If you didn't request this, you can ignore this email.", { muted: true, size: 13 }),
+    }),
   })
 }
 
@@ -100,13 +97,10 @@ export async function confirmNumberChange(
         from: FROM,
         to: user.email,
         subject: `Your Sub-tree ${label} was changed`,
-        html: `
-          <div style="font-family:sans-serif;max-width:400px;margin:0 auto;padding:24px">
-            <h2 style="margin:0 0 8px">Your ${label} was changed</h2>
-            <p style="color:#374151">Your ${label} is now <strong>${newNumber}</strong>.</p>
-            <p style="color:#dc2626;font-size:13px;margin-top:16px">If you didn't make this change, contact support immediately.</p>
-          </div>
-        `,
+        html: emailLayout({
+          preheader: `Your ${label} is now ${newNumber}`,
+          body: heading(`Your ${label} was changed`) + p(`Your ${label} is now ${strong(newNumber)}.`, { html: true }) + notice("If you didn't make this change, contact support immediately by replying to this email.", "danger"),
+        }),
       })
     } catch (err) {
       console.error(`${kind} change email failed`, { userId, err })

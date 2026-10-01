@@ -1,6 +1,7 @@
 import { Resend } from "resend"
 import { prisma } from "@/lib/db"
 import { sendSms } from "@/lib/sms"
+import { emailLayout, heading, p, strong, notice } from "@/lib/email/template"
 
 const resend = new Resend(process.env.RESEND_API_KEY)
 const FROM = "Sub-tree <hello@sub-tree.com>"
@@ -21,13 +22,10 @@ export async function notifyPasswordChanged(userId: number): Promise<void> {
         from: FROM,
         to: user.email,
         subject: "Your Sub-tree password was changed",
-        html: `
-          <div style="font-family:sans-serif;max-width:400px;margin:0 auto;padding:24px">
-            <h2 style="margin:0 0 8px">Password changed</h2>
-            <p style="color:#374151">Your Sub-tree password was just changed.</p>
-            <p style="color:#dc2626;font-size:13px;margin-top:16px">If you didn't make this change, contact support immediately.</p>
-          </div>
-        `,
+        html: emailLayout({
+          preheader: "Your Sub-tree password was just changed.",
+          body: heading("Password changed") + p("Your Sub-tree password was just changed. If that was you, there's nothing else to do.") + notice("If you didn't make this change, reply to this email right away so we can secure your account.", "danger"),
+        }),
       })
     } catch (err) {
       console.error("Password-changed email failed", { userId, err })
@@ -46,13 +44,10 @@ export async function notifyAccountDeleted(email: string | null, phone: string |
         from: FROM,
         to: email,
         subject: "Your Sub-tree account was deleted",
-        html: `
-          <div style="font-family:sans-serif;max-width:400px;margin:0 auto;padding:24px">
-            <h2 style="margin:0 0 8px">Account deleted</h2>
-            <p style="color:#374151">Your Sub-tree account and profile have been deleted. Your username is now free for anyone to claim.</p>
-            <p style="color:#dc2626;font-size:13px;margin-top:16px">If you didn't request this, contact support immediately.</p>
-          </div>
-        `,
+        html: emailLayout({
+          preheader: "Your Sub-tree account and profile have been deleted.",
+          body: heading("Account deleted") + p("Your Sub-tree account and profile have been deleted, and your username is now free for anyone to claim.") + p("Thank you for being part of Sub-tree. You're always welcome back.", { muted: true, size: 14 }) + notice("If you didn't request this, reply to this email immediately.", "danger"),
+        }),
       })
     } catch (err) {
       console.error("Account-deleted email failed", { email, err })
@@ -76,13 +71,10 @@ export async function notifyBankDetailsChanged(userId: number, bankName: string,
         from: FROM,
         to: user.email,
         subject: "Your Sub-tree bank details were changed",
-        html: `
-          <div style="font-family:sans-serif;max-width:400px;margin:0 auto;padding:24px">
-            <h2 style="margin:0 0 8px">Bank details changed</h2>
-            <p style="color:#374151">Withdrawals to a bank will now go to <strong>${bankName}</strong>, account ending <strong>${last4}</strong>.</p>
-            <p style="color:#dc2626;font-size:13px;margin-top:16px">If you didn't make this change, contact support immediately.</p>
-          </div>
-        `,
+        html: emailLayout({
+          preheader: `Bank withdrawals now go to ${bankName} ending ${last4}`,
+          body: heading("Bank details changed") + p(`Withdrawals to a bank will now go to ${strong(bankName)}, account ending ${strong(last4)}.`, { html: true }) + notice("If you didn't make this change, reply to this email immediately.", "danger"),
+        }),
       })
     } catch (err) {
       console.error("Bank-details email failed", { userId, err })

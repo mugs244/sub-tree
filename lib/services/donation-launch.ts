@@ -1,6 +1,7 @@
 import { Resend } from "resend"
 import { prisma } from "@/lib/db"
 import { getSetting, getSettingAsBool, updateSetting } from "@/lib/services/platform-settings"
+import { emailLayout, heading, p, button } from "@/lib/email/template"
 
 const resend = new Resend(process.env.RESEND_API_KEY)
 const FROM = "Sub-tree <hello@sub-tree.com>"
@@ -84,15 +85,15 @@ async function notifyPendingSubscribers(): Promise<number> {
       await resend.emails.send({
         from: FROM,
         to: sub.email,
-        subject: "Donations are live on Sub-tree 🎉",
-        html: `
-          <div style="font-family:sans-serif;max-width:420px;margin:0 auto;padding:24px">
-            <p>Hi there,</p>
-            <p style="color:#374151">Good news — mobile money donations are now live on Sub-tree. Supporters can send you money directly through your Sub-tree page.</p>
-            <a href="https://sub-tree.com" style="display:inline-block;margin-top:12px;padding:10px 20px;background:#111827;color:#ffffff;text-decoration:none;border-radius:8px;font-size:14px">Go to Sub-tree</a>
-            <p style="margin-top:24px">Best regards,<br/><strong>The Sub-tree Team</strong></p>
-          </div>
-        `,
+        subject: "Donations are live on Sub-tree",
+        html: emailLayout({
+          preheader: "Supporters can now send you mobile money straight from your page.",
+          body:
+            heading("Donations are live") +
+            p("Good news — mobile money donations are now live on Sub-tree. Supporters can send you money directly from your Sub-tree page, with MTN MoMo or Airtel Money.") +
+            button("Go to Sub-tree", "https://sub-tree.com/dashboard") +
+            p("Best regards,<br><strong>The Sub-tree team</strong>", { html: true }),
+        }),
       })
       sent++
     } catch (err) {

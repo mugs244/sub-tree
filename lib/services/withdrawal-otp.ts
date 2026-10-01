@@ -2,6 +2,7 @@ import { Resend } from "resend"
 import { prisma } from "@/lib/db"
 import { generateCode } from "@/lib/auth/email"
 import { sendSms } from "@/lib/sms"
+import { emailLayout, greeting, p, codeBox, notice, securityNote, strong } from "@/lib/email/template"
 
 const resend = new Resend(process.env.RESEND_API_KEY)
 const FROM = "Sub-tree <hello@sub-tree.com>"
@@ -31,21 +32,18 @@ async function issueCode(userId: number, purpose: OtpPurpose): Promise<string> {
   return code
 }
 
-function codeEmail(name: string, intro: string, code: string): string {
-  return `
-    <div style="font-family:sans-serif;max-width:420px;margin:0 auto;padding:24px">
-      <p>Hi ${name},</p>
-      <p style="color:#374151">${intro}</p>
-      <div style="font-size:36px;font-weight:700;letter-spacing:8px;font-family:monospace;text-align:center;margin:24px 0">${code}</div>
-      <p style="font-weight:600;margin-bottom:4px">Security notice:</p>
-      <ul style="color:#374151;font-size:14px;padding-left:20px;margin-top:4px">
-        <li>This code expires in ${CODE_TTL_MINUTES} minutes.</li>
-        <li><strong>Do not share this code with anyone.</strong> Sub-tree staff will never ask you for it.</li>
-      </ul>
-      <p style="color:#dc2626;font-size:13px;margin-top:16px">If you didn't request this, change your password immediately and reply to this email to alert our team.</p>
-      <p style="margin-top:24px">The Sub-tree team</p>
-    </div>
-  `
+// `intro` may contain markup built by the caller (e.g. <strong>); `name`
+// is user-provided and escaped by greeting().
+function codeEmail(name: string, intro: string, code: string, preheader: string): string {
+  return emailLayout({
+    preheader,
+    body:
+      greeting(name) +
+      p(intro, { html: true }) +
+      codeBox(code, CODE_TTL_MINUTES) +
+      notice("Never share this code. Sub-tree staff will never ask you for it — not by phone, text or email.") +
+      securityNote(),
+  })
 }
 
 // Withdrawal approval code, sent by email or SMS — the creator's choice.
@@ -71,7 +69,7 @@ export async function sendWithdrawalOtp(userId: number, amountUgx: number, chann
     from: FROM,
     to: user!.email,
     subject: "Your Sub-tree withdrawal code",
-    html: codeEmail(name, `Use this code to approve your withdrawal of <strong>${amount}</strong>:`, code),
+    html: codeEmail(name, `Use this code to approve your withdrawal of ${strong(amount)}:`, code, `Your code to approve a ${amount} withdrawal`),
   })
 }
 
@@ -89,7 +87,7 @@ export async function sendBankDetailsOtp(userId: number): Promise<void> {
     from: FROM,
     to: user.email,
     subject: "Confirm your Sub-tree bank details",
-    html: codeEmail(name, "Use this code to save the bank account your withdrawals will be sent to:", code),
+    html: codeEmail(name, "Use this code to save the bank account your withdrawals will be sent to:", code, "Your code to confirm your bank details"),
   })
 }
 

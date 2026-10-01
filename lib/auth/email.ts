@@ -1,5 +1,6 @@
 import { Resend } from "resend"
 import { prisma } from "@/lib/db"
+import { emailLayout, heading, p, codeBox, button, strong } from "@/lib/email/template"
 
 const resend = new Resend(process.env.RESEND_API_KEY)
 const FROM = "Sub-tree <hello@sub-tree.com>"
@@ -20,14 +21,10 @@ export async function sendVerificationEmail(userId: number, email: string): Prom
     from: FROM,
     to: email,
     subject: `${code} — your Sub-tree verification code`,
-    html: `
-      <div style="font-family:sans-serif;max-width:400px;margin:0 auto;padding:24px">
-        <h2 style="margin:0 0 8px">Verify your email</h2>
-        <p style="color:#6b7280;margin:0 0 24px">Enter this code in Sub-tree to continue:</p>
-        <div style="font-size:36px;font-weight:700;letter-spacing:8px;font-family:monospace;margin-bottom:24px">${code}</div>
-        <p style="color:#6b7280;font-size:13px">Expires in ${CODE_TTL_MINUTES} minutes. If you didn't request this, ignore this email.</p>
-      </div>
-    `,
+    html: emailLayout({
+      preheader: `Your verification code is ${code}`,
+      body: heading("Verify your email") + p("Enter this code in Sub-tree to continue:") + codeBox(code, CODE_TTL_MINUTES) + p("If you didn't request this, you can ignore this email.", { muted: true, size: 13 }),
+    }),
   })
 }
 
@@ -35,17 +32,17 @@ export async function sendWelcomeEmail(email: string, username: string): Promise
   await resend.emails.send({
     from: FROM,
     to: email,
-    subject: `Welcome to Subtree, @${username}! 🌿`,
-    html: `
-      <div style="font-family:sans-serif;max-width:420px;margin:0 auto;padding:24px">
-        <p>Hi @${username},</p>
-        <p style="color:#374151">Welcome to Subtree!</p>
-        <p style="color:#374151">We are so happy to have you as part of our branch. Whether you are here to grow your portfolio, connect, or explore new tools, you are in the right place.</p>
-        <p style="color:#374151">Our team is dedicated to providing you with the best possible experience as you get started. If you ever need guidance or just want to say hello, we are always just a message away.</p>
-        <p style="color:#374151">Thank you for choosing Subtree. Let&apos;s grow together!</p>
-        <p style="margin-top:24px">Warmly,<br/><strong>The Subtree Team</strong></p>
-      </div>
-    `,
+    subject: `Welcome to Sub-tree, @${username}`,
+    html: emailLayout({
+      preheader: "Your page is ready. Here's how to make the most of it.",
+      body:
+        heading(`Welcome to Sub-tree, @${username}`) +
+        p("We're so happy to have you here. Your page is ready — one link for everything you create, with mobile money donations built in.") +
+        p(`Your link: ${strong(`sub-tree.com/${username}`)}`, { html: true }) +
+        button("Open your dashboard", "https://sub-tree.com/dashboard") +
+        p("Add your links, pick a template, and share your link in your bio. If you ever need help, just reply to this email — a real person will answer.", { muted: true, size: 14 }) +
+        p("Let's grow together,<br><strong>The Sub-tree team</strong>", { html: true }),
+    }),
   })
 }
 
@@ -60,14 +57,10 @@ export async function sendSigninCode(userId: number, email: string): Promise<voi
     from: FROM,
     to: email,
     subject: `${code} — your Sub-tree sign-in code`,
-    html: `
-      <div style="font-family:sans-serif;max-width:400px;margin:0 auto;padding:24px">
-        <h2 style="margin:0 0 8px">Your sign-in code</h2>
-        <p style="color:#6b7280;margin:0 0 24px">Enter this code in Sub-tree to sign in:</p>
-        <div style="font-size:36px;font-weight:700;letter-spacing:8px;font-family:monospace;margin-bottom:24px">${code}</div>
-        <p style="color:#6b7280;font-size:13px">Expires in ${CODE_TTL_MINUTES} minutes. If you didn't request this, ignore this email.</p>
-      </div>
-    `,
+    html: emailLayout({
+      preheader: `Your sign-in code is ${code}`,
+      body: heading("Your sign-in code") + p("Enter this code in Sub-tree to sign in:") + codeBox(code, CODE_TTL_MINUTES) + p("If you didn't try to sign in, you can ignore this email — your account is safe.", { muted: true, size: 13 }),
+    }),
   })
 }
 
@@ -82,14 +75,10 @@ export async function sendPasswordResetCode(userId: number, email: string): Prom
     from: FROM,
     to: email,
     subject: `${code} — reset your Sub-tree password`,
-    html: `
-      <div style="font-family:sans-serif;max-width:400px;margin:0 auto;padding:24px">
-        <h2 style="margin:0 0 8px">Reset your password</h2>
-        <p style="color:#6b7280;margin:0 0 24px">Enter this code in Sub-tree to set a new password:</p>
-        <div style="font-size:36px;font-weight:700;letter-spacing:8px;font-family:monospace;margin-bottom:24px">${code}</div>
-        <p style="color:#6b7280;font-size:13px">Expires in ${CODE_TTL_MINUTES} minutes. If you didn't request this, ignore this email.</p>
-      </div>
-    `,
+    html: emailLayout({
+      preheader: `Your password reset code is ${code}`,
+      body: heading("Reset your password") + p("Enter this code in Sub-tree to set a new password:") + codeBox(code, CODE_TTL_MINUTES) + p("If you didn't ask to reset your password, you can ignore this email — your password won't change.", { muted: true, size: 13 }),
+    }),
   })
 }
 
