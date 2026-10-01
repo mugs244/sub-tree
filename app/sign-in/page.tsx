@@ -3,7 +3,7 @@
 import { useState, Suspense } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
-import { Logo } from "@/components/brand/Logo"
+import { AuthShell, authButtonClass, authInputClass, authLinkButtonClass } from "@/components/auth/AuthShell"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { PasswordInput } from "@/components/ui/password-input"
@@ -78,110 +78,103 @@ function SignInForm() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-6 py-12 bg-[color:var(--bg-base)]">
-      <div className="w-full max-w-sm space-y-8">
-        <div className="flex flex-col items-center gap-3">
-          <Logo variant="icon" />
-          <h1 className="text-2xl font-semibold tracking-tight">Sign in to Sub-tree</h1>
-        </div>
+    <AuthShell variant="sign-in">
+      <h1 className="text-3xl sm:text-4xl font-bold tracking-tighter">Sign in to Sub-tree</h1>
+      <p className="mt-2 text-sm text-muted-foreground">
+        Don&apos;t have an account?{" "}
+        <Link href="/sign-up" className="font-medium text-foreground underline-offset-4 hover:underline">Create one</Link>
+      </p>
 
-        {mode === "password" && (
-          <div className="space-y-3">
+      {mode === "password" && (
+        <>
+          <div className="mt-7 space-y-3">
             {oauthFailed && (
               <p className="text-sm text-red-600 text-center">Google/Apple sign-in didn&apos;t complete. Please try again.</p>
             )}
-            <SocialSignIn next={explicitNext} termsNotice />
+            <SocialSignIn next={explicitNext} action="Sign in" termsNotice />
           </div>
-        )}
-
-        {mode === "password" && (
-          <form onSubmit={(e) => void handlePasswordSignIn(e)} className="space-y-4">
+          <form onSubmit={(e) => void handlePasswordSignIn(e)} className="mt-3 space-y-4">
             <div className="space-y-1.5">
               <Label htmlFor="email">Email</Label>
-              <Input id="email" type="email" autoComplete="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" />
+              <Input id="email" type="email" autoComplete="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" className={authInputClass} />
             </div>
             <div className="space-y-1.5">
               <div className="flex items-center justify-between">
                 <Label htmlFor="password">Password</Label>
-                <Link href="/forgot-password" className="text-xs text-[color:var(--accent-primary)] hover:underline">
+                <Link href="/forgot-password" className="text-xs font-medium text-foreground underline-offset-4 hover:underline">
                   Forgot password?
                 </Link>
               </div>
-              <PasswordInput id="password" autoComplete="current-password" required value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Your password" />
+              <PasswordInput id="password" autoComplete="current-password" required value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Your password" className={authInputClass} />
             </div>
             {error && <p className="text-sm text-red-600">{error}</p>}
-            <Button type="submit" className="w-full" disabled={loading}>
+            <Button type="submit" className={authButtonClass} disabled={loading}>
               {loading ? "Signing in…" : "Sign in"}
             </Button>
             <button
               type="button"
               onClick={() => { setError(""); setMode("otp-send") }}
-              className="w-full text-sm text-center text-[color:var(--text-secondary)] hover:text-[color:var(--text-primary)] transition-colors"
+              className={authLinkButtonClass}
             >
               Sign in with a code instead
             </button>
           </form>
-        )}
+        </>
+      )}
 
-        {mode === "otp-send" && (
-          <form onSubmit={(e) => void handleSendCode(e)} className="space-y-4">
-            <p className="text-sm text-[color:var(--text-secondary)] text-center">
-              We&apos;ll email you a 6-digit code to sign in.
-            </p>
-            <div className="space-y-1.5">
-              <Label htmlFor="otp-email">Email</Label>
-              <Input id="otp-email" type="email" autoComplete="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" />
-            </div>
-            {error && <p className="text-sm text-red-600">{error}</p>}
-            <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? "Sending…" : "Send code"}
-            </Button>
-            <button
-              type="button"
-              onClick={() => { setError(""); setMode("password") }}
-              className="w-full text-sm text-center text-[color:var(--text-secondary)] hover:text-[color:var(--text-primary)] transition-colors"
-            >
-              Sign in with password instead
-            </button>
-          </form>
-        )}
+      {mode === "otp-send" && (
+        <form onSubmit={(e) => void handleSendCode(e)} className="mt-7 space-y-4">
+          <p className="text-sm text-muted-foreground">
+            We&apos;ll email you a 6-digit code to sign in.
+          </p>
+          <div className="space-y-1.5">
+            <Label htmlFor="otp-email">Email</Label>
+            <Input id="otp-email" type="email" autoComplete="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" className={authInputClass} />
+          </div>
+          {error && <p className="text-sm text-red-600">{error}</p>}
+          <Button type="submit" className={authButtonClass} disabled={loading}>
+            {loading ? "Sending…" : "Send code"}
+          </Button>
+          <button
+            type="button"
+            onClick={() => { setError(""); setMode("password") }}
+            className={authLinkButtonClass}
+          >
+            Sign in with password instead
+          </button>
+        </form>
+      )}
 
-        {mode === "otp-verify" && (
-          <form onSubmit={(e) => void handleVerifyCode(e)} className="space-y-4">
-            <p className="text-sm text-[color:var(--text-secondary)] text-center">
-              We sent a 6-digit code to <strong>{email}</strong>.
-            </p>
-            <Input
-              type="text"
-              inputMode="numeric"
-              autoComplete="one-time-code"
-              maxLength={6}
-              placeholder="000000"
-              className="text-center text-2xl tracking-[0.5em] font-mono"
-              value={code}
-              onChange={(e) => setCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
-              required
-            />
-            {error && <p className="text-sm text-red-600 text-center">{error}</p>}
-            <Button type="submit" className="w-full" disabled={loading || code.length < 6}>
-              {loading ? "Verifying…" : "Sign in"}
-            </Button>
-            <button
-              type="button"
-              onClick={() => { setError(""); setCode(""); setMode("otp-send") }}
-              className="w-full text-sm text-center text-[color:var(--text-secondary)] hover:text-[color:var(--text-primary)] transition-colors"
-            >
-              Resend code
-            </button>
-          </form>
-        )}
-
-        <p className="text-center text-sm text-[color:var(--text-secondary)]">
-          Don&apos;t have an account?{" "}
-          <Link href="/sign-up" className="font-medium text-[color:var(--accent-primary)] hover:underline">Create one</Link>
-        </p>
-      </div>
-    </div>
+      {mode === "otp-verify" && (
+        <form onSubmit={(e) => void handleVerifyCode(e)} className="mt-7 space-y-4">
+          <p className="text-sm text-muted-foreground">
+            We sent a 6-digit code to <strong className="text-foreground">{email}</strong>.
+          </p>
+          <Input
+            type="text"
+            inputMode="numeric"
+            autoComplete="one-time-code"
+            maxLength={6}
+            placeholder="000000"
+            className={`${authInputClass} h-14 text-center text-2xl tracking-[0.5em] font-mono`}
+            value={code}
+            onChange={(e) => setCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+            required
+          />
+          {error && <p className="text-sm text-red-600 text-center">{error}</p>}
+          <Button type="submit" className={authButtonClass} disabled={loading || code.length < 6}>
+            {loading ? "Verifying…" : "Sign in"}
+          </Button>
+          <button
+            type="button"
+            onClick={() => { setError(""); setCode(""); setMode("otp-send") }}
+            className={authLinkButtonClass}
+          >
+            Resend code
+          </button>
+        </form>
+      )}
+    </AuthShell>
   )
 }
 

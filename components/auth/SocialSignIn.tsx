@@ -7,8 +7,9 @@ import { createSupabaseBrowserClient } from "@/lib/supabase/client"
 
 type Provider = "google" | "apple"
 
-// NEXT_PUBLIC_* values are inlined at build time, so a deploy without the
-// Supabase keys simply doesn't show the buttons instead of showing broken ones.
+// NEXT_PUBLIC_* values are inlined at build time. Without the Supabase keys the
+// buttons still show, but explain that this option isn't live yet instead of
+// failing.
 const CONFIGURED = Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY)
 
 export function SocialSignIn({
@@ -16,6 +17,7 @@ export function SocialSignIn({
   disabled = false,
   termsNotice = false,
   divider = "below",
+  action = "Continue",
 }: {
   next?: string | null
   disabled?: boolean
@@ -25,14 +27,18 @@ export function SocialSignIn({
   // Which side of the buttons the "or" separator goes on, relative to the
   // email form they sit beside.
   divider?: "above" | "below"
+  // Button wording: "Sign up with Google" on sign-up, "Sign in with…" on sign-in.
+  action?: "Continue" | "Sign in" | "Sign up"
 }) {
   const [pending, setPending] = useState<Provider | null>(null)
   const [error, setError] = useState("")
 
-  if (!CONFIGURED) return null
-
   async function start(provider: Provider) {
     setError("")
+    if (!CONFIGURED) {
+      setError("Google and Apple sign-in are coming soon. Please use your email for now.")
+      return
+    }
     setPending(provider)
     const callback = new URL("/auth/callback", window.location.origin)
     if (next) callback.searchParams.set("next", next)
@@ -53,22 +59,22 @@ export function SocialSignIn({
       <Button
         type="button"
         variant="outline"
-        className="w-full gap-2"
+        className="h-11 w-full gap-2 rounded-xl border-2 border-foreground bg-white font-semibold hover:bg-surface"
         disabled={disabled || pending !== null}
         onClick={() => void start("google")}
       >
         <GoogleIcon />
-        {pending === "google" ? "Redirecting…" : "Continue with Google"}
+        {pending === "google" ? "Redirecting…" : `${action} with Google`}
       </Button>
       <Button
         type="button"
         variant="outline"
-        className="w-full gap-2"
+        className="h-11 w-full gap-2 rounded-xl border-2 border-foreground bg-white font-semibold hover:bg-surface"
         disabled={disabled || pending !== null}
         onClick={() => void start("apple")}
       >
         <AppleIcon />
-        {pending === "apple" ? "Redirecting…" : "Continue with Apple"}
+        {pending === "apple" ? "Redirecting…" : `${action} with Apple`}
       </Button>
       {error && <p className="text-sm text-red-600 text-center">{error}</p>}
       {termsNotice && (
