@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input"
 import { PasswordInput } from "@/components/ui/password-input"
 import { Label } from "@/components/ui/label"
 import { Checkbox } from "@/components/ui/checkbox"
+import { SocialSignIn } from "@/components/auth/SocialSignIn"
 
 export default function SignUpPage() {
   const router = useRouter()
@@ -39,18 +40,10 @@ export default function SignUpPage() {
         <div className="flex flex-col items-center gap-3">
           <Logo variant="icon" />
           <h1 className="text-2xl font-semibold tracking-tight">Create your account</h1>
-          <p className="text-sm text-[color:var(--text-secondary)]">Free to start — no credit card needed.</p>
         </div>
 
-        <form onSubmit={(e) => void handleSubmit(e)} className="space-y-4">
-          <div className="space-y-1.5">
-            <Label htmlFor="email">Email</Label>
-            <Input id="email" type="email" autoComplete="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" />
-          </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="password">Password</Label>
-            <PasswordInput id="password" autoComplete="new-password" required value={password} onChange={(e) => setPassword(e.target.value)} placeholder="At least 8 characters" />
-          </div>
+        {/* Terms gate both Google/Apple and email sign-up, so it sits above both */}
+        <div className="space-y-4">
           <div className="flex items-start gap-2">
             <Checkbox
               id="agreedToTerms"
@@ -64,6 +57,18 @@ export default function SignUpPage() {
                 Terms of Service
               </Link>
             </Label>
+          </div>
+          <SocialSignIn disabled={!agreedToTerms} />
+        </div>
+
+        <form onSubmit={(e) => void handleSubmit(e)} className="space-y-4">
+          <div className="space-y-1.5">
+            <Label htmlFor="email">Email</Label>
+            <Input id="email" type="email" autoComplete="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="password">Password</Label>
+            <PasswordInput id="password" autoComplete="new-password" required value={password} onChange={(e) => setPassword(e.target.value)} placeholder="At least 8 characters" />
           </div>
           {error && <p className="text-sm text-red-600">{error}</p>}
           <Button type="submit" className="w-full" disabled={loading || !agreedToTerms}>

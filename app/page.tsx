@@ -3,7 +3,7 @@ import { Logo } from "@/components/brand/Logo"
 import { PlatformIcon } from "@/components/PlatformIcon"
 import { DonationLaunchNotice } from "@/components/DonationLaunchNotice"
 import { CookiePreferencesButton } from "@/components/CookiePreferencesButton"
-import { Link2, Heart, BarChart2, ArrowRight, Globe, Smartphone, Check, Minus } from "lucide-react"
+import { Link2, Heart, BarChart2, ArrowRight, Smartphone, Check, Minus } from "lucide-react"
 import type { Platform } from "@/lib/utils/platform"
 import { getFeeRate } from "@/lib/services/platform-settings"
 
@@ -150,10 +150,6 @@ export default async function LandingPage() {
           <div className="flex flex-col md:flex-row md:items-center gap-12 md:gap-16">
             {/* Left */}
             <div className="flex-1 md:max-w-[52%]">
-              <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-surface px-3 py-1 text-xs font-medium text-muted-foreground mb-6">
-                <Globe className="h-3 w-3" />
-                Built for East African creators
-              </span>
               {/* Orbit ring wraps just the h1 so icons orbit the headline */}
               <div className="relative">
                 <OrbitRing />
@@ -330,7 +326,7 @@ export default async function LandingPage() {
         <section id="pricing" className="mx-auto max-w-5xl px-4 sm:px-6 py-20">
           <div className="text-center mb-14">
             <h2 className="text-2xl sm:text-3xl font-semibold tracking-tight mb-3">
-              Free. No credit card needed.
+              Simple, transparent pricing
             </h2>
             <p className="text-muted-foreground text-sm max-w-md mx-auto">
               Everything you need to share your links and accept mobile money donations — at no cost.
@@ -353,7 +349,7 @@ export default async function LandingPage() {
               Ready to grow your audience?
             </h2>
             <p className="text-muted-foreground text-sm mb-8 max-w-sm mx-auto">
-              Create your Sub-tree page in minutes. Free to start, no credit card required.
+              Create your Sub-tree page in minutes.
             </p>
             <Link
               href="/sign-up"

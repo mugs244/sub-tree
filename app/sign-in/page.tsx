@@ -8,11 +8,13 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { PasswordInput } from "@/components/ui/password-input"
 import { Label } from "@/components/ui/label"
+import { SocialSignIn } from "@/components/auth/SocialSignIn"
 
 function SignInForm() {
   const router = useRouter()
   const params = useSearchParams()
   const explicitNext = params.get("next")
+  const oauthFailed = params.get("error") === "oauth_failed"
 
   const [mode, setMode] = useState<"password" | "otp-send" | "otp-verify">("password")
   const [email, setEmail] = useState("")
@@ -82,6 +84,15 @@ function SignInForm() {
           <Logo variant="icon" />
           <h1 className="text-2xl font-semibold tracking-tight">Sign in to Sub-tree</h1>
         </div>
+
+        {mode === "password" && (
+          <div className="space-y-3">
+            {oauthFailed && (
+              <p className="text-sm text-red-600 text-center">Google/Apple sign-in didn&apos;t complete. Please try again.</p>
+            )}
+            <SocialSignIn next={explicitNext} termsNotice />
+          </div>
+        )}
 
         {mode === "password" && (
           <form onSubmit={(e) => void handlePasswordSignIn(e)} className="space-y-4">

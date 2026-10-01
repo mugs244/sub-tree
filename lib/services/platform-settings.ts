@@ -1,17 +1,12 @@
 import { prisma } from "@/lib/db";
 
-const CACHE_TTL_MS = 5 * 60 * 1000;
-
-const cache = new Map<string, { value: string; expiresAt: number }>();
-
+// Read straight from the DB, no in-process cache: on serverless each instance
+// would hold its own copy, so an admin change only invalidated the instance
+// that handled the save and every other one kept showing (and charging) the
+// old rate for minutes. A single unique-key lookup is cheap enough.
 export async function getSetting(key: string, defaultValue: string): Promise<string> {
-  const cached = cache.get(key);
-  if (cached && cached.expiresAt > Date.now()) return cached.value;
-
   const setting = await prisma.platformSetting.findUnique({ where: { key } });
-  const value = setting?.value ?? defaultValue;
-  cache.set(key, { value, expiresAt: Date.now() + CACHE_TTL_MS });
-  return value;
+  return setting?.value ?? defaultValue;
 }
 
 export async function getSettingAsNumber(key: string, defaultValue: number): Promise<number> {
@@ -51,16 +46,6 @@ export async function updateSetting(
       },
     }),
   ]);
-
-  cache.delete(key);
-}
-
-export function invalidateCache(key?: string): void {
-  if (key) {
-    cache.delete(key);
-  } else {
-    cache.clear();
-  }
 }
 
 export interface RatePeriod {

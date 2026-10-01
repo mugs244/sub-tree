@@ -23,7 +23,7 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   metadataBase: new URL("https://sub-tree.com"),
   title: "Sub-tree",
-  description: "Your links, your way — built for East African creators.",
+  description: "Share everything you create and accept mobile money donations, all from one link.",
 };
 
 export default function RootLayout({
