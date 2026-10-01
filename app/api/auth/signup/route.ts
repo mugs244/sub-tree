@@ -5,10 +5,11 @@ import { sendVerificationEmail } from "@/lib/auth/email"
 import { recordTermsAcceptance } from "@/lib/services/terms-acceptance"
 import { getIpFromHeaders } from "@/lib/utils/geo"
 import { z } from "zod"
+import { newPasswordSchema } from "@/lib/validators/password"
 
 const schema = z.object({
   email: z.string().email("Invalid email"),
-  password: z.string().min(8, "Password must be at least 8 characters"),
+  password: newPasswordSchema,
   agreedToTerms: z.literal(true, {
     message: "You must agree to the Terms of Service",
   }),

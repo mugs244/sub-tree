@@ -15,12 +15,16 @@ export function SocialSignIn({
   next,
   disabled = false,
   termsNotice = false,
+  divider = "below",
 }: {
   next?: string | null
   disabled?: boolean
-  // Sign-in has no Terms checkbox, but a first Google/Apple login there still
-  // creates an account — so it shows the notice instead.
+  // A first Google/Apple login creates an account, so the pages show this
+  // notice to make that a Terms agreement.
   termsNotice?: boolean
+  // Which side of the buttons the "or" separator goes on, relative to the
+  // email form they sit beside.
+  divider?: "above" | "below"
 }) {
   const [pending, setPending] = useState<Provider | null>(null)
   const [error, setError] = useState("")
@@ -45,6 +49,7 @@ export function SocialSignIn({
 
   return (
     <div className="space-y-3">
+      {divider === "above" && <OrDivider />}
       <Button
         type="button"
         variant="outline"
@@ -68,18 +73,24 @@ export function SocialSignIn({
       {error && <p className="text-sm text-red-600 text-center">{error}</p>}
       {termsNotice && (
         <p className="text-xs text-center text-[color:var(--text-secondary)]">
-          New here? Continuing with Google or Apple creates an account and means you agree to the{" "}
+          By continuing with Google or Apple (which creates an account if you&apos;re new), you agree to Sub-tree&apos;s{" "}
           <Link href="/terms" target="_blank" className="font-medium text-[color:var(--accent-primary)] hover:underline">
             Terms of Service
           </Link>
           .
         </p>
       )}
-      <div className="flex items-center gap-3 pt-1">
-        <span className="h-px flex-1 bg-[color:var(--border-default)]" />
-        <span className="text-xs text-[color:var(--text-secondary)]">or</span>
-        <span className="h-px flex-1 bg-[color:var(--border-default)]" />
-      </div>
+      {divider === "below" && <OrDivider />}
+    </div>
+  )
+}
+
+function OrDivider() {
+  return (
+    <div className="flex items-center gap-3 py-1">
+      <span className="h-px flex-1 bg-[color:var(--border-default)]" />
+      <span className="text-xs text-[color:var(--text-secondary)]">or</span>
+      <span className="h-px flex-1 bg-[color:var(--border-default)]" />
     </div>
   )
 }

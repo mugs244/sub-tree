@@ -5,6 +5,8 @@ import { Pencil, Loader2, Check } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { PasswordInput } from "@/components/ui/password-input"
 import { Label } from "@/components/ui/label"
+import { PasswordChecklist } from "@/components/auth/PasswordChecklist"
+import { passwordMeetsRules } from "@/lib/validators/password"
 
 export function ChangePasswordForm() {
   const [editing, setEditing] = useState(false)
@@ -27,8 +29,8 @@ export function ChangePasswordForm() {
     e.preventDefault()
     setError(null)
 
-    if (newPassword.length < 8) {
-      setError("New password must be at least 8 characters")
+    if (!passwordMeetsRules(newPassword)) {
+      setError("New password doesn't meet all the requirements")
       return
     }
     if (newPassword !== confirmPassword) {
@@ -105,9 +107,9 @@ export function ChangePasswordForm() {
           autoComplete="new-password"
           value={newPassword}
           onChange={(e) => setNewPassword(e.target.value)}
-          placeholder="At least 8 characters"
           required
         />
+        <PasswordChecklist password={newPassword} />
       </div>
 
       <div className="space-y-1.5">

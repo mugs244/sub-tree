@@ -34,8 +34,8 @@ export async function findOrCreateOAuthUser(
     data: { email: normalized, email_verified_at: new Date() },
     select: { id: true },
   })
-  // Both entry points show the Terms before the Google/Apple buttons can be
-  // used (a required checkbox on sign-up, a notice on sign-in).
+  // Both sign-up and sign-in show a Terms notice right under the
+  // Google/Apple buttons, so continuing is the agreement.
   await recordTermsAcceptance(user.id, ipAddress)
   return { userId: user.id, created: true }
 }

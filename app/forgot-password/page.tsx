@@ -8,6 +8,8 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { PasswordInput } from "@/components/ui/password-input"
 import { Label } from "@/components/ui/label"
+import { PasswordChecklist } from "@/components/auth/PasswordChecklist"
+import { passwordMeetsRules } from "@/lib/validators/password"
 
 export default function ForgotPasswordPage() {
   const router = useRouter()
@@ -49,7 +51,7 @@ export default function ForgotPasswordPage() {
     e.preventDefault()
     setError("")
 
-    if (newPassword.length < 8) { setError("Password must be at least 8 characters"); return }
+    if (!passwordMeetsRules(newPassword)) { setError("Password doesn't meet all the requirements"); return }
     if (newPassword !== confirmPassword) { setError("Passwords don't match"); return }
 
     setLoading(true)
@@ -112,7 +114,8 @@ export default function ForgotPasswordPage() {
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="new-password">New password</Label>
-              <PasswordInput id="new-password" autoComplete="new-password" required value={newPassword} onChange={(e) => setNewPassword(e.target.value)} placeholder="At least 8 characters" />
+              <PasswordInput id="new-password" autoComplete="new-password" required value={newPassword} onChange={(e) => setNewPassword(e.target.value)} />
+              <PasswordChecklist password={newPassword} />
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="confirm-password">Confirm new password</Label>

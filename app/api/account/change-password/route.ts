@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { cookies } from "next/headers"
 import { z } from "zod"
+import { newPasswordSchema } from "@/lib/validators/password"
 import { getSession } from "@/lib/auth/session"
 import { hashPassword, verifyPassword } from "@/lib/auth/password"
 import { notifyPasswordChanged } from "@/lib/services/security-notify"
@@ -8,7 +9,7 @@ import { prisma } from "@/lib/db"
 
 const schema = z.object({
   current_password: z.string().min(1, "Current password is required"),
-  new_password: z.string().min(8, "Password must be at least 8 characters"),
+  new_password: newPasswordSchema,
 })
 
 export async function POST(req: Request): Promise<NextResponse> {

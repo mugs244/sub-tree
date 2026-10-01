@@ -6,11 +6,12 @@ import { isAdmin } from "@/lib/services/admin"
 import { notifyPasswordChanged } from "@/lib/services/security-notify"
 import { prisma } from "@/lib/db"
 import { z } from "zod"
+import { newPasswordSchema } from "@/lib/validators/password"
 
 const schema = z.object({
   userId: z.number().int().positive(),
   code: z.string().length(6),
-  new_password: z.string().min(8, "Password must be at least 8 characters"),
+  new_password: newPasswordSchema,
 })
 
 export async function POST(req: Request) {
