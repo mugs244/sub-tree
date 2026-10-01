@@ -13,6 +13,7 @@ import { GiftMeSection } from "@/components/GiftMeSection"
 import { detectPlatform } from "@/lib/utils/platform"
 import { getDonationLaunchStatus } from "@/lib/services/donation-launch"
 import { getProfileTemplate } from "@/lib/profile-templates"
+import { TemplatePage } from "@/components/profile-templates/TemplatePage"
 import type { SmartCardMeta } from "@/lib/services/smart-links"
 
 type Props = { params: Promise<{ username: string }> }
@@ -139,17 +140,31 @@ export default async function PublicProfilePage({ params }: Props) {
   const { profile, links } = user
   const { enabled: donationsEnabled } = await getDonationLaunchStatus()
 
-  // A template (lib/profile-templates.ts) is a whole-page design; when one is
-  // chosen it drives colours and structure, and the classic theme path below
-  // is skipped.
+  const isPro = (["PRO", "BUSINESS", "CONTENT_HOUSE"] as string[]).includes(user.tier)
+  const showBranding = !isPro || !profile.hide_branding
+
+  // Templates (lib/profile-templates.ts) are whole-page designs with their
+  // own layouts; the classic colour-theme page below only renders without one.
   const template = getProfileTemplate(profile.theme_preset)
-  const t = template?.colors
+  if (template) {
+    return (
+      <TemplatePage
+        template={template}
+        username={username}
+        profile={profile}
+        links={links}
+        donationsEnabled={donationsEnabled}
+        showBranding={showBranding}
+        trackers={<><PageViewTracker username={username} /><Suspense><ReferrerTracker /></Suspense></>}
+      />
+    )
+  }
 
   const buttonClass = profile.button_style === "sharp"
     ? "rounded-none"
     : profile.button_style === "pill"
       ? "rounded-full"
-      : template ? "rounded-2xl" : "rounded-lg"
+      : "rounded-lg"
 
   const presetStyle = THEME_VARS[profile.theme_preset] ?? {}
 
@@ -159,104 +174,50 @@ export default async function PublicProfilePage({ params }: Props) {
   if (profile.theme_accent_color) customOverrides["--accent-primary"] = profile.theme_accent_color
   if (profile.theme_card_bg)      customOverrides["--bg-raised"]      = profile.theme_card_bg
 
-  // Templates still set the shared CSS variables so nested components
-  // (gift-me section, smart cards) pick up matching colours.
-  const templateVars: Record<string, string> = t
-    ? {
-        "--bg-base": t.panel,
-        "--bg-surface": t.linkBg,
-        "--bg-raised": t.linkBg,
-        "--text-primary": t.text,
-        "--text-muted": t.muted,
-        "--border-default": t.border,
-        "--accent-primary": t.accent,
-        "--primary-foreground": t.accentText,
-        "--pop-ledge": t.ledge,
-      }
-    : {}
-
-  const themeStyle = (t ? templateVars : { ...presetStyle, ...customOverrides }) as React.CSSProperties
+  const themeStyle = { ...presetStyle, ...customOverrides } as React.CSSProperties
 
   // Derive button/card colors directly from the resolved preset + custom overrides
   // so they are never affected by Tailwind's @theme inline variable chain.
   const presetVars = presetStyle as Record<string, string>
-  const donateBg   = t?.accent     ?? profile.theme_accent_color ?? presetVars["--accent-primary"] ?? "#111827"
-  const donateText = t?.accentText ?? presetVars["--primary-foreground"] ?? "#ffffff"
-  const buttonBg   = t?.linkBg     ?? profile.theme_button_color ?? presetVars["--bg-base"] ?? "#ffffff"
-  const buttonText = t?.linkText   ?? profile.theme_button_text  ?? presetVars["--text-primary"] ?? "#111827"
-  const cardBg     = t?.linkBg     ?? profile.theme_card_bg      ?? presetVars["--bg-base"] ?? "#ffffff"
-  const cardText   = t?.linkText   ?? profile.theme_card_text    ?? presetVars["--text-primary"] ?? "#111827"
+  const donateBg   = profile.theme_accent_color ?? presetVars["--accent-primary"] ?? "#111827"
+  const donateText = presetVars["--primary-foreground"] ?? "#ffffff"
+  const buttonBg   = profile.theme_button_color ?? presetVars["--bg-base"] ?? "#ffffff"
+  const buttonText = profile.theme_button_text  ?? presetVars["--text-primary"] ?? "#111827"
+  const cardBg     = profile.theme_card_bg      ?? presetVars["--bg-base"] ?? "#ffffff"
+  const cardText   = profile.theme_card_text    ?? presetVars["--text-primary"] ?? "#111827"
 
-  // Templates are always set in Geist, like the Sub-tree site itself.
-  const fontClass = template ? "" : FONT_CLASS[profile.theme_font ?? "geist"] ?? ""
-
-  const isPro = (["PRO", "BUSINESS", "CONTENT_HOUSE"] as string[]).includes(user.tier)
-  const showBranding = !isPro || !profile.hide_branding
-
-  const linkStyle: React.CSSProperties = t
-    ? { backgroundColor: buttonBg, color: buttonText, borderColor: t.border }
-    : { backgroundColor: buttonBg, color: buttonText }
+  const fontClass = FONT_CLASS[profile.theme_font ?? "geist"] ?? ""
 
   return (
     <main
-      style={t ? { ...themeStyle, backgroundColor: t.canvas } : themeStyle}
-      className={[
-        "min-h-screen flex flex-col items-center",
-        template ? "justify-start px-3 py-3 sm:justify-center sm:py-12" : "bg-background justify-center px-4 py-12",
-        fontClass,
-      ].join(" ")}
+      style={themeStyle}
+      className={["min-h-screen bg-background flex flex-col items-center justify-center px-4 py-12", fontClass].join(" ")}
     >
       <PageViewTracker username={username} />
       <Suspense><ReferrerTracker /></Suspense>
-      <div
-        style={t ? { backgroundColor: t.panel, color: t.text } : undefined}
-        className={template ? "w-full max-w-md space-y-6 rounded-[28px] px-5 py-8 sm:px-8" : "w-full max-w-sm space-y-6"}
-      >
-        {profile.avatar_url ? (
+      <div className="w-full max-w-sm space-y-6">
+        {profile.avatar_url && (
           <div className="flex justify-center">
             <img
               src={profile.avatar_url}
               alt={profile.display_name}
-              style={t ? { borderColor: t.border } : undefined}
-              className={template ? "h-24 w-24 rounded-full object-cover border-[3px]" : "h-20 w-20 rounded-full object-cover border border-border"}
+              className="h-20 w-20 rounded-full object-cover border border-border"
             />
-          </div>
-        ) : t && (
-          <div className="flex justify-center">
-            <span
-              style={{ backgroundColor: t.accent, color: t.accentText, borderColor: t.border }}
-              className="flex h-24 w-24 items-center justify-center rounded-full border-[3px] text-4xl font-bold"
-              aria-hidden="true"
-            >
-              {profile.display_name.charAt(0).toUpperCase()}
-            </span>
           </div>
         )}
 
         <div className="text-center space-y-2">
-          <h1 className={template ? "text-3xl font-bold tracking-tighter" : "text-xl font-semibold tracking-tight"}>
-            {profile.display_name}
-          </h1>
-          <p
-            style={t ? { color: t.handle } : undefined}
-            className={template ? "text-sm font-semibold" : "text-xs text-muted-foreground font-mono"}
-          >
-            @{username}
-          </p>
+          <h1 className="text-xl font-semibold tracking-tight">{profile.display_name}</h1>
+          <p className="text-xs text-muted-foreground font-mono">@{username}</p>
           {profile.bio && (
-            <p
-              style={t ? { color: t.muted } : undefined}
-              className={template ? "text-sm leading-relaxed pt-1" : "text-sm text-muted-foreground leading-relaxed pt-1"}
-            >
-              {profile.bio}
-            </p>
+            <p className="text-sm text-muted-foreground leading-relaxed pt-1">{profile.bio}</p>
           )}
         </div>
 
         {/* Links section */}
         <div className="space-y-4">
           {links.length > 0 ? (
-            <div className={template ? "space-y-3.5" : "space-y-3"}>
+            <div className="space-y-3">
               {links.map((link) => {
                 const showRich = link.link_type === "SMART_CARD" && !link.render_as_plain && link.smart_card_meta
                 if (showRich) {
@@ -276,12 +237,9 @@ export default async function PublicProfilePage({ params }: Props) {
                     key={link.id}
                     href={link.url}
                     linkId={link.id}
-                    style={linkStyle}
+                    style={{ backgroundColor: buttonBg, color: buttonText }}
                     className={[
-                      "flex items-center justify-center gap-2.5 w-full px-4 text-sm",
-                      template
-                        ? "pop-press py-3.5 font-semibold border-2"
-                        : "py-3 font-medium border border-border transition-colors duration-150",
+                      "flex items-center justify-center gap-2.5 w-full px-4 py-3 text-sm font-medium border border-border transition-colors duration-150",
                       buttonClass,
                     ].join(" ")}
                   >
@@ -292,7 +250,7 @@ export default async function PublicProfilePage({ params }: Props) {
               })}
             </div>
           ) : (
-            <p style={t ? { color: t.muted } : undefined} className="text-center text-sm text-muted-foreground">No links yet.</p>
+            <p className="text-center text-sm text-muted-foreground">No links yet.</p>
           )}
         </div>
 
@@ -300,10 +258,9 @@ export default async function PublicProfilePage({ params }: Props) {
           {donationsEnabled ? (
             <a
               href={`/${username}/donate`}
-              style={t ? { backgroundColor: donateBg, color: donateText, borderColor: t.ledge } : { backgroundColor: donateBg, color: donateText }}
+              style={{ backgroundColor: donateBg, color: donateText }}
               className={[
-                "flex items-center justify-center w-full px-4 text-sm",
-                template ? "pop-press py-3.5 font-bold border-2" : "py-3 font-medium transition-colors duration-150",
+                "flex items-center justify-center w-full px-4 py-3 text-sm font-medium transition-colors duration-150",
                 buttonClass,
               ].join(" ")}
             >
@@ -313,10 +270,8 @@ export default async function PublicProfilePage({ params }: Props) {
             <>
               <div
                 aria-disabled="true"
-                style={t ? { backgroundColor: t.linkBg, color: t.muted, borderColor: t.border } : undefined}
                 className={[
-                  "flex items-center justify-center w-full px-4 py-3 text-sm font-medium cursor-not-allowed select-none",
-                  template ? "border-2 border-dashed" : "bg-muted text-muted-foreground",
+                  "flex items-center justify-center w-full px-4 py-3 text-sm font-medium bg-muted text-muted-foreground cursor-not-allowed select-none",
                   buttonClass,
                 ].join(" ")}
               >
@@ -334,7 +289,7 @@ export default async function PublicProfilePage({ params }: Props) {
         )}
 
         {showBranding && (
-          <p style={t ? { color: t.muted } : undefined} className="text-center text-xs text-muted-foreground pt-4">
+          <p className="text-center text-xs text-muted-foreground pt-4">
             <Link href="/" className="hover:underline">Powered by Sub-tree</Link>
           </p>
         )}

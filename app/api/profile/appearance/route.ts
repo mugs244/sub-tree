@@ -10,7 +10,7 @@ const baseSchema = z.object({
   theme_preset: z.enum(["default", "warm", "cool", "forest", "midnight",
     "rose", "violet", "amber", "teal", "slate", "crimson", "sage", "dusk",
     // Whole-page templates — see lib/profile-templates.ts
-    "orange", "orange-night"]).optional(),
+    "orange", "orange-night", "citrus"]).optional(),
   button_style: z.enum(["rounded", "pill", "sharp"]).optional(),
 })
 

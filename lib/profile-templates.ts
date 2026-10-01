@@ -1,26 +1,34 @@
-// Templates are whole-page designs for a creator's public page, in the
-// landing page's style: a rounded panel on a canvas, a bold Geist name, an
-// orange @handle, chunky bordered link buttons that press down, and an
-// orange Support button. Unlike the colour-only theme presets, they change
-// the page's structure — app/[username]/page.tsx switches layout on them.
+// Templates are whole-page designs for a creator's public page. Each one is
+// copied from a design reference: it picks a `layout` (the page structure,
+// rendered by components/profile-templates/TemplatePage.tsx), a font, and the
+// colours that layout uses. Unlike the colour-only theme presets they change
+// the page's structure.
 //
-// They're stored in Profile.theme_preset like any preset, so the value must
+// They're stored in Profile.theme_preset like any preset, so every value must
 // also be accepted by app/api/profile/appearance/route.ts.
+
+export type TemplateLayout =
+  | "pop"   // rounded panel on a canvas, chunky bordered buttons that press down
+  | "rows"  // full-bleed, soft avatar, solid colour rows with icon + subtitle + chevron
+
+export type TemplateFont = "geist" | "inter"
 
 export interface ProfileTemplate {
   value: string
   label: string
   blurb: string
+  layout: TemplateLayout
+  font: TemplateFont
   colors: {
-    canvas: string     // page background around the panel
-    panel: string      // the rounded card everything sits on
+    canvas: string     // page background
+    panel: string      // card everything sits on ("pop"); same as canvas for "rows"
     text: string
     muted: string
     handle: string     // the @username
     linkBg: string
     linkText: string
-    border: string     // chunky 2px outline on buttons and avatar
-    ledge: string      // the solid "shadow" under buttons
+    border: string     // outline on buttons and avatar ("pop")
+    ledge: string      // solid "shadow" under buttons ("pop")
     accent: string     // Support button
     accentText: string
   }
@@ -31,6 +39,8 @@ export const PROFILE_TEMPLATES: ProfileTemplate[] = [
     value: "orange",
     label: "Orange",
     blurb: "Off-white with orange, like the Sub-tree homepage",
+    layout: "pop",
+    font: "geist",
     colors: {
       canvas: "#eeede8",
       panel: "#fafaf8",
@@ -49,6 +59,8 @@ export const PROFILE_TEMPLATES: ProfileTemplate[] = [
     value: "orange-night",
     label: "Orange night",
     blurb: "The same bold look on a dark background",
+    layout: "pop",
+    font: "geist",
     colors: {
       canvas: "#030712",
       panel: "#111827",
@@ -61,6 +73,26 @@ export const PROFILE_TEMPLATES: ProfileTemplate[] = [
       ledge: "#000000",
       accent: "#ff9a4d",
       accentText: "#111827",
+    },
+  },
+  {
+    value: "citrus",
+    label: "Citrus",
+    blurb: "Bright orange link rows with icons and subtitles",
+    layout: "rows",
+    font: "inter",
+    colors: {
+      canvas: "#f6f7f9",
+      panel: "#f6f7f9",
+      text: "#111827",
+      muted: "#4b5563",
+      handle: "#f26a2e",
+      linkBg: "#f26a2e",
+      linkText: "#ffffff",
+      border: "#ffffff",
+      ledge: "transparent",
+      accent: "#f26a2e",
+      accentText: "#ffffff",
     },
   },
 ]

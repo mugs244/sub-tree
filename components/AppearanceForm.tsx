@@ -482,15 +482,27 @@ function TemplateCard({
       ].join(" ")}
     >
       {/* Miniature of the template */}
-      <span className="flex h-20 w-16 shrink-0 rounded-lg p-1.5" style={{ background: c.canvas }} aria-hidden="true">
-        <span className="flex flex-1 flex-col items-center gap-1 rounded-md px-1.5 pt-1.5" style={{ background: c.panel }}>
-          <span className="h-3.5 w-3.5 rounded-full border" style={{ background: c.accent, borderColor: c.border }} />
+      {template.layout === "rows" ? (
+        <span className="flex h-20 w-16 shrink-0 flex-col items-center gap-1 rounded-lg px-1.5 pt-2" style={{ background: c.canvas }} aria-hidden="true">
+          <span className="h-4 w-4 rounded-full bg-white shadow" />
           <span className="h-1 w-6 rounded-full" style={{ background: c.text }} />
-          <span className="mt-0.5 h-2 w-full rounded border" style={{ background: c.linkBg, borderColor: c.border, boxShadow: `0 1px 0 0 ${c.ledge}` }} />
-          <span className="h-2 w-full rounded border" style={{ background: c.linkBg, borderColor: c.border, boxShadow: `0 1px 0 0 ${c.ledge}` }} />
-          <span className="h-2 w-full rounded border" style={{ background: c.accent, borderColor: c.border }} />
+          {[0, 1, 2].map((i) => (
+            <span key={i} className="flex h-2.5 w-full items-center justify-end rounded-sm pr-0.5" style={{ background: c.linkBg }}>
+              <span className="h-1 w-1 rounded-full bg-white/80" />
+            </span>
+          ))}
         </span>
-      </span>
+      ) : (
+        <span className="flex h-20 w-16 shrink-0 rounded-lg p-1.5" style={{ background: c.canvas }} aria-hidden="true">
+          <span className="flex flex-1 flex-col items-center gap-1 rounded-md px-1.5 pt-1.5" style={{ background: c.panel }}>
+            <span className="h-3.5 w-3.5 rounded-full border" style={{ background: c.accent, borderColor: c.border }} />
+            <span className="h-1 w-6 rounded-full" style={{ background: c.text }} />
+            <span className="mt-0.5 h-2 w-full rounded border" style={{ background: c.linkBg, borderColor: c.border, boxShadow: `0 1px 0 0 ${c.ledge}` }} />
+            <span className="h-2 w-full rounded border" style={{ background: c.linkBg, borderColor: c.border, boxShadow: `0 1px 0 0 ${c.ledge}` }} />
+            <span className="h-2 w-full rounded border" style={{ background: c.accent, borderColor: c.border }} />
+          </span>
+        </span>
+      )}
       <span className="min-w-0">
         <span className="block text-sm font-semibold">{template.label}</span>
         <span className="block text-[11px] leading-snug text-muted-foreground">{template.blurb}</span>
@@ -504,8 +516,8 @@ function TemplateCard({
   )
 }
 
-// Live preview for a template — a scaled-down copy of the template layout in
-// app/[username]/page.tsx.
+// Live preview for a template — a scaled-down copy of the layouts in
+// components/profile-templates/TemplatePage.tsx.
 function TemplatePreview({
   template, radius, displayName, username, avatarUrl, bio, showBranding,
 }: {
@@ -518,6 +530,40 @@ function TemplatePreview({
   showBranding: boolean
 }) {
   const c = template.colors
+  if (template.layout === "rows") {
+    const rowRadius = radius === "14px" ? "10px" : radius
+    return (
+      <div className="flex flex-col items-center px-4 py-6" style={{ background: c.canvas, color: c.text }}>
+        <div className="flex h-16 w-16 items-center justify-center rounded-full bg-white p-1 shadow-md">
+          {avatarUrl ? (
+            <img src={avatarUrl} alt="" className="h-full w-full rounded-full object-cover" />
+          ) : (
+            <span className="text-2xl font-bold" style={{ color: c.accent }}>{displayName.charAt(0).toUpperCase()}</span>
+          )}
+        </div>
+        <p className="mt-3 text-base font-semibold tracking-tight">{displayName}</p>
+        <p className="text-[10px] font-medium" style={{ color: c.handle }}>@{username}</p>
+        {bio && (
+          <p className="mt-1 text-[10px] leading-relaxed max-w-[180px] text-center" style={{ color: c.muted }}>
+            {bio.length > 80 ? bio.slice(0, 80) + "…" : bio}
+          </p>
+        )}
+        <div className="mt-4 w-full space-y-2">
+          {[["My Website", "mysite.com"], ["YouTube", "youtube.com/@you"], ["Instagram", "instagram.com/you"]].map(([label, sub]) => (
+            <div key={label} className="flex items-center gap-2 px-3 py-1.5 shadow-sm" style={{ borderRadius: rowRadius, background: c.linkBg, color: c.linkText }}>
+              <span className="h-3 w-3 rounded-full bg-white/80" />
+              <span className="min-w-0 flex-1">
+                <span className="block text-[10px] font-semibold leading-tight">{label}</span>
+                <span className="block text-[8px] opacity-90">{sub}</span>
+              </span>
+              <span className="text-[10px]">›</span>
+            </div>
+          ))}
+        </div>
+        {showBranding && <p className="mt-4 text-[9px]" style={{ color: c.muted }}>Powered by Sub-tree</p>}
+      </div>
+    )
+  }
   return (
     <div className="p-3" style={{ background: c.canvas }}>
       <div className="flex flex-col items-center gap-3.5 rounded-2xl px-4 py-6" style={{ background: c.panel, color: c.text }}>
