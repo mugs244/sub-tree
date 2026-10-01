@@ -22,8 +22,9 @@ function formatCountdown(launchAt: string): string {
 
 // Self-hides once donations are enabled — safe to drop anywhere without a
 // parent needing to check status first. `compact` swaps the layout for tight
-// spaces like replacing the public donate button.
-export function DonationLaunchNotice({ compact = false }: { compact?: boolean }) {
+// spaces like replacing the public donate button; `inline` is a single slim
+// row for the landing hero.
+export function DonationLaunchNotice({ compact = false, inline = false }: { compact?: boolean; inline?: boolean }) {
   const [status, setStatus] = useState<Status | null>(null)
   const [countdown, setCountdown] = useState("")
   const [email, setEmail] = useState("")
@@ -67,6 +68,45 @@ export function DonationLaunchNotice({ compact = false }: { compact?: boolean })
       setError("Something went wrong")
       setState("error")
     }
+  }
+
+  if (inline) {
+    // One slim row for the landing hero: message + countdown on the left,
+    // the notify form on the right (stacked on phones).
+    return (
+      <div className="flex flex-col gap-2 rounded-xl border border-gray-200 bg-white/70 px-4 py-2.5 sm:flex-row sm:items-center sm:justify-between">
+        <p className="text-sm text-gray-900">
+          <span className="font-medium">Donations aren&apos;t open yet</span>
+          {status.launchAt && <span className="text-gray-500"> · {countdown}</span>}
+        </p>
+        {state === "done" ? (
+          <p className="text-xs text-gray-500">You&apos;ll get an email the moment donations go live.</p>
+        ) : (
+          <form onSubmit={submit} className="flex gap-2">
+            <label htmlFor="donation-launch-email" className="sr-only">
+              Email address
+            </label>
+            <input
+              id="donation-launch-email"
+              type="email"
+              required
+              placeholder="you@email.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="min-w-0 flex-1 rounded-lg border border-gray-300 bg-white text-gray-900 px-3 py-1.5 text-sm sm:w-48 focus:outline-none focus:ring-2 focus:ring-gray-400"
+            />
+            <button
+              type="submit"
+              disabled={state === "sending"}
+              className="rounded-lg bg-gray-900 text-white text-sm font-medium px-3 py-1.5 whitespace-nowrap hover:bg-gray-800 transition-colors duration-150 disabled:opacity-50"
+            >
+              {state === "sending" ? "…" : "Notify me"}
+            </button>
+          </form>
+        )}
+        {error && <p className="text-xs text-red-600">{error}</p>}
+      </div>
+    )
   }
 
   // Hardcoded neutral colors, not the theme-driven bg-surface/border-border/

@@ -125,7 +125,7 @@ export default async function LandingPage() {
       <main className="flex-1">
         {/* ── Hero panel ──────────────────────────────────── */}
         <section className="px-3 pt-3 sm:px-6 sm:pt-6">
-          <div className="relative mx-auto max-w-6xl overflow-hidden rounded-[28px] bg-[color:var(--landing-panel)] px-4 pb-4 pt-4 sm:px-8 sm:pb-8 sm:pt-6">
+          <div className="relative mx-auto max-w-6xl overflow-hidden rounded-[28px] bg-[color:var(--landing-panel)] px-4 pb-4 pt-4 sm:px-6 sm:pb-6 sm:pt-5">
             {/* Nav */}
             <header className="relative z-20 flex items-center justify-between">
               <Link href="/" aria-label="Sub-tree home">
@@ -149,15 +149,15 @@ export default async function LandingPage() {
               </nav>
             </header>
 
-            <div className="relative z-10 mt-6">
-              <DonationLaunchNotice />
+            <div className="relative z-10 mt-4">
+              <DonationLaunchNotice inline />
             </div>
 
             {/* Floating platform tiles — real Simple Icons, not drawn props */}
             <FloatingTiles />
 
             {/* Headline */}
-            <div className="relative z-10 mx-auto max-w-3xl pt-12 pb-10 text-center sm:pt-16 sm:pb-14">
+            <div className="relative z-10 mx-auto max-w-3xl pt-8 pb-8 text-center sm:pt-10 sm:pb-10">
               <h1 className="text-[44px] leading-[0.95] sm:text-7xl font-bold tracking-tighter">
                 All your{" "}
                 <span className="relative inline-block">
@@ -176,7 +176,7 @@ export default async function LandingPage() {
               <p className="mx-auto mt-10 sm:mt-5 max-w-md text-sm sm:text-[16px] text-muted-foreground">
                 Share everything you create and accept mobile money donations, all from one link.
               </p>
-              <div className="mt-8 flex justify-center">
+              <div className="mt-6 flex justify-center">
                 <span className="rounded-full border border-dashed border-border-default p-2">
                   <Link
                     href="/sign-up"
@@ -192,13 +192,21 @@ export default async function LandingPage() {
             {/* Cards */}
             <div className="relative z-10 grid grid-cols-1 gap-3 md:grid-cols-3">
               {/* Dark — mobile money */}
-              <div className="relative flex min-h-[290px] flex-col overflow-hidden rounded-[20px] bg-foreground p-6 text-background">
+              <div className="relative flex min-h-[240px] flex-col overflow-hidden rounded-[20px] bg-foreground p-6 text-background">
                 <CardTag dark>Mobile money</CardTag>
                 <h2 className="mt-4 text-2xl sm:text-3xl font-semibold tracking-tight">Get paid on MoMo</h2>
                 <p className="mt-2 text-sm text-white/70">
                   Supporters send money straight to your MTN or Airtel number.
                 </p>
-                <div className="mt-auto pt-6 grid grid-cols-3 gap-2">
+                <div className="mt-4 flex gap-2">
+                  {["MTN MoMo", "Airtel Money"].map((p) => (
+                    <span key={p} className="inline-flex items-center gap-1.5 rounded-full border border-white/20 px-2.5 py-1 text-[11px] text-white/80">
+                      <Smartphone className="h-3 w-3" />
+                      {p}
+                    </span>
+                  ))}
+                </div>
+                <div className="mt-auto pt-5 grid grid-cols-3 gap-2">
                   {["2,000", "5,000", "10,000"].map((a, i) => (
                     <div
                       key={a}
@@ -214,7 +222,7 @@ export default async function LandingPage() {
               </div>
 
               {/* Light — the page itself */}
-              <div className="relative flex min-h-[290px] flex-col overflow-hidden rounded-[20px] bg-[#ececea] p-6">
+              <div className="relative flex min-h-[240px] flex-col overflow-hidden rounded-[20px] bg-[#ececea] p-6">
                 <CardTag>Your page</CardTag>
                 <h2 className="mt-4 text-2xl sm:text-3xl font-semibold tracking-tight">All your links, one page</h2>
                 <p className="mt-2 text-sm text-muted-foreground">
@@ -228,13 +236,13 @@ export default async function LandingPage() {
               </div>
 
               {/* Orange — live fees */}
-              <div className="relative flex min-h-[290px] flex-col overflow-hidden rounded-[20px] bg-[color:var(--landing-orange)] p-6">
+              <div className="relative flex min-h-[240px] flex-col overflow-hidden rounded-[20px] bg-[color:var(--landing-orange)] p-6">
                 <CardTag>Simple fees</CardTag>
                 <h2 className="mt-4 text-2xl sm:text-3xl font-semibold tracking-tight">Free to sign up</h2>
                 <p className="mt-2 text-sm text-foreground/75">
                   You only pay a small fee when money comes in or goes out.
                 </p>
-                <div className="mt-auto pt-6 grid grid-cols-2 gap-2">
+                <div className="mt-auto pt-5 grid grid-cols-2 gap-2">
                   <FeeChip label="Donation fee" value={donationFeePct} />
                   <FeeChip label="Withdrawal fee" value={withdrawalFeePct} />
                 </div>
@@ -245,8 +253,8 @@ export default async function LandingPage() {
 
         {/* ── Logo bar ────────────────────────────────────── */}
         <section className="border-b border-border">
-          <div className="mx-auto max-w-5xl px-4 sm:px-6 py-10">
-            <p className="text-xs text-muted-foreground text-center mb-6">
+          <div className="mx-auto max-w-5xl px-4 sm:px-6 py-6">
+            <p className="text-xs text-muted-foreground text-center mb-4">
               Trusted by creators and organisations across East Africa
             </p>
             <ul className="flex flex-wrap items-center justify-center gap-x-10 gap-y-4">
@@ -260,8 +268,8 @@ export default async function LandingPage() {
         </section>
 
         {/* ── Features ────────────────────────────────────── */}
-        <section className="mx-auto max-w-5xl px-4 sm:px-6 py-20">
-          <div className="text-center mb-14">
+        <section className="mx-auto max-w-5xl px-4 sm:px-6 py-10 sm:py-12">
+          <div className="text-center mb-8">
             <h2 className="text-2xl sm:text-3xl font-semibold tracking-tight mb-3">
               Everything a creator needs
             </h2>
@@ -290,8 +298,8 @@ export default async function LandingPage() {
 
         {/* ── How it works ────────────────────────────────── */}
         <section>
-          <div className="mx-auto max-w-5xl px-4 sm:px-6 py-20">
-            <h2 className="text-2xl sm:text-3xl font-semibold tracking-tight text-center mb-14">
+          <div className="mx-auto max-w-5xl px-4 sm:px-6 py-10 sm:py-12">
+            <h2 className="text-2xl sm:text-3xl font-semibold tracking-tight text-center mb-8">
               Up in three steps
             </h2>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-0">
@@ -318,8 +326,8 @@ export default async function LandingPage() {
         </section>
 
         {/* ── Mobile money highlight ───────────────────────── */}
-        <section className="mx-auto max-w-5xl px-4 sm:px-6 py-20">
-          <div className="rounded-[28px] bg-[color:var(--landing-panel)] p-8 md:p-12 flex flex-col md:flex-row md:items-center gap-8">
+        <section className="mx-auto max-w-5xl px-4 sm:px-6 py-10 sm:py-12">
+          <div className="rounded-[28px] bg-[color:var(--landing-panel)] p-6 md:p-10 flex flex-col md:flex-row md:items-center gap-8">
             <div className="flex-1">
               <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-background px-3 py-1 text-xs font-medium text-muted-foreground mb-4">
                 <Smartphone className="h-3 w-3" />
@@ -340,8 +348,8 @@ export default async function LandingPage() {
 
         {/* ── Testimonials ────────────────────────────────── */}
         <section>
-          <div className="mx-auto max-w-5xl px-4 sm:px-6 py-20">
-            <div className="text-center mb-14">
+          <div className="mx-auto max-w-5xl px-4 sm:px-6 py-10 sm:py-12">
+            <div className="text-center mb-8">
               <h2 className="text-2xl sm:text-3xl font-semibold tracking-tight mb-3">
                 Quiet wins from real creators
               </h2>
@@ -372,32 +380,34 @@ export default async function LandingPage() {
         </section>
 
         {/* ── Pricing ─────────────────────────────────────── */}
-        <section id="pricing" className="mx-auto max-w-5xl px-4 sm:px-6 py-20">
-          <div className="text-center mb-14">
-            <h2 className="text-2xl sm:text-3xl font-semibold tracking-tight mb-3">
-              Simple, transparent pricing
-            </h2>
-            <p className="text-muted-foreground text-sm max-w-md mx-auto">
-              Everything you need to share your links and accept mobile money donations — at no cost.
-            </p>
+        <section id="pricing" className="mx-auto max-w-5xl px-4 sm:px-6 py-10 sm:py-12">
+          <div className="grid grid-cols-1 items-center gap-8 md:grid-cols-2">
+            <div className="text-center md:text-left">
+              <h2 className="text-2xl sm:text-3xl font-semibold tracking-tight mb-3">
+                Simple, transparent pricing
+              </h2>
+              <p className="text-muted-foreground text-sm max-w-md mx-auto md:mx-0">
+                Everything you need to share your links and accept mobile money donations — at no cost.
+              </p>
+              <p className="mt-4 text-[11px] text-muted-foreground font-mono">
+                {donationFeePct} donation fee applies. Sub-tree never holds your money.
+              </p>
+            </div>
+            <div className="max-w-sm mx-auto w-full md:mr-0">
+              {TIERS.map((tier) => (
+                <PricingCard key={tier.id} tier={tier} />
+              ))}
+            </div>
           </div>
-          <div className="max-w-sm mx-auto w-full">
-            {TIERS.map((tier) => (
-              <PricingCard key={tier.id} tier={tier} />
-            ))}
-          </div>
-          <p className="mt-8 text-center text-[11px] text-muted-foreground font-mono">
-            {donationFeePct} donation fee applies. Sub-tree never holds your money.
-          </p>
         </section>
 
         {/* ── CTA banner ──────────────────────────────────── */}
         <section className="border-t border-border">
-          <div className="mx-auto max-w-5xl px-4 sm:px-6 py-20 text-center">
+          <div className="mx-auto max-w-5xl px-4 sm:px-6 py-10 sm:py-12 text-center">
             <h2 className="text-2xl sm:text-3xl font-semibold tracking-tight mb-3">
               Ready to grow your audience?
             </h2>
-            <p className="text-muted-foreground text-sm mb-8 max-w-sm mx-auto">
+            <p className="text-muted-foreground text-sm mb-6 max-w-sm mx-auto">
               Create your Sub-tree page in minutes.
             </p>
             <Link
@@ -413,7 +423,7 @@ export default async function LandingPage() {
 
       {/* ── Footer ──────────────────────────────────────── */}
       <footer className="border-t border-border">
-        <div className="mx-auto max-w-5xl px-4 sm:px-6 py-8 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
+        <div className="mx-auto max-w-5xl px-4 sm:px-6 py-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
           <Logo variant="lockup" />
           <nav className="flex flex-wrap items-center gap-x-6 gap-y-2">
             <Link href="/sign-up" className="text-xs text-muted-foreground hover:text-foreground transition-colors duration-150">
@@ -541,7 +551,7 @@ function Step({
   connector?: boolean
 }) {
   return (
-    <div className="relative flex flex-col gap-3 px-0 sm:px-6 pb-10 sm:pb-0 first:pl-0">
+    <div className="relative flex flex-col gap-3 px-0 sm:px-6 pb-6 sm:pb-0 first:pl-0">
       {connector && (
         <span className="hidden sm:block absolute top-4 left-[calc(50%+1.5rem)] right-0 h-px bg-border" />
       )}
