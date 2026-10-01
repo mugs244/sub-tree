@@ -7,8 +7,8 @@ interface Status {
   launchAt: string | null
 }
 
-function formatCountdown(launchAt: string): string {
-  const diffMs = new Date(launchAt).getTime() - Date.now()
+function formatCountdown(launchAt: string, now: number): string {
+  const diffMs = new Date(launchAt).getTime() - now
   if (diffMs <= 0) return "Any moment now"
 
   const days = Math.floor(diffMs / (1000 * 60 * 60 * 24))
@@ -26,7 +26,9 @@ function formatCountdown(launchAt: string): string {
 // row for the landing hero.
 export function DonationLaunchNotice({ compact = false, inline = false }: { compact?: boolean; inline?: boolean }) {
   const [status, setStatus] = useState<Status | null>(null)
-  const [countdown, setCountdown] = useState("")
+  // A ticking clock, not a stored countdown string — the countdown is derived
+  // from it during render.
+  const [now, setNow] = useState(() => Date.now())
   const [email, setEmail] = useState("")
   const [state, setState] = useState<"idle" | "sending" | "done" | "error">("idle")
   const [error, setError] = useState<string | null>(null)
@@ -40,12 +42,13 @@ export function DonationLaunchNotice({ compact = false, inline = false }: { comp
 
   useEffect(() => {
     if (!status?.launchAt) return
-    setCountdown(formatCountdown(status.launchAt))
-    const interval = setInterval(() => setCountdown(formatCountdown(status.launchAt!)), 60_000)
+    const interval = setInterval(() => setNow(Date.now()), 60_000)
     return () => clearInterval(interval)
   }, [status?.launchAt])
 
   if (!status || status.enabled) return null
+
+  const countdown = status.launchAt ? formatCountdown(status.launchAt, now) : ""
 
   async function submit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()

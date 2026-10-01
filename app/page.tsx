@@ -3,7 +3,7 @@ import { Logo } from "@/components/brand/Logo"
 import { PlatformIcon } from "@/components/PlatformIcon"
 import { DonationLaunchNotice } from "@/components/DonationLaunchNotice"
 import { CookiePreferencesButton } from "@/components/CookiePreferencesButton"
-import { Link2, Heart, BarChart2, ArrowRight, Smartphone, Check, Minus, Sparkle } from "lucide-react"
+import { Heart, ArrowRight, Smartphone, Check, Minus, Sparkle, Copy } from "lucide-react"
 import type { Platform } from "@/lib/utils/platform"
 import { getFeeRate } from "@/lib/services/platform-settings"
 
@@ -16,6 +16,24 @@ const FLOATING_TILES: { platform: Platform; cls: string; tone: "dark" | "light" 
   { platform: "tiktok",    cls: "right-[20%] top-[16%] h-10 w-10 rotate-[8deg]",  tone: "light" },
 ]
 const SPARKLES = ["left-[22%] top-[30%]", "left-[13%] top-[60%]", "right-[25%] top-[38%]", "right-[11%] top-[60%]"]
+
+// ── How it works / feature panel ─────────────────────────
+const STEP_LINKS: { platform: Platform; label: string }[] = [
+  { platform: "instagram", label: "Instagram" },
+  { platform: "youtube",   label: "YouTube" },
+  { platform: "whatsapp",  label: "WhatsApp" },
+]
+// Illustrative weekly views for the analytics mini-chart (percent of height).
+const CHART_BARS = [38, 52, 44, 68, 57, 92, 74]
+// Mirrors the five presets in components/AppearanceForm.tsx (page bg + accent).
+const THEME_SWATCHES = [
+  { bg: "#ffffff", accent: "#111827" },
+  { bg: "#fffbf5", accent: "#92400e" },
+  { bg: "#f0f9ff", accent: "#0369a1" },
+  { bg: "#f0fdf4", accent: "#15803d" },
+  { bg: "#0f172a", accent: "#e2e8f0" },
+]
+const DONATION_STEPS = ["Pick an amount", "Approve on phone", "Lands on your MoMo"]
 
 // ── Logo bar ─────────────────────────────────────────────
 const LOGO_BAR_NAMES = [
@@ -73,7 +91,7 @@ function buildTiers(donationFeePct: string, withdrawalFeePct: string): Tier[] {
       name: "Free",
       blurb: "All your links, one page — forever free.",
       price: null,
-      cta: "Get started",
+      cta: "Sign up for free",
       href: "/sign-up",
       highlight: true,
       features: [
@@ -134,16 +152,14 @@ export default async function LandingPage() {
               <nav className="flex items-center gap-2">
                 <Link
                   href="/sign-in"
-                  className="inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 text-sm font-medium shadow-[0_1px_2px_0_rgb(0_0_0/0.06)] hover:bg-surface transition-colors duration-150"
+                  className="inline-flex items-center rounded-md border border-border bg-white px-4 py-2 text-sm font-medium hover:bg-surface transition-colors duration-150"
                 >
-                  <span className="h-1.5 w-1.5 rounded-full bg-foreground" aria-hidden="true" />
                   Sign in
                 </Link>
                 <Link
                   href="/sign-up"
-                  className="inline-flex items-center gap-2 rounded-full bg-foreground px-4 py-2 text-sm font-medium text-background hover:bg-accent-dark transition-colors duration-150"
+                  className="inline-flex items-center rounded-md border border-foreground bg-foreground px-4 py-2 text-sm font-medium text-background hover:bg-accent-dark transition-colors duration-150"
                 >
-                  <span className="h-1.5 w-1.5 rounded-full bg-[color:var(--landing-orange)]" aria-hidden="true" />
                   Sign up
                 </Link>
               </nav>
@@ -251,15 +267,13 @@ export default async function LandingPage() {
           </div>
         </section>
 
-        {/* ── Logo bar ────────────────────────────────────── */}
-        <section className="border-b border-border">
-          <div className="mx-auto max-w-5xl px-4 sm:px-6 py-6">
-            <p className="text-xs text-muted-foreground text-center mb-4">
-              Trusted by creators and organisations across East Africa
-            </p>
-            <ul className="flex flex-wrap items-center justify-center gap-x-10 gap-y-4">
+        {/* ── Logo strip ──────────────────────────────────── */}
+        <section className="px-3 sm:px-6">
+          <div className="mx-auto flex max-w-6xl flex-col items-center gap-3 py-6 sm:flex-row sm:justify-between sm:px-2">
+            <p className="shrink-0 text-xs font-medium text-muted-foreground">Trusted by creators and organisations</p>
+            <ul className="flex flex-wrap items-center justify-center gap-x-8 gap-y-2">
               {LOGO_BAR_NAMES.map(({ name, cls }) => (
-                <li key={name} className={`text-sm text-muted-foreground ${cls}`}>
+                <li key={name} className={`text-sm text-foreground/60 ${cls}`}>
                   {name}
                 </li>
               ))}
@@ -267,107 +281,142 @@ export default async function LandingPage() {
           </div>
         </section>
 
-        {/* ── Features ────────────────────────────────────── */}
-        <section className="mx-auto max-w-5xl px-4 sm:px-6 py-10 sm:py-12">
-          <div className="text-center mb-8">
-            <h2 className="text-2xl sm:text-3xl font-semibold tracking-tight mb-3">
-              Everything a creator needs
-            </h2>
-            <p className="text-muted-foreground text-sm max-w-md mx-auto">
-              One link that does the work of a website, social profile, and payment page.
-            </p>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
-            <FeatureCard
-              icon={Link2}
-              title="All your links, one place"
-              body="Add unlimited links, reorder them in seconds, and choose a button style that fits your brand."
-            />
-            <FeatureCard
-              icon={Heart}
-              title="Accept mobile money"
-              body="Let supporters send donations straight to your MTN MoMo or Airtel Money number — no bank account needed."
-            />
-            <FeatureCard
-              icon={BarChart2}
-              title="Know your audience"
-              body="See how many people visit your page, which links they click, and where your donations come from."
-            />
-          </div>
-        </section>
-
         {/* ── How it works ────────────────────────────────── */}
-        <section>
-          <div className="mx-auto max-w-5xl px-4 sm:px-6 py-10 sm:py-12">
-            <h2 className="text-2xl sm:text-3xl font-semibold tracking-tight text-center mb-8">
-              Up in three steps
-            </h2>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-0">
-              <Step
-                number={1}
-                title="Claim your @username"
-                body="Pick a unique username — your Sub-tree link will be sub-tree.com/you."
-                connector
-              />
-              <Step
-                number={2}
-                title="Add your links"
-                body="Paste in your Instagram, YouTube, WhatsApp, website — anything you want to share."
-                connector
-              />
-              <Step
-                number={3}
-                title="Share everywhere"
-                body="One link in your bio does it all. Supporters can send you money while they're there."
-                connector={false}
-              />
+        <section className="px-3 sm:px-6">
+          <div className="mx-auto max-w-6xl rounded-[28px] bg-[color:var(--landing-panel)] p-4 sm:p-8">
+            <SectionHeader tag="How it works" title="Up in three steps" />
+            <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+              <StepCard number={1} title="Claim your @username" body="Pick a unique username. That becomes your link.">
+                <div className="rounded-lg border border-border bg-surface px-3 py-2 font-mono text-xs">
+                  sub-tree.com/<span className="font-semibold text-[color:var(--landing-orange-strong)]">you</span>
+                </div>
+              </StepCard>
+              <StepCard number={2} title="Add your links" body="Instagram, YouTube, WhatsApp, your website. Anything you want to share.">
+                <div className="space-y-1.5">
+                  {STEP_LINKS.map(({ platform, label }) => (
+                    <div key={platform} className="flex items-center gap-2 rounded-lg border border-border bg-surface px-3 py-1.5 text-xs">
+                      <PlatformIcon platform={platform} className="h-3.5 w-3.5" />
+                      {label}
+                    </div>
+                  ))}
+                </div>
+              </StepCard>
+              <StepCard number={3} title="Share everywhere" body="One link in your bio. Supporters can send you money while they’re there.">
+                <div className="flex items-center justify-between rounded-lg border border-border bg-surface px-3 py-2 text-xs">
+                  <span className="font-mono">sub-tree.com/you</span>
+                  <span className="inline-flex items-center gap-1 rounded-md bg-foreground px-2 py-1 text-[11px] font-medium text-background">
+                    <Copy className="h-3 w-3" />
+                    Copy
+                  </span>
+                </div>
+              </StepCard>
             </div>
           </div>
         </section>
 
-        {/* ── Mobile money highlight ───────────────────────── */}
-        <section className="mx-auto max-w-5xl px-4 sm:px-6 py-10 sm:py-12">
-          <div className="rounded-[28px] bg-[color:var(--landing-panel)] p-6 md:p-10 flex flex-col md:flex-row md:items-center gap-8">
-            <div className="flex-1">
-              <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-background px-3 py-1 text-xs font-medium text-muted-foreground mb-4">
-                <Smartphone className="h-3 w-3" />
-                Mobile money built in
-              </span>
-              <h2 className="text-2xl sm:text-3xl font-semibold tracking-tight mb-3">
-                Get paid on MTN MoMo<br className="hidden sm:block" /> and Airtel Money
-              </h2>
-              <p className="text-muted-foreground text-sm leading-relaxed max-w-md">
-                Your supporters enter their phone number and approve the payment from their mobile. Donations go directly to your registered MoMo number — no bank, no delay, no middleman.
-              </p>
+        {/* ── Feature bento ───────────────────────────────── */}
+        <section className="px-3 pt-3 sm:px-6">
+          <div className="mx-auto grid max-w-6xl grid-cols-1 gap-3 md:grid-cols-3">
+            {/* Analytics */}
+            <div className="flex flex-col rounded-[20px] bg-[color:var(--landing-panel)] p-6 md:col-span-2">
+              <CardTag>Analytics</CardTag>
+              <div className="mt-4 flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
+                <div className="max-w-xs">
+                  <h3 className="text-2xl sm:text-3xl font-semibold tracking-tight">Know your audience</h3>
+                  <p className="mt-2 text-sm text-muted-foreground">
+                    See who visits your page, which links they click, and where your donations come from.
+                  </p>
+                  <div className="mt-5 flex gap-2">
+                    <StatPill value="1,284" label="Page views" />
+                    <StatPill value="312" label="Link clicks" />
+                  </div>
+                </div>
+                <div className="flex h-36 items-end gap-2 sm:w-64" aria-hidden="true">
+                  {CHART_BARS.map((h, i) => (
+                    <div
+                      key={i}
+                      className={[
+                        "flex-1 rounded-t-md border-2 border-foreground",
+                        i === CHART_BARS.length - 2 ? "bg-[color:var(--landing-orange)]" : "bg-white",
+                      ].join(" ")}
+                      style={{ height: `${h}%` }}
+                    />
+                  ))}
+                </div>
+              </div>
             </div>
-            <div className="shrink-0">
-              <DonatePreview />
+
+            {/* Themes */}
+            <div className="flex flex-col rounded-[20px] bg-[color:var(--landing-orange-soft)] p-6">
+              <CardTag>Appearance</CardTag>
+              <h3 className="mt-4 text-2xl sm:text-3xl font-semibold tracking-tight">Make it yours</h3>
+              <p className="mt-2 text-sm text-foreground/70">
+                Five themes, your photo and your button style. Changes save as you go.
+              </p>
+              <div className="mt-auto flex gap-2 pt-5" aria-hidden="true">
+                {THEME_SWATCHES.map(({ bg, accent }) => (
+                  <span
+                    key={bg}
+                    className="flex h-10 flex-1 items-end justify-center rounded-xl border-2 border-foreground pb-1.5"
+                    style={{ background: bg }}
+                  >
+                    <span className="h-1.5 w-5 rounded-full" style={{ background: accent }} />
+                  </span>
+                ))}
+              </div>
+            </div>
+
+            {/* How a donation works */}
+            <div className="flex flex-col gap-8 rounded-[20px] bg-foreground p-6 text-background sm:p-8 md:col-span-3 md:flex-row md:items-center">
+              <div className="flex-1">
+                <CardTag dark>Mobile money</CardTag>
+                <h3 className="mt-4 text-2xl sm:text-4xl font-semibold tracking-tight">
+                  No bank, no card, no middleman
+                </h3>
+                <p className="mt-2 max-w-md text-sm text-white/70">
+                  Your supporters pay from their phone, and the money goes to your registered MoMo number.
+                </p>
+                <ol className="mt-6 grid grid-cols-1 gap-2 sm:grid-cols-3">
+                  {DONATION_STEPS.map((s, i) => (
+                    <li key={s} className="flex items-center gap-3 rounded-xl bg-white/10 px-3 py-2.5 text-sm">
+                      <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-[color:var(--landing-orange)] font-mono text-xs font-bold text-foreground">
+                        {i + 1}
+                      </span>
+                      {s}
+                    </li>
+                  ))}
+                </ol>
+              </div>
+              <div className="flex shrink-0 justify-center text-foreground">
+                <DonatePreview />
+              </div>
             </div>
           </div>
         </section>
 
         {/* ── Testimonials ────────────────────────────────── */}
-        <section>
-          <div className="mx-auto max-w-5xl px-4 sm:px-6 py-10 sm:py-12">
-            <div className="text-center mb-8">
-              <h2 className="text-2xl sm:text-3xl font-semibold tracking-tight mb-3">
-                Quiet wins from real creators
-              </h2>
-              <p className="text-muted-foreground text-sm">Three early users, in their own words.</p>
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
-              {TESTIMONIALS.map((t) => (
-                <figure key={t.handle} className="rounded-xl border border-border bg-background p-6 flex flex-col gap-4">
-                  <blockquote className="text-sm text-muted-foreground leading-relaxed flex-1">
+        <section className="px-3 pt-3 sm:px-6">
+          <div className="mx-auto max-w-6xl rounded-[28px] bg-[color:var(--landing-panel)] p-4 sm:p-8">
+            <SectionHeader tag="Creators" title="Quiet wins from real creators" />
+            <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+              {TESTIMONIALS.map((t, i) => (
+                <figure
+                  key={t.handle}
+                  className={[
+                    "landing-tile flex flex-col gap-5 rounded-[20px] border-2 border-foreground p-6",
+                    i === 1 ? "bg-[color:var(--landing-orange)]" : "bg-white",
+                  ].join(" ")}
+                >
+                  <blockquote className="flex-1 text-[15px] leading-relaxed">
                     &ldquo;{t.quote}&rdquo;
                   </blockquote>
                   <figcaption className="flex items-center gap-3">
-                    <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground text-xs font-semibold">
+                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-foreground text-sm font-semibold text-background">
                       {t.initial}
                     </span>
                     <span className="flex flex-col">
-                      <span className="text-xs font-semibold">{t.name}</span>
-                      <span className="text-[10px] text-muted-foreground">
+                      <span className="text-sm font-semibold">{t.name}</span>
+                      <span className={i === 1 ? "text-[11px] text-foreground/70" : "text-[11px] text-muted-foreground"}>
                         <span className="font-mono">{t.handle}</span>
                         {" · "}{t.role}
                       </span>
@@ -380,72 +429,69 @@ export default async function LandingPage() {
         </section>
 
         {/* ── Pricing ─────────────────────────────────────── */}
-        <section id="pricing" className="mx-auto max-w-5xl px-4 sm:px-6 py-10 sm:py-12">
-          <div className="grid grid-cols-1 items-center gap-8 md:grid-cols-2">
-            <div className="text-center md:text-left">
-              <h2 className="text-2xl sm:text-3xl font-semibold tracking-tight mb-3">
-                Simple, transparent pricing
-              </h2>
-              <p className="text-muted-foreground text-sm max-w-md mx-auto md:mx-0">
-                Everything you need to share your links and accept mobile money donations — at no cost.
+        <section id="pricing" className="px-3 pt-3 sm:px-6">
+          <div className="mx-auto grid max-w-6xl grid-cols-1 items-center gap-6 rounded-[28px] bg-[color:var(--landing-panel)] p-4 sm:p-8 md:grid-cols-2">
+            <div>
+              <CardTag>Pricing</CardTag>
+              <h2 className="mt-4 text-3xl sm:text-5xl font-bold tracking-tighter">Simple, transparent pricing</h2>
+              <p className="mt-3 max-w-md text-sm text-muted-foreground">
+                Everything you need to share your links and accept mobile money donations, at no cost to sign up.
               </p>
-              <p className="mt-4 text-[11px] text-muted-foreground font-mono">
-                {donationFeePct} donation fee applies. Sub-tree never holds your money.
-              </p>
+              <div className="mt-6 grid max-w-sm grid-cols-2 gap-2">
+                <FeeChip label="Donation fee" value={donationFeePct} />
+                <FeeChip label="Withdrawal fee" value={withdrawalFeePct} />
+              </div>
+              <p className="mt-4 text-[11px] font-mono text-muted-foreground">Sub-tree never holds your money.</p>
             </div>
-            <div className="max-w-sm mx-auto w-full md:mr-0">
-              {TIERS.map((tier) => (
-                <PricingCard key={tier.id} tier={tier} />
-              ))}
-            </div>
+            {TIERS.map((tier) => (
+              <PricingCard key={tier.id} tier={tier} />
+            ))}
           </div>
         </section>
 
-        {/* ── CTA banner ──────────────────────────────────── */}
-        <section className="border-t border-border">
-          <div className="mx-auto max-w-5xl px-4 sm:px-6 py-10 sm:py-12 text-center">
-            <h2 className="text-2xl sm:text-3xl font-semibold tracking-tight mb-3">
-              Ready to grow your audience?
-            </h2>
-            <p className="text-muted-foreground text-sm mb-6 max-w-sm mx-auto">
-              Create your Sub-tree page in minutes.
-            </p>
+        {/* ── Closing CTA ─────────────────────────────────── */}
+        <section className="px-3 py-3 sm:px-6">
+          <div className="mx-auto max-w-6xl rounded-[28px] border-2 border-foreground bg-[color:var(--landing-orange)] px-6 py-12 text-center sm:py-16">
+            <h2 className="text-3xl sm:text-5xl font-bold tracking-tighter">Ready to grow your audience?</h2>
+            <p className="mx-auto mt-3 max-w-sm text-sm text-foreground/75">Create your Sub-tree page in minutes.</p>
             <Link
               href="/sign-up"
-              className="landing-cta inline-flex items-center gap-2 rounded-full border-2 border-foreground bg-[color:var(--landing-orange)] px-6 py-3 text-sm font-semibold text-foreground"
+              className="landing-cta mt-7 inline-flex items-center gap-2 rounded-full border-2 border-foreground bg-white px-7 py-3.5 text-[16px] font-semibold text-foreground"
             >
               Sign up for free
-              <ArrowRight className="h-4 w-4" />
+              <ArrowRight className="h-5 w-5" />
             </Link>
           </div>
         </section>
       </main>
 
       {/* ── Footer ──────────────────────────────────────── */}
-      <footer className="border-t border-border">
-        <div className="mx-auto max-w-5xl px-4 sm:px-6 py-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
-          <Logo variant="lockup" />
+      <footer className="px-3 pb-3 sm:px-6">
+        <div className="mx-auto flex max-w-6xl flex-col items-start justify-between gap-5 rounded-[28px] bg-foreground px-6 py-6 text-background sm:flex-row sm:items-center">
+          <span className="rounded-lg bg-[color:var(--landing-panel)] px-2 py-1">
+            <Logo variant="lockup" />
+          </span>
           <nav className="flex flex-wrap items-center gap-x-6 gap-y-2">
-            <Link href="/sign-up" className="text-xs text-muted-foreground hover:text-foreground transition-colors duration-150">
+            <Link href="/sign-up" className="text-xs text-white/70 hover:text-white transition-colors duration-150">
               Sign up
             </Link>
-            <Link href="/sign-in" className="text-xs text-muted-foreground hover:text-foreground transition-colors duration-150">
+            <Link href="/sign-in" className="text-xs text-white/70 hover:text-white transition-colors duration-150">
               Sign in
             </Link>
-            <a href="mailto:hello@sub-tree.com" className="text-xs text-muted-foreground hover:text-foreground transition-colors duration-150">
+            <a href="mailto:hello@sub-tree.com" className="text-xs text-white/70 hover:text-white transition-colors duration-150">
               Contact
             </a>
-            <Link href="/terms" className="text-xs text-muted-foreground hover:text-foreground transition-colors duration-150">
+            <Link href="/terms" className="text-xs text-white/70 hover:text-white transition-colors duration-150">
               Terms
             </Link>
-            <Link href="/cookies" className="text-xs text-muted-foreground hover:text-foreground transition-colors duration-150">
+            <Link href="/cookies" className="text-xs text-white/70 hover:text-white transition-colors duration-150">
               Cookies
             </Link>
-            <CookiePreferencesButton className="text-xs text-muted-foreground hover:text-foreground transition-colors duration-150">
+            <CookiePreferencesButton className="text-xs text-white/70 hover:text-white transition-colors duration-150">
               Cookie preferences
             </CookiePreferencesButton>
           </nav>
-          <p className="text-xs text-muted-foreground sm:text-right">
+          <p className="text-xs text-white/60 sm:text-right">
             &copy; {new Date().getFullYear()} Sub-tree
           </p>
         </div>
@@ -517,108 +563,83 @@ function FeeChip({ label, value }: { label: string; value: string }) {
     </div>
   )
 }
-function FeatureCard({
-  icon: Icon,
-  title,
-  body,
-}: {
-  icon: React.ElementType
-  title: string
-  body: string
-}) {
+function SectionHeader({ tag, title }: { tag: string; title: string }) {
   return (
-    <div className="rounded-xl border border-border bg-background p-6 flex flex-col gap-4">
-      <span className="flex h-10 w-10 items-center justify-center rounded-lg border border-border bg-surface">
-        <Icon className="h-5 w-5 text-foreground" strokeWidth={1.5} />
-      </span>
-      <div>
-        <h3 className="text-sm font-semibold mb-1.5">{title}</h3>
-        <p className="text-sm text-muted-foreground leading-relaxed">{body}</p>
-      </div>
+    <div className="mb-6 sm:mb-8">
+      <CardTag>{tag}</CardTag>
+      <h2 className="mt-3 text-3xl sm:text-5xl font-bold tracking-tighter">{title}</h2>
     </div>
   )
 }
 
-function Step({
+function StepCard({
   number,
   title,
   body,
-  connector,
+  children,
 }: {
   number: number
   title: string
   body: string
-  connector?: boolean
+  children: React.ReactNode
 }) {
   return (
-    <div className="relative flex flex-col gap-3 px-0 sm:px-6 pb-6 sm:pb-0 first:pl-0">
-      {connector && (
-        <span className="hidden sm:block absolute top-4 left-[calc(50%+1.5rem)] right-0 h-px bg-border" />
-      )}
-      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground text-xs font-semibold font-mono z-10">
+    <div className="flex flex-col gap-4 rounded-[20px] border-2 border-foreground bg-white p-5">
+      <span className="landing-tile flex h-10 w-10 items-center justify-center rounded-xl border-2 border-foreground bg-[color:var(--landing-orange)] font-mono text-sm font-bold">
         {number}
       </span>
-      <h3 className="text-sm font-semibold">{title}</h3>
-      <p className="text-sm text-muted-foreground leading-relaxed">{body}</p>
+      <div>
+        <h3 className="text-lg font-semibold tracking-tight">{title}</h3>
+        <p className="mt-1 text-sm text-muted-foreground leading-relaxed">{body}</p>
+      </div>
+      <div className="mt-auto">{children}</div>
+    </div>
+  )
+}
+
+function StatPill({ value, label }: { value: string; label: string }) {
+  return (
+    <div className="rounded-xl border-2 border-foreground bg-white px-3 py-2">
+      <p className="font-mono text-lg font-semibold tracking-tight">{value}</p>
+      <p className="text-[11px] text-muted-foreground">{label}</p>
     </div>
   )
 }
 
 function PricingCard({ tier }: { tier: Tier }) {
   return (
-    <div
-      className={[
-        "rounded-xl border bg-background p-5 flex flex-col",
-        tier.highlight ? "border-foreground shadow-[0_0_0_1px_#111827]" : "border-border",
-      ].join(" ")}
-    >
-      {tier.highlight && (
-        <span className="self-start text-[10px] font-bold tracking-[0.08em] uppercase rounded-full bg-primary text-primary-foreground px-2 py-0.5 mb-3">
-          Most popular
+    <div className="landing-tile flex w-full flex-col rounded-[20px] border-2 border-foreground bg-white p-6 md:ml-auto md:max-w-md">
+      <div className="flex items-baseline justify-between">
+        <p className="text-sm font-semibold">{tier.name} plan</p>
+        <span className="text-3xl font-bold tracking-tighter">
+          {tier.price === null ? "Free" : `UGX ${tier.price.toLocaleString("en-UG")}`}
         </span>
-      )}
-      <p className="text-sm font-semibold">{tier.name}</p>
-      <div className="flex items-baseline gap-1 mt-2 mb-1">
-        {tier.price === null ? (
-          <span className="text-xl font-semibold tracking-tight">Free</span>
-        ) : (
-          <>
-            <span className="text-xl font-semibold tracking-tight font-mono">
-              UGX {tier.price.toLocaleString("en-UG")}
-            </span>
-            <span className="text-[11px] text-muted-foreground">/month</span>
-          </>
-        )}
       </div>
-      <p className="text-xs text-muted-foreground leading-relaxed mb-4">{tier.blurb}</p>
-      <Link
-        href={tier.href}
-        className={[
-          "w-full rounded-lg px-4 py-2 text-xs font-medium text-center transition-colors duration-150 mb-5",
-          tier.highlight
-            ? "bg-primary text-primary-foreground hover:bg-accent-dark"
-            : "border border-border hover:bg-surface",
-        ].join(" ")}
-      >
-        {tier.cta}
-      </Link>
-      <ul className="border-t border-border pt-4 flex flex-col gap-2.5">
+      <p className="mt-1 text-xs text-muted-foreground">{tier.blurb}</p>
+      <ul className="mt-5 grid grid-cols-1 gap-2.5 border-t border-border pt-5 sm:grid-cols-2">
         {tier.features.map(({ label, value }) => (
           <li key={label} className="flex items-start gap-2 text-xs">
             {value === false ? (
-              <Minus className="h-3.5 w-3.5 shrink-0 mt-0.5 text-muted-foreground" strokeWidth={2} />
+              <Minus className="mt-0.5 h-3.5 w-3.5 shrink-0 text-muted-foreground" strokeWidth={2} />
             ) : (
-              <Check className="h-3.5 w-3.5 shrink-0 mt-0.5 text-foreground" strokeWidth={2.5} />
+              <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[color:var(--landing-orange-strong)]" strokeWidth={3} />
             )}
             <span className={value === false ? "text-muted-foreground" : ""}>
               {label}
               {typeof value === "string" && (
-                <span className="ml-1 font-mono text-muted-foreground text-[10px]">· {value}</span>
+                <span className="ml-1 font-mono text-[10px] text-muted-foreground">· {value}</span>
               )}
             </span>
           </li>
         ))}
       </ul>
+      <Link
+        href={tier.href}
+        className="landing-cta mt-6 inline-flex items-center justify-center gap-2 rounded-full border-2 border-foreground bg-[color:var(--landing-orange)] px-5 py-3 text-sm font-semibold text-foreground"
+      >
+        {tier.cta}
+        <ArrowRight className="h-4 w-4" />
+      </Link>
     </div>
   )
 }
