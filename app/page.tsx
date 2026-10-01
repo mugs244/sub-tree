@@ -3,16 +3,19 @@ import { Logo } from "@/components/brand/Logo"
 import { PlatformIcon } from "@/components/PlatformIcon"
 import { DonationLaunchNotice } from "@/components/DonationLaunchNotice"
 import { CookiePreferencesButton } from "@/components/CookiePreferencesButton"
-import { Link2, Heart, BarChart2, ArrowRight, Smartphone, Check, Minus } from "lucide-react"
+import { Link2, Heart, BarChart2, ArrowRight, Smartphone, Check, Minus, Sparkle } from "lucide-react"
 import type { Platform } from "@/lib/utils/platform"
 import { getFeeRate } from "@/lib/services/platform-settings"
 
-// ── Orbit ring ───────────────────────────────────────────
-const ORBIT_PLATFORMS: Platform[] = [
-  "youtube", "instagram", "tiktok", "twitter",
-  "whatsapp", "spotify", "substack", "facebook",
+// ── Hero floating tiles ──────────────────────────────────
+// Placed around the headline like scattered stickers; desktop only.
+const FLOATING_TILES: { platform: Platform; cls: string; tone: "dark" | "light" | "orange" }[] = [
+  { platform: "youtube",   cls: "left-[11%] top-[24%] h-14 w-14 rotate-[-14deg]", tone: "dark" },
+  { platform: "instagram", cls: "left-[17%] top-[46%] h-12 w-12 rotate-[10deg]",  tone: "orange" },
+  { platform: "whatsapp",  cls: "right-[15%] top-[48%] h-11 w-11 rotate-[-8deg]", tone: "light" },
+  { platform: "tiktok",    cls: "right-[20%] top-[16%] h-10 w-10 rotate-[8deg]",  tone: "light" },
 ]
-const ORBIT_PERIOD = 30
+const SPARKLES = ["left-[22%] top-[30%]", "left-[13%] top-[60%]", "right-[25%] top-[38%]", "right-[11%] top-[60%]"]
 
 // ── Logo bar ─────────────────────────────────────────────
 const LOGO_BAR_NAMES = [
@@ -87,7 +90,10 @@ function buildTiers(donationFeePct: string, withdrawalFeePct: string): Tier[] {
 }
 
 function formatPct(rate: number): string {
-  return `${(rate * 100).toFixed(rate * 100 % 1 === 0 ? 0 : 1)}%`
+  // Round first: 0.2 + 0.01 is 0.21000000000000002, which would otherwise
+  // show as "21.0%".
+  const pct = Math.round(rate * 1000) / 10
+  return `${Number.isInteger(pct) ? pct : pct.toFixed(1)}%`
 }
 
 export const metadata = {
@@ -115,82 +121,125 @@ export default async function LandingPage() {
   const TIERS = buildTiers(donationFeePct, withdrawalFeePct)
 
   return (
-    <div className="flex flex-col min-h-screen bg-background text-foreground">
-      {/* ── Nav ─────────────────────────────────────────── */}
-      <header className="sticky top-0 z-50 border-b border-border bg-background/90 backdrop-blur-sm">
-        <div className="mx-auto max-w-5xl px-4 sm:px-6 h-14 flex items-center justify-between">
-          <Link href="/" aria-label="Sub-tree home">
-            <Logo variant="lockup" />
-          </Link>
-          <nav className="flex items-center gap-3">
-            <Link
-              href="/sign-in"
-              className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors duration-150"
-            >
-              Sign in
-            </Link>
-            <Link
-              href="/sign-up"
-              className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3.5 py-2 text-sm font-medium text-primary-foreground hover:bg-accent-dark transition-colors duration-150"
-            >
-              Get started
-            </Link>
-          </nav>
-        </div>
-      </header>
-
+    <div className="flex flex-col min-h-screen bg-[color:var(--landing-bg)] text-foreground">
       <main className="flex-1">
-        {/* ── Donation launch notice ──────────────────────── */}
-        <section className="mx-auto max-w-5xl px-4 sm:px-6 pt-8">
-          <DonationLaunchNotice />
-        </section>
-
-        {/* ── Hero ────────────────────────────────────────── */}
-        <section className="mx-auto max-w-5xl px-4 sm:px-6 pt-16 pb-20 md:pt-24 md:pb-28">
-          <div className="flex flex-col md:flex-row md:items-center gap-12 md:gap-16">
-            {/* Left */}
-            <div className="flex-1 md:max-w-[52%]">
-              {/* Orbit ring wraps just the h1 so icons orbit the headline */}
-              <div className="relative">
-                <OrbitRing />
-                <h1 className="relative z-10 text-4xl sm:text-5xl font-semibold tracking-tight leading-[1.1] mb-5">
-                  All your links.<br />
-                  One page.
-                </h1>
-              </div>
-              <p className="text-base text-muted-foreground leading-relaxed mb-8 max-w-md">
-                Share everything you create — links, content, social profiles — and accept mobile money donations directly, all from a single Sub-tree link.
-              </p>
-              <div className="flex flex-col sm:flex-row gap-3">
-                <Link
-                  href="/sign-up"
-                  className="inline-flex items-center justify-center gap-2 rounded-lg bg-primary px-6 py-3 text-sm font-medium text-primary-foreground hover:bg-accent-dark transition-colors duration-150"
-                >
-                  Claim your username
-                  <ArrowRight className="h-4 w-4" />
-                </Link>
+        {/* ── Hero panel ──────────────────────────────────── */}
+        <section className="px-3 pt-3 sm:px-6 sm:pt-6">
+          <div className="relative mx-auto max-w-6xl overflow-hidden rounded-[28px] bg-[color:var(--landing-panel)] px-4 pb-4 pt-4 sm:px-8 sm:pb-8 sm:pt-6">
+            {/* Nav */}
+            <header className="relative z-20 flex items-center justify-between">
+              <Link href="/" aria-label="Sub-tree home">
+                <Logo variant="lockup" />
+              </Link>
+              <nav className="flex items-center gap-2">
                 <Link
                   href="/sign-in"
-                  className="inline-flex items-center justify-center gap-2 rounded-lg border border-border px-6 py-3 text-sm font-medium hover:bg-surface transition-colors duration-150"
+                  className="inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 text-sm font-medium shadow-[0_1px_2px_0_rgb(0_0_0/0.06)] hover:bg-surface transition-colors duration-150"
                 >
+                  <span className="h-1.5 w-1.5 rounded-full bg-foreground" aria-hidden="true" />
                   Sign in
                 </Link>
+                <Link
+                  href="/sign-up"
+                  className="inline-flex items-center gap-2 rounded-full bg-foreground px-4 py-2 text-sm font-medium text-background hover:bg-accent-dark transition-colors duration-150"
+                >
+                  <span className="h-1.5 w-1.5 rounded-full bg-[color:var(--landing-orange)]" aria-hidden="true" />
+                  Sign up
+                </Link>
+              </nav>
+            </header>
+
+            <div className="relative z-10 mt-6">
+              <DonationLaunchNotice />
+            </div>
+
+            {/* Floating platform tiles — real Simple Icons, not drawn props */}
+            <FloatingTiles />
+
+            {/* Headline */}
+            <div className="relative z-10 mx-auto max-w-3xl pt-12 pb-10 text-center sm:pt-16 sm:pb-14">
+              <h1 className="text-[44px] leading-[0.95] sm:text-7xl font-bold tracking-tighter">
+                All your{" "}
+                <span className="relative inline-block">
+                  links
+                  <Squiggle />
+                </span>
+                .
+                <br />
+                <span className="relative inline-block">
+                  One page.
+                  <span className="absolute -bottom-7 right-0 sm:bottom-auto sm:-right-24 sm:top-1 rotate-[-6deg] rounded-md border border-foreground bg-white px-2 py-0.5 text-[10px] sm:text-xs font-semibold tracking-normal leading-tight shadow-[2px_2px_0_0_#111827]">
+                    MoMo built in
+                  </span>
+                </span>
+              </h1>
+              <p className="mx-auto mt-10 sm:mt-5 max-w-md text-sm sm:text-[16px] text-muted-foreground">
+                Share everything you create and accept mobile money donations, all from one link.
+              </p>
+              <div className="mt-8 flex justify-center">
+                <span className="rounded-full border border-dashed border-border-default p-2">
+                  <Link
+                    href="/sign-up"
+                    className="landing-cta inline-flex items-center gap-2 rounded-full border-2 border-foreground bg-[color:var(--landing-orange)] px-7 py-3.5 text-[16px] sm:text-lg font-semibold text-foreground"
+                  >
+                    Sign up for free
+                    <ArrowRight className="h-5 w-5" />
+                  </Link>
+                </span>
               </div>
             </div>
 
-            {/* Right — profile preview mockup */}
-            <div className="flex-1 flex justify-center md:justify-end">
-              <ProfileMockup />
-            </div>
-          </div>
-        </section>
+            {/* Cards */}
+            <div className="relative z-10 grid grid-cols-1 gap-3 md:grid-cols-3">
+              {/* Dark — mobile money */}
+              <div className="relative flex min-h-[290px] flex-col overflow-hidden rounded-[20px] bg-foreground p-6 text-background">
+                <CardTag dark>Mobile money</CardTag>
+                <h2 className="mt-4 text-2xl sm:text-3xl font-semibold tracking-tight">Get paid on MoMo</h2>
+                <p className="mt-2 text-sm text-white/70">
+                  Supporters send money straight to your MTN or Airtel number.
+                </p>
+                <div className="mt-auto pt-6 grid grid-cols-3 gap-2">
+                  {["2,000", "5,000", "10,000"].map((a, i) => (
+                    <div
+                      key={a}
+                      className={[
+                        "rounded-xl py-2.5 text-center font-mono text-xs",
+                        i === 1 ? "bg-[color:var(--landing-orange)] text-foreground font-semibold" : "bg-white/10 text-white/80",
+                      ].join(" ")}
+                    >
+                      UGX {a}
+                    </div>
+                  ))}
+                </div>
+              </div>
 
-        {/* ── Stats strip ─────────────────────────────────── */}
-        <section className="border-y border-border bg-surface">
-          <div className="mx-auto max-w-5xl px-4 sm:px-6 py-8 grid grid-cols-3 gap-6 text-center">
-            <StatItem value="Free" label="to get started" />
-            <StatItem value="MTN + Airtel" label="mobile money" />
-            <StatItem value="1 link" label="for everything" />
+              {/* Light — the page itself */}
+              <div className="relative flex min-h-[290px] flex-col overflow-hidden rounded-[20px] bg-[#ececea] p-6">
+                <CardTag>Your page</CardTag>
+                <h2 className="mt-4 text-2xl sm:text-3xl font-semibold tracking-tight">All your links, one page</h2>
+                <p className="mt-2 text-sm text-muted-foreground">
+                  YouTube, Instagram, WhatsApp and more behind one link in your bio.
+                </p>
+                <div className="pointer-events-none mt-auto -mb-6 flex h-[120px] justify-center overflow-hidden pt-5" aria-hidden="true">
+                  <div className="w-[210px] rotate-[-3deg]">
+                    <ProfileMockup />
+                  </div>
+                </div>
+              </div>
+
+              {/* Orange — live fees */}
+              <div className="relative flex min-h-[290px] flex-col overflow-hidden rounded-[20px] bg-[color:var(--landing-orange)] p-6">
+                <CardTag>Simple fees</CardTag>
+                <h2 className="mt-4 text-2xl sm:text-3xl font-semibold tracking-tight">Free to sign up</h2>
+                <p className="mt-2 text-sm text-foreground/75">
+                  You only pay a small fee when money comes in or goes out.
+                </p>
+                <div className="mt-auto pt-6 grid grid-cols-2 gap-2">
+                  <FeeChip label="Donation fee" value={donationFeePct} />
+                  <FeeChip label="Withdrawal fee" value={withdrawalFeePct} />
+                </div>
+              </div>
+            </div>
           </div>
         </section>
 
@@ -240,7 +289,7 @@ export default async function LandingPage() {
         </section>
 
         {/* ── How it works ────────────────────────────────── */}
-        <section className="bg-surface border-t border-border">
+        <section>
           <div className="mx-auto max-w-5xl px-4 sm:px-6 py-20">
             <h2 className="text-2xl sm:text-3xl font-semibold tracking-tight text-center mb-14">
               Up in three steps
@@ -270,7 +319,7 @@ export default async function LandingPage() {
 
         {/* ── Mobile money highlight ───────────────────────── */}
         <section className="mx-auto max-w-5xl px-4 sm:px-6 py-20">
-          <div className="rounded-2xl border border-border bg-surface p-8 md:p-12 flex flex-col md:flex-row md:items-center gap-8">
+          <div className="rounded-[28px] bg-[color:var(--landing-panel)] p-8 md:p-12 flex flex-col md:flex-row md:items-center gap-8">
             <div className="flex-1">
               <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-background px-3 py-1 text-xs font-medium text-muted-foreground mb-4">
                 <Smartphone className="h-3 w-3" />
@@ -290,7 +339,7 @@ export default async function LandingPage() {
         </section>
 
         {/* ── Testimonials ────────────────────────────────── */}
-        <section className="bg-surface border-t border-border">
+        <section>
           <div className="mx-auto max-w-5xl px-4 sm:px-6 py-20">
             <div className="text-center mb-14">
               <h2 className="text-2xl sm:text-3xl font-semibold tracking-tight mb-3">
@@ -353,9 +402,9 @@ export default async function LandingPage() {
             </p>
             <Link
               href="/sign-up"
-              className="inline-flex items-center gap-2 rounded-lg bg-primary px-6 py-3 text-sm font-medium text-primary-foreground hover:bg-accent-dark transition-colors duration-150"
+              className="landing-cta inline-flex items-center gap-2 rounded-full border-2 border-foreground bg-[color:var(--landing-orange)] px-6 py-3 text-sm font-semibold text-foreground"
             >
-              Get started — it&apos;s free
+              Sign up for free
               <ArrowRight className="h-4 w-4" />
             </Link>
           </div>
@@ -397,35 +446,67 @@ export default async function LandingPage() {
 
 /* ── Sub-components ─────────────────────────────────────── */
 
-function OrbitRing() {
+function FloatingTiles() {
   return (
-    <div
-      className="absolute top-1/2 left-1/2 w-[380px] h-[380px] -translate-x-1/2 -translate-y-1/2 pointer-events-none z-0"
-      aria-hidden="true"
-    >
-      <div className="absolute inset-0 rounded-full border border-dashed border-border opacity-85" />
-      {ORBIT_PLATFORMS.map((platform, i) => (
+    <div className="pointer-events-none absolute inset-0 z-0 hidden sm:block" aria-hidden="true">
+      {FLOATING_TILES.map(({ platform, cls, tone }) => (
         <span
           key={platform}
-          className="orbit-icon absolute top-1/2 left-1/2 w-[34px] h-[34px] -mt-[17px] -ml-[17px] bg-background border border-border rounded-full flex items-center justify-center text-foreground shadow-[0_1px_2px_0_rgb(0_0_0/0.04)]"
-          style={{ animationDelay: `${-i * (ORBIT_PERIOD / ORBIT_PLATFORMS.length)}s` }}
+          className={[
+            "landing-tile absolute flex items-center justify-center rounded-2xl border-2 border-foreground",
+            tone === "dark" && "bg-foreground text-background",
+            tone === "orange" && "bg-[color:var(--landing-orange)] text-foreground",
+            tone === "light" && "bg-white text-foreground",
+            cls,
+          ].filter(Boolean).join(" ")}
         >
-          <PlatformIcon platform={platform} className="h-[18px] w-[18px]" />
+          <PlatformIcon platform={platform} className="h-1/2 w-1/2" />
         </span>
+      ))}
+      <span className="landing-tile absolute right-[9%] top-[30%] flex h-14 w-14 rotate-[12deg] items-center justify-center rounded-2xl border-2 border-foreground bg-[color:var(--landing-orange-soft)]">
+        <Heart className="h-7 w-7 fill-[color:var(--landing-orange-strong)] text-foreground" strokeWidth={1.75} />
+      </span>
+      {SPARKLES.map((cls) => (
+        <Sparkle key={cls} className={`absolute h-4 w-4 text-muted-foreground ${cls}`} strokeWidth={1.5} />
       ))}
     </div>
   )
 }
 
-function StatItem({ value, label }: { value: string; label: string }) {
+function Squiggle() {
   return (
-    <div>
-      <p className="text-lg font-semibold tracking-tight">{value}</p>
-      <p className="text-xs text-muted-foreground mt-0.5">{label}</p>
-    </div>
+    <svg
+      viewBox="0 0 200 20"
+      preserveAspectRatio="none"
+      className="absolute -bottom-1 left-0 -z-10 h-4 w-full text-[color:var(--landing-orange)]"
+      aria-hidden="true"
+    >
+      <path d="M2 12 C 25 2, 45 20, 70 10 S 115 2, 140 11 S 180 18, 198 6" fill="none" stroke="currentColor" strokeWidth="7" strokeLinecap="round" />
+    </svg>
   )
 }
 
+function CardTag({ children, dark = false }: { children: React.ReactNode; dark?: boolean }) {
+  return (
+    <span
+      className={[
+        "self-start rounded-md border px-2 py-0.5 text-[11px] font-medium",
+        dark ? "border-white/60 text-white" : "border-foreground text-foreground",
+      ].join(" ")}
+    >
+      {children}
+    </span>
+  )
+}
+
+function FeeChip({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-xl border-2 border-foreground bg-white/80 px-3 py-2.5">
+      <p className="font-mono text-xl font-semibold tracking-tight">{value}</p>
+      <p className="text-[11px] text-foreground/70">{label}</p>
+    </div>
+  )
+}
 function FeatureCard({
   icon: Icon,
   title,
