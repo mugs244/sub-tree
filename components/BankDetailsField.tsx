@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { UGANDA_BANKS } from "@/lib/banks"
+import { RowLabel, type SettingsIcon } from "@/components/settings/RowLabel"
 
 interface Saved {
   bankName: string
@@ -15,7 +16,7 @@ interface Saved {
 
 // Settings row for the bank account withdrawals can be sent to. Saving needs
 // a code emailed to the account owner, since this decides where money goes.
-export function BankDetailsField({ initial }: { initial: Saved | null }) {
+export function BankDetailsField({ initial, icon }: { initial: Saved | null; icon?: SettingsIcon }) {
   const [saved, setSaved] = useState<Saved | null>(initial)
   const [editing, setEditing] = useState(false)
   const [bankName, setBankName] = useState<string>(initial?.bankName ?? "")
@@ -76,14 +77,14 @@ export function BankDetailsField({ initial }: { initial: Saved | null }) {
 
   if (!editing) {
     return (
-      <div className="flex items-center justify-between gap-3 px-4 py-3">
+      <div className="flex items-center justify-between gap-3 px-4 py-3.5">
         <div className="min-w-0">
-          <p className="text-sm text-muted-foreground">Bank account</p>
-          <p className="truncate text-sm font-medium">
+          <RowLabel icon={icon} label="Bank account" />
+          <p className={["truncate text-xs text-muted-foreground", icon ? "pl-8" : ""].join(" ")}>
             {saved ? `${saved.bankName} ${saved.maskedNumber} · ${saved.accountName}` : "Not added"}
           </p>
         </div>
-        <button type="button" onClick={() => setEditing(true)} className="flex shrink-0 items-center gap-1.5 text-sm font-medium hover:underline">
+        <button type="button" onClick={() => setEditing(true)} className="flex shrink-0 items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground">
           {justSaved ? (
             <span className="flex items-center gap-1 text-success"><Check className="h-3.5 w-3.5" />Saved</span>
           ) : (

@@ -39,7 +39,7 @@ interface Receipt {
 const ugx = (n: number) => `UGX ${Math.round(n).toLocaleString("en-UG")}`
 const pct = (r: number) => `${Math.round(r * 1000) / 10}%`
 
-export function WithdrawButton({ available }: { available: number }) {
+export function WithdrawButton({ available, variant = "large" }: { available: number; variant?: "large" | "pill" }) {
   const router = useRouter()
   const [open, setOpen] = useState(false)
   const [step, setStep] = useState<Step>("loading")
@@ -140,7 +140,11 @@ export function WithdrawButton({ available }: { available: number }) {
         type="button"
         onClick={() => void start()}
         disabled={available <= 0}
-        className="inline-flex h-12 flex-1 items-center justify-center gap-2 rounded-2xl bg-[#ff8a3d] px-5 text-sm font-semibold text-[#111827] shadow-[0_6px_20px_rgba(255,138,61,0.35)] transition-[transform,filter] duration-150 hover:brightness-105 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 disabled:shadow-none"
+        className={
+          variant === "pill"
+            ? "inline-flex h-11 flex-1 items-center justify-center gap-2 rounded-full bg-[#111827] px-4 text-sm font-semibold text-white transition-colors duration-150 hover:bg-[#1f2937] disabled:cursor-not-allowed disabled:opacity-50 dark:bg-white/10 dark:hover:bg-white/15"
+            : "inline-flex h-12 flex-1 items-center justify-center gap-2 rounded-2xl bg-[#ff8a3d] px-5 text-sm font-semibold text-[#111827] shadow-[0_6px_20px_rgba(255,138,61,0.35)] transition-[transform,filter] duration-150 hover:brightness-105 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 disabled:shadow-none"
+        }
       >
         <ArrowUpRight className="h-4 w-4" strokeWidth={2.5} />
         Withdraw

@@ -1,12 +1,14 @@
 "use client"
 
 import { useState } from "react"
+import { RowIcon, type SettingsIcon } from "@/components/settings/RowLabel"
 
 interface Props {
   initialEnabled: boolean
+  icon?: SettingsIcon
 }
 
-export function GiftMeToggle({ initialEnabled }: Props) {
+export function GiftMeToggle({ initialEnabled, icon }: Props) {
   const [enabled, setEnabled] = useState(initialEnabled)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -34,13 +36,16 @@ export function GiftMeToggle({ initialEnabled }: Props) {
   }
 
   return (
-    <div className="flex items-center justify-between px-4 py-3">
-      <div>
-        <p className="text-sm font-medium">Gift me</p>
+    <div className="flex items-center justify-between gap-3 px-4 py-3.5">
+      <div className="flex gap-3">
+        {icon && <RowIcon icon={icon} className="mt-0.5" />}
+        <div>
+        <p className="text-[15px]">Gift me</p>
         <p className="text-xs text-muted-foreground mt-0.5">
           Show a coming-soon section on your public page where fans will be able to gift you WiFi, data, airtime, and TV subscriptions.
         </p>
         {error && <p className="text-xs text-destructive mt-1">{error}</p>}
+        </div>
       </div>
       <button
         type="button"

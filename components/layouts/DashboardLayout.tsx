@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
-import { Home, Link2, Activity, Palette, Settings, ExternalLink, LogOut } from "lucide-react"
+import { Home, Link2, Activity, Palette, Settings, ExternalLink, LogOut, Bell } from "lucide-react"
 import { Logo } from "@/components/brand/Logo"
 import { ThemeToggle } from "@/components/dashboard/ThemeToggle"
 
@@ -52,10 +52,11 @@ export function DashboardLayout({ children, username, displayName, avatarUrl, un
     <div className="dash-root min-h-screen flex bg-background text-foreground">
       {/* ── Desktop sidebar ───────────────────────────────── */}
       <aside className="hidden md:flex w-64 shrink-0 flex-col fixed inset-y-0 left-0 border-r border-border bg-card z-20">
-        <div className="h-16 flex items-center px-5">
+        <div className="h-16 flex items-center justify-between px-5">
           <Link href="/dashboard" aria-label="Dashboard home">
             <Logo variant="lockup" />
           </Link>
+          <NotificationBell unreadCount={unreadCount} />
         </div>
 
         <nav className="flex-1 px-3 py-3 space-y-1" aria-label="Main navigation">
@@ -124,31 +125,29 @@ export function DashboardLayout({ children, username, displayName, avatarUrl, un
 
       {/* ── Main content ──────────────────────────────────── */}
       <div className="flex-1 flex min-w-0 flex-col md:ml-64">
-        <header className="md:hidden sticky top-0 z-10 flex h-14 items-center justify-between gap-3 border-b border-border bg-card/85 px-4 backdrop-blur-md">
-          <Link href="/dashboard" aria-label="Dashboard home">
-            <Logo variant="icon" />
+        {/* Phones: who you are (or the page you're on) + notifications. Theme
+            and sign out live in Settings on phones. */}
+        <header className="md:hidden sticky top-0 z-10 flex h-16 items-center justify-between gap-3 bg-background/85 px-4 backdrop-blur-md">
+          <Link href="/dashboard/settings" className="flex min-w-0 items-center gap-3" aria-label="Your profile and settings">
+            <Avatar name={name} url={avatarUrl} />
+            {pathname === "/dashboard" ? (
+              <span className="min-w-0 leading-tight">
+                <span className="block truncate text-xs text-muted-foreground">Hi, {name.split(" ")[0]}</span>
+                <span className="block truncate text-[15px] font-semibold">{greeting()}</span>
+              </span>
+            ) : (
+              <span className="truncate text-lg font-bold tracking-tight">{pageTitle(pathname)}</span>
+            )}
           </Link>
-          <div className="flex items-center gap-2">
-            <div className="w-[104px]">
-              <ThemeToggle compact />
-            </div>
-            <button
-              onClick={() => void handleSignOut()}
-              className="flex h-9 w-9 items-center justify-center rounded-xl text-muted-foreground transition-colors duration-150 hover:bg-surface hover:text-foreground"
-              aria-label="Sign out"
-            >
-              <LogOut className="h-[18px] w-[18px]" strokeWidth={1.75} />
-            </button>
-          </div>
+          <NotificationBell unreadCount={unreadCount} />
         </header>
 
-        <main className="flex-1 pb-24 md:pb-0">{children}</main>
+        <main className="flex-1 pb-28 md:pb-0">{children}</main>
       </div>
 
-      {/* ── Mobile bottom tab bar ─────────────────────────── */}
+      {/* ── Mobile bottom tab bar: dark pill, icons only, active in orange ── */}
       <nav
-        className="md:hidden fixed inset-x-3 bottom-3 z-20 grid h-16 rounded-2xl border border-border bg-card/90 shadow-[0_8px_30px_rgba(0,0,0,0.12)] backdrop-blur-md"
-        style={{ gridTemplateColumns: `repeat(${NAV_ITEMS.length}, minmax(0, 1fr))` }}
+        className="md:hidden fixed inset-x-4 bottom-4 z-20 flex h-16 items-center justify-around rounded-full bg-[#111827] px-2 shadow-[0_10px_30px_rgba(0,0,0,0.25)] ring-1 ring-white/10"
         aria-label="Mobile navigation"
       >
         {NAV_ITEMS.map(({ label, href, icon: Icon, alsoActiveOn }) => {
@@ -157,32 +156,56 @@ export function DashboardLayout({ children, username, displayName, avatarUrl, un
             <Link
               key={href}
               href={href}
-              className={[
-                "flex flex-col items-center justify-center gap-1 transition-colors duration-150",
-                active ? "text-[color:var(--dash-orange-text)]" : "text-muted-foreground",
-              ].join(" ")}
+              aria-label={label}
               aria-current={active ? "page" : undefined}
+              className={[
+                "relative flex h-12 w-12 items-center justify-center rounded-full transition-colors duration-150",
+                active ? "bg-[#ff8a3d] text-[#111827]" : "text-white/70 hover:text-white",
+              ].join(" ")}
             >
-              <span
-                className={[
-                  "relative flex h-7 w-12 items-center justify-center rounded-full transition-colors duration-150",
-                  active ? "bg-[color:var(--dash-orange-soft)]" : "",
-                ].join(" ")}
-              >
-                <Icon className="h-5 w-5" strokeWidth={active ? 2.25 : 1.75} />
-                {href === "/dashboard/activity" && unreadCount > 0 && (
-                  <span
-                    className="absolute right-2 top-0.5 h-2 w-2 rounded-full bg-[color:var(--dash-orange)] ring-2 ring-card"
-                    aria-label="Unread notifications"
-                  />
-                )}
-              </span>
-              <span className={["text-[10px]", active ? "font-semibold" : "font-medium"].join(" ")}>{label}</span>
+              <Icon className="h-[22px] w-[22px]" strokeWidth={active ? 2.25 : 2} />
+              {href === "/dashboard/activity" && unreadCount > 0 && !active && (
+                <span className="absolute right-2.5 top-2.5 h-2 w-2 rounded-full bg-[#ff8a3d] ring-2 ring-[#111827]" aria-label="Unread notifications" />
+              )}
             </Link>
           )
         })}
       </nav>
     </div>
+  )
+}
+
+const PAGE_TITLES: Record<string, string> = {
+  "/dashboard/links": "Links",
+  "/dashboard/activity": "Activity",
+  "/dashboard/appearance": "Appearance",
+  "/dashboard/settings": "Settings",
+  "/dashboard/support": "Support",
+}
+
+function pageTitle(pathname: string): string {
+  const match = Object.keys(PAGE_TITLES).find((p) => pathname === p || pathname.startsWith(p + "/"))
+  return match ? PAGE_TITLES[match]! : "Sub-tree"
+}
+
+// Kampala time on both server and client so the first render matches.
+function greeting(): string {
+  const hour = Number(new Date().toLocaleString("en-US", { hour: "numeric", hour12: false, timeZone: "Africa/Kampala" }))
+  if (hour < 12) return "Good morning"
+  if (hour < 17) return "Good afternoon"
+  return "Good evening"
+}
+
+function NotificationBell({ unreadCount }: { unreadCount: number }) {
+  return (
+    <Link
+      href="/dashboard/activity?filter=updates"
+      aria-label={unreadCount > 0 ? `Notifications, ${unreadCount} unread` : "Notifications"}
+      className="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-border bg-card text-foreground transition-colors duration-150 hover:bg-surface"
+    >
+      <Bell className="h-5 w-5" strokeWidth={1.9} />
+      {unreadCount > 0 && <span className="absolute right-2.5 top-2.5 h-2.5 w-2.5 rounded-full bg-[#ff8a3d] ring-2 ring-card" />}
+    </Link>
   )
 }
 

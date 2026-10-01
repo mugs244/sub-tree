@@ -137,7 +137,7 @@ export function ActivityFeed({
         groups.map((g) => (
           <section key={g.label} className="space-y-2">
             <h2 className="px-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground">{g.label}</h2>
-            <ul className="divide-y divide-border overflow-hidden rounded-3xl border border-border bg-card">
+            <ul className="space-y-2.5">
               {g.items.map((item) => <Row key={item.key} item={item} />)}
             </ul>
           </section>
@@ -157,22 +157,22 @@ function Row({ item }: { item: ActivityItem }) {
     <>
       <span
         className={[
-          "flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl",
-          item.kind === "donation" ? "bg-[color:var(--dash-orange-soft)] text-[color:var(--dash-orange-text)]" : "bg-surface text-muted-foreground",
+          "flex h-11 w-11 shrink-0 items-center justify-center rounded-full",
+          item.kind === "donation" ? "bg-[#ff8a3d] text-[#111827]" : "bg-[#111827] text-white dark:bg-white/10",
         ].join(" ")}
       >
-        <Icon className="h-5 w-5" strokeWidth={1.9} />
+        <Icon className="h-5 w-5" strokeWidth={2.25} />
       </span>
       <span className="min-w-0 flex-1">
         <span className="flex items-center gap-2">
-          <span className="truncate text-sm font-semibold">{item.title}</span>
+          <span className="truncate text-[15px] font-semibold">{item.title}</span>
           {item.unread && <span className="h-2 w-2 shrink-0 rounded-full bg-[color:var(--dash-orange)]" aria-label="New" />}
         </span>
         <span className="block truncate text-xs text-muted-foreground">{item.detail}</span>
       </span>
       <span className="shrink-0 text-right">
         {item.amount !== undefined && (
-          <span className={["block font-mono text-sm font-semibold tabular-nums", incoming ? "text-success" : ""].join(" ")}>
+          <span className={["block text-sm font-semibold tabular-nums", incoming ? "text-[color:var(--dash-orange-text)]" : ""].join(" ")}>
             {incoming ? "+" : "−"}{Math.abs(item.amount).toLocaleString()}
           </span>
         )}
@@ -187,11 +187,11 @@ function Row({ item }: { item: ActivityItem }) {
     </>
   )
 
-  const cls = ["flex items-center gap-3 px-4 py-3.5", item.unread ? "bg-[color:var(--dash-orange-soft)]/40" : ""].join(" ")
+  const cls = ["flex items-center gap-3 rounded-2xl px-4 py-3.5", item.unread ? "bg-[color:var(--dash-orange-soft)]" : "bg-surface"].join(" ")
   return (
     <li>
       {item.href ? (
-        <Link href={item.href} className={[cls, "transition-colors hover:bg-surface"].join(" ")}>{body}</Link>
+        <Link href={item.href} className={[cls, "transition-colors hover:brightness-[0.98]"].join(" ")}>{body}</Link>
       ) : (
         <div className={cls}>{body}</div>
       )}

@@ -1,16 +1,20 @@
 import { getSession } from "@/lib/auth/session"
 import { redirect } from "next/navigation"
 import Link from "next/link"
-import { MessageCircle, ChevronRight } from "lucide-react"
+import { ChevronRight } from "lucide-react"
 import { prisma } from "@/lib/db"
-import { EditProfileForm } from "@/components/EditProfileForm"
 import { DeleteAccountButton } from "@/components/DeleteAccountButton"
 import { GiftMeToggle } from "@/components/GiftMeToggle"
 import { UsernameSettingsField } from "@/components/UsernameSettingsField"
 import { ChangePasswordForm } from "@/components/ChangePasswordForm"
 import { NumberChangeField } from "@/components/NumberChangeField"
 import { BankDetailsField } from "@/components/BankDetailsField"
+import { ThemeToggle } from "@/components/dashboard/ThemeToggle"
+import { RowLabel, type SettingsIcon } from "@/components/settings/RowLabel"
+import { ProfileHeader, SignOutRow } from "@/components/settings/SettingsClientParts"
 
+// Settings, laid out like a phone app's profile screen: who you are on top,
+// then grouped cards of icon rows with the current value on the right.
 export default async function SettingsPage() {
   const session = await getSession()
   if (!session) redirect("/sign-in")
@@ -22,7 +26,6 @@ export default async function SettingsPage() {
       username: true,
       email: true,
       phone: true,
-      tier: true,
       created_at: true,
       momo_number: true,
       bank_name: true,
@@ -33,115 +36,103 @@ export default async function SettingsPage() {
   })
 
   return (
-    <div className="px-4 py-5 md:p-8 max-w-2xl space-y-6 md:space-y-10">
-      <h1 className="text-2xl font-semibold tracking-tight">Settings</h1>
-
-      <section className="space-y-3">
-        <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Profile</h2>
-        <div className="bg-surface border border-border rounded-xl p-4 sm:p-5">
-          <EditProfileForm
-            initialDisplayName={user?.profile?.display_name ?? ""}
-            initialBio={user?.profile?.bio ?? ""}
-            initialAvatarUrl={user?.profile?.avatar_url ?? ""}
-          />
-        </div>
-      </section>
-
-      <section className="space-y-3">
-        <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Account</h2>
-        <div className="bg-surface border border-border rounded-xl divide-y divide-border">
-          {user?.username ? (
-            <UsernameSettingsField initialUsername={user.username} />
-          ) : (
-            <Row label="Username" value="—" mono />
-          )}
-          <ChangePasswordForm />
-          <Row label="Email" value={user?.email ?? "—"} />
-          <NumberChangeField
-            label="Auth phone"
-            initialValue={user?.phone ?? null}
-            requestUrl="/api/account/phone/request-change"
-            confirmUrl="/api/account/phone/confirm-change"
-            fieldName="new_phone"
-          />
-          <Row label="Plan" value={user?.tier === "PRO" ? "Pro" : "Free"} />
-          <Row
-            label="Member since"
-            value={user?.created_at
-              ? new Date(user.created_at).toLocaleDateString("en-UG", { month: "long", year: "numeric" })
-              : "—"}
-          />
-        </div>
-      </section>
+    <div className="mx-auto max-w-xl space-y-5 px-4 pb-6 pt-4 md:px-8 md:py-10">
+      <ProfileHeader
+        displayName={user?.profile?.display_name ?? user?.username ?? "You"}
+        email={user?.email ?? null}
+        avatarUrl={user?.profile?.avatar_url ?? null}
+        bio={user?.profile?.bio ?? ""}
+      />
 
       {/* Linked from the withdraw flow (#payouts). Withdrawals only ever go
           to these saved, verified details. */}
-      <section id="payouts" className="space-y-3 scroll-mt-20">
-        <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Payouts</h2>
-        <div className="bg-surface border border-border rounded-xl divide-y divide-border">
-          <NumberChangeField
-            label="Mobile money number"
-            initialValue={user?.momo_number ?? null}
-            requestUrl="/api/account/momo-number/request-change"
-            confirmUrl="/api/account/momo-number/confirm-change"
-            fieldName="new_momo_number"
-          />
-          <BankDetailsField
-            initial={user?.bank_name && user.bank_account_name && user.bank_account_number
-              ? { bankName: user.bank_name, accountName: user.bank_account_name, maskedNumber: `•••• ${user.bank_account_number.slice(-4)}` }
-              : null}
-          />
-        </div>
-        <p className="text-xs text-muted-foreground px-1">
-          Donations go to your mobile money number. Withdrawals can go to either.
-        </p>
-      </section>
+      <Group id="payouts" title="Payouts" note="Donations go to your mobile money number. Withdrawals can go to either.">
+        <NumberChangeField
+          icon="smartphone"
+          label="Mobile money"
+          initialValue={user?.momo_number ?? null}
+          requestUrl="/api/account/momo-number/request-change"
+          confirmUrl="/api/account/momo-number/confirm-change"
+          fieldName="new_momo_number"
+        />
+        <BankDetailsField
+          icon="bank"
+          initial={user?.bank_name && user.bank_account_name && user.bank_account_number
+            ? { bankName: user.bank_name, accountName: user.bank_account_name, maskedNumber: `•••• ${user.bank_account_number.slice(-4)}` }
+            : null}
+        />
+      </Group>
 
-      <section className="space-y-3">
-        <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Gift me</h2>
-        <div className="bg-surface border border-border rounded-xl">
-          <GiftMeToggle initialEnabled={user?.profile?.gift_me_enabled ?? false} />
-        </div>
-      </section>
+      <Group title="Account">
+        {user?.username && <UsernameSettingsField icon="username" initialUsername={user.username} />}
+        <ChangePasswordForm icon="password" />
+        <ValueRow icon="email" label="Email" value={user?.email ?? "—"} />
+        <NumberChangeField
+          icon="phone"
+          label="Phone"
+          initialValue={user?.phone ?? null}
+          requestUrl="/api/account/phone/request-change"
+          confirmUrl="/api/account/phone/confirm-change"
+          fieldName="new_phone"
+        />
+        <ValueRow
+          icon="calendar"
+          label="Member since"
+          value={user?.created_at ? new Date(user.created_at).toLocaleDateString("en-UG", { month: "long", year: "numeric" }) : "—"}
+        />
+      </Group>
 
-      <section className="space-y-3">
-        <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Support</h2>
-        <Link
-          href="/dashboard/support"
-          className="flex items-center justify-between gap-3 bg-surface border border-border rounded-xl px-4 py-3.5 hover:bg-border/20 transition-colors duration-150"
-        >
-          <div className="flex items-center gap-3">
-            <MessageCircle className="h-4 w-4 text-muted-foreground shrink-0" strokeWidth={1.5} />
-            <div>
-              <p className="text-sm font-medium">Message support</p>
-              <p className="text-xs text-muted-foreground mt-0.5">We usually reply within a day.</p>
-            </div>
+      <Group title="Preferences">
+        <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3.5">
+          <RowLabel icon="theme" label="Theme" />
+          <div className="w-full sm:w-[230px]">
+            <ThemeToggle />
           </div>
-          <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" strokeWidth={1.5} />
+        </div>
+        <GiftMeToggle icon="gift" initialEnabled={user?.profile?.gift_me_enabled ?? false} />
+      </Group>
+
+      <Group title="Support">
+        <Link href="/dashboard/support" className="flex items-center justify-between gap-3 px-4 py-3.5 transition-colors hover:bg-black/[0.02]">
+          <RowLabel icon="support" label="Contact support" />
+          <span className="flex items-center gap-1 text-sm text-muted-foreground">
+            Usually within a day
+            <ChevronRight className="h-4 w-4" />
+          </span>
         </Link>
-      </section>
+      </Group>
 
-      <section className="space-y-3">
-        <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Danger zone</h2>
-        <div className="bg-surface border border-destructive/30 rounded-xl p-4 sm:p-5 space-y-3">
-          <div>
-            <p className="text-sm font-medium">Delete account</p>
-            <p className="text-xs text-muted-foreground mt-0.5">
-              Permanently removes your profile and all links. Donation records are retained for legal purposes.
-            </p>
-          </div>
+      <Group>
+        <SignOutRow />
+        <div className="space-y-3 px-4 py-3.5">
+          <RowLabel icon="trash" label="Delete account" />
+          <p className="text-xs text-muted-foreground">
+            Permanently removes your profile and all links. Donation records are kept for legal purposes.
+          </p>
           <DeleteAccountButton />
         </div>
-      </section>
+      </Group>
     </div>
   )
 }
 
-function Row({ label, value, mono }: { label: string; value: string; mono?: boolean }) {
+function Group({ id, title, note, children }: { id?: string; title?: string; note?: string; children: React.ReactNode }) {
   return (
-    <div className="flex items-center justify-between px-4 py-3">
-      <span className="text-sm text-muted-foreground">{label}</span>
-      <span className={`text-sm font-medium ${mono ? "font-mono" : ""}`}>{value}</span>
+    <section id={id} className="scroll-mt-20">
+      <div className="rounded-3xl bg-surface py-2">
+        {title && <h2 className="px-4 pb-1 pt-3 text-lg font-semibold tracking-tight">{title}</h2>}
+        {children}
+      </div>
+      {note && <p className="mt-2 px-4 text-xs text-muted-foreground">{note}</p>}
+    </section>
+  )
+}
+
+function ValueRow({ icon, label, value }: { icon: SettingsIcon; label: string; value: string }) {
+  return (
+    <div className="flex items-center justify-between gap-3 px-4 py-3.5">
+      <RowLabel icon={icon} label={label} />
+      <span className="min-w-0 truncate text-sm text-muted-foreground">{value}</span>
     </div>
   )
 }

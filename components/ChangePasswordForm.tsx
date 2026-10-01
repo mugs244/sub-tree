@@ -7,8 +7,9 @@ import { PasswordInput } from "@/components/ui/password-input"
 import { Label } from "@/components/ui/label"
 import { PasswordChecklist } from "@/components/auth/PasswordChecklist"
 import { passwordMeetsRules } from "@/lib/validators/password"
+import { RowLabel, type SettingsIcon } from "@/components/settings/RowLabel"
 
-export function ChangePasswordForm() {
+export function ChangePasswordForm({ icon }: { icon?: SettingsIcon } = {}) {
   const [editing, setEditing] = useState(false)
   const [currentPassword, setCurrentPassword] = useState("")
   const [newPassword, setNewPassword] = useState("")
@@ -65,12 +66,12 @@ export function ChangePasswordForm() {
 
   if (!editing) {
     return (
-      <div className="flex items-center justify-between px-4 py-3">
-        <span className="text-sm text-muted-foreground">Password</span>
+      <div className="flex items-center justify-between gap-3 px-4 py-3.5">
+        <RowLabel icon={icon} label="Password" />
         <button
           type="button"
           onClick={() => setEditing(true)}
-          className="flex items-center gap-1.5 text-sm font-medium hover:underline"
+          className="flex items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
         >
           {saved ? (
             <span className="flex items-center gap-1 text-success"><Check className="h-3.5 w-3.5" />Saved</span>

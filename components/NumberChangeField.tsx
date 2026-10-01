@@ -4,16 +4,18 @@ import { useState } from "react"
 import { Pencil, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { RowLabel, type SettingsIcon } from "@/components/settings/RowLabel"
 
 interface NumberChangeFieldProps {
   label: string
+  icon?: SettingsIcon
   initialValue: string | null
   requestUrl: string
   confirmUrl: string
   fieldName: "new_phone" | "new_momo_number"
 }
 
-export function NumberChangeField({ label, initialValue, requestUrl, confirmUrl, fieldName }: NumberChangeFieldProps) {
+export function NumberChangeField({ label, icon, initialValue, requestUrl, confirmUrl, fieldName }: NumberChangeFieldProps) {
   const [value, setValue] = useState(initialValue ?? "—")
   const [editing, setEditing] = useState(false)
   const [step, setStep] = useState<"number" | "code">("number")
@@ -80,12 +82,12 @@ export function NumberChangeField({ label, initialValue, requestUrl, confirmUrl,
 
   if (!editing) {
     return (
-      <div className="flex items-center justify-between px-4 py-3">
-        <span className="text-sm text-muted-foreground">{label}</span>
+      <div className="flex items-center justify-between gap-3 px-4 py-3.5">
+        <RowLabel icon={icon} label={label} />
         <button
           type="button"
           onClick={() => setEditing(true)}
-          className="flex items-center gap-1.5 text-sm font-medium font-mono hover:underline"
+          className="flex min-w-0 items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
         >
           {value}
           <Pencil className="h-3 w-3 text-muted-foreground shrink-0" />
