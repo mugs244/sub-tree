@@ -1,0 +1,25 @@
+// Banks creators can withdraw to. Payouts are sent by hand by the Sub-tree
+// team, so this list only needs to be recognisable, not machine-routable.
+export const UGANDA_BANKS = [
+  "Absa Bank Uganda",
+  "Bank of Africa Uganda",
+  "Bank of Baroda Uganda",
+  "Cairo Bank Uganda",
+  "Centenary Bank",
+  "dfcu Bank",
+  "Diamond Trust Bank",
+  "Ecobank Uganda",
+  "Equity Bank Uganda",
+  "Exim Bank Uganda",
+  "Finance Trust Bank",
+  "Housing Finance Bank",
+  "I&M Bank Uganda",
+  "KCB Bank Uganda",
+  "NCBA Bank Uganda",
+  "Opportunity Bank Uganda",
+  "PostBank Uganda",
+  "Stanbic Bank Uganda",
+  "Standard Chartered Uganda",
+  "Tropical Bank",
+  "United Bank for Africa Uganda",
+] as const

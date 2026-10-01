@@ -3,7 +3,7 @@ import { getSession } from "@/lib/auth/session"
 import { isAdmin } from "@/lib/services/admin"
 import { prisma } from "@/lib/db"
 import { computePlatformRevenue, getAvailableBalance, listWithdrawals } from "@/lib/services/wallet"
-import { listAllClientWithdrawals } from "@/lib/services/client-wallet"
+import { listAllClientWithdrawals, withdrawalReference } from "@/lib/services/client-wallet"
 import { getFeeRate } from "@/lib/services/platform-settings"
 import { WithdrawButton } from "./WithdrawButton"
 import { WithdrawalActions } from "./WithdrawalActions"
@@ -139,6 +139,7 @@ export default async function AdminWalletPage() {
               <tr>
                 <th className="text-left px-4 py-3 text-xs font-medium text-muted-foreground">Creator</th>
                 <th className="text-left px-4 py-3 text-xs font-medium text-muted-foreground">Amount</th>
+                <th className="text-left px-4 py-3 text-xs font-medium text-muted-foreground">Send to</th>
                 <th className="text-left px-4 py-3 text-xs font-medium text-muted-foreground">Status</th>
                 <th className="text-left px-4 py-3 text-xs font-medium text-muted-foreground">Date</th>
                 <th className="px-4 py-3" />
@@ -147,19 +148,37 @@ export default async function AdminWalletPage() {
             <tbody className="divide-y divide-border">
               {clientWithdrawals.length === 0 && (
                 <tr>
-                  <td colSpan={5} className="px-4 py-8 text-center text-muted-foreground text-sm">
+                  <td colSpan={6} className="px-4 py-8 text-center text-muted-foreground text-sm">
                     No creator withdrawal requests yet.
                   </td>
                 </tr>
               )}
               {clientWithdrawals.map((w) => (
                 <tr key={w.id} className="bg-background hover:bg-surface transition-colors duration-100">
-                  <td className="px-4 py-3 text-muted-foreground">{w.user.username ?? w.user.email}</td>
+                  <td className="px-4 py-3 text-muted-foreground">
+                    {w.user.username ?? w.user.email}
+                    <p className="font-mono text-[11px]">{withdrawalReference(w.id)}</p>
+                  </td>
                   <td className="px-4 py-3">
                     <p className="font-mono">UGX {w.amount.toLocaleString()}</p>
                     <p className="text-[11px] text-muted-foreground">
                       UGX {w.net_amount.toLocaleString()} net after fees
                     </p>
+                  </td>
+                  <td className="px-4 py-3 text-xs">
+                    {/* Full details — bank transfers are sent by hand from here. */}
+                    {w.payout_method === "BANK" ? (
+                      <>
+                        <p className="font-medium">Bank · {w.payout_bank_name}</p>
+                        <p className="font-mono">{w.payout_bank_account_number}</p>
+                        <p className="text-muted-foreground">{w.payout_bank_account_name}</p>
+                      </>
+                    ) : (
+                      <>
+                        <p className="font-medium">Mobile money</p>
+                        <p className="font-mono">{w.payout_phone ?? "Creator's current number"}</p>
+                      </>
+                    )}
                   </td>
                   <td className="px-4 py-3">
                     <WithdrawalStatusBadge status={w.status} />

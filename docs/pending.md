@@ -200,30 +200,23 @@ recurring billing rail.
 
 ---
 
-## Bank Withdrawal
+## Bank Withdrawal — automatic bank payouts
 
-**What it is:** Creators choose "mobile money" or "bank" (plus an amount)
-when withdrawing their balance, instead of always paying out to their
-registered momo number. Requires bank account details (bank name, account
-number, account name) captured somewhere on the creator's account.
+**Status (2026-10-01):** Creators *can* now withdraw to a bank account. They
+save bank details in Settings → Payouts (needs an emailed code; an email +
+SMS alert goes out on every change), pick "Bank transfer" in the withdraw
+flow, and the request is recorded with a snapshot of the account. There is
+still **no bank payout API**, so these requests stay PENDING and the Sub-tree
+team sends the transfer by hand, then clicks Mark completed in Admin → Wallet
+(the "Send to" column shows the full account). Creators are told it takes
+1–3 business days.
 
-**Code that exists:** None. The current withdraw flow
-(`app/api/wallet/withdraw/route.ts` → `lib/services/client-wallet.ts` →
-`lib/services/payments/openfloat.ts`'s `payout()`) only takes amount + OTP and
-always pays to `User.momo_number`. `payout()`'s request shape is itself
-explicitly commented as an assumption pending OpenFloat's real payout API
-docs — it has never been confirmed against real disbursement documentation,
-mobile or bank.
-
-**Why parked:** No confirmed API docs for paying out to a Ugandan bank
-account via OpenFloat or Pesapal (or any other rail). Building the bank
-detail fields and a "mobile or bank" choice in the withdraw UI without a
-working payout path behind it would mean the option either silently fails or
-misleads creators into thinking a bank payout succeeded.
+**Still parked:** sending bank payouts automatically.
 
 **Re-enable when:** Real OpenFloat and/or Pesapal disbursement-to-bank API
-docs are available and the existing OpenFloat mobile-money payout() shape
-itself has been verified against real docs (or replaced).
+docs are available. Then call the payout from `requestClientWithdrawal` for
+`method === "BANK"` (it currently only auto-pays mobile money), and verify the
+existing OpenFloat mobile-money `payout()` request shape against real docs.
 
 ---
 

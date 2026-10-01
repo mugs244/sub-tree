@@ -7,6 +7,7 @@ import { z } from "zod"
 const schema = z.object({
   amount: z.number().positive(),
   code: z.string().length(6),
+  method: z.enum(["MOBILE_MONEY", "BANK"]).default("MOBILE_MONEY"),
 })
 
 export async function POST(req: Request): Promise<NextResponse> {
@@ -28,8 +29,8 @@ export async function POST(req: Request): Promise<NextResponse> {
   }
 
   try {
-    await requestClientWithdrawal(session.userId, parsed.data.amount, parsed.data.code)
-    return NextResponse.json({ data: null }, { status: 201 })
+    const receipt = await requestClientWithdrawal(session.userId, parsed.data.amount, parsed.data.code, parsed.data.method)
+    return NextResponse.json({ data: receipt }, { status: 201 })
   } catch (err) {
     if (err instanceof ClientWalletError || err instanceof WithdrawalOtpError) {
       return NextResponse.json({ error: err.code, message: err.message }, { status: 400 })

@@ -16,6 +16,13 @@ model User {
   email_verified_at DateTime?
   phone_verified_at        DateTime?
   momo_number_verified_at  DateTime?
+  // Saved bank account for withdrawals. Bank payouts are sent by hand by the
+  // Sub-tree team (no bank payout API yet). Changing these needs an emailed
+  // code (WithdrawalOtp purpose BANK_DETAILS).
+  bank_name                String?
+  bank_account_name        String?
+  bank_account_number      String?
+  bank_details_updated_at  DateTime?
   account_type      AccountType     @default(INDIVIDUAL)
   tier              Tier            @default(FREE)
   last_active_at    DateTime?
@@ -129,6 +136,9 @@ model WithdrawalOtp {
   expires_at  DateTime
   consumed_at DateTime?
   created_at  DateTime  @default(now())
+  // What the code authorises — WITHDRAWAL or BANK_DETAILS — so a code sent
+  // for one action can never be spent on the other.
+  purpose     String    @default("WITHDRAWAL")
 
   user        User      @relation(fields: [user_id], references: [id], onDelete: Cascade)
 
@@ -186,6 +196,13 @@ model ClientWithdrawal {
   note         String?
   created_at   DateTime         @default(now())
   completed_at DateTime?
+  // Where this withdrawal goes, snapshotted at request time so later edits
+  // to the creator's saved details can't change it. MOBILE_MONEY or BANK.
+  payout_method              String  @default("MOBILE_MONEY")
+  payout_phone               String?
+  payout_bank_name           String?
+  payout_bank_account_name   String?
+  payout_bank_account_number String?
 
   user         User             @relation(fields: [user_id], references: [id], onDelete: Restrict)
 

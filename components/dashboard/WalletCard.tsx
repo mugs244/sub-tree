@@ -7,8 +7,6 @@ export interface WalletCardProps {
   available: number
   totalReceived: number
   inTransit: number
-  creatorFeeRate: number
-  processorFeeRate: number
 }
 
 function ugx(n: number): string {
@@ -17,7 +15,7 @@ function ugx(n: number): string {
 
 // The creator's balance as a bank-card style panel, with Withdraw built in.
 // Stays dark in both light and dark mode, like a physical card.
-export function WalletCard({ username, available, totalReceived, inTransit, creatorFeeRate, processorFeeRate }: WalletCardProps) {
+export function WalletCard({ username, available, totalReceived, inTransit }: WalletCardProps) {
   return (
     <section
       aria-label="Wallet"
@@ -65,7 +63,7 @@ export function WalletCard({ username, available, totalReceived, inTransit, crea
         </p>
 
         <div className="mt-5 flex gap-3">
-          <WithdrawButton available={available} creatorFeeRate={creatorFeeRate} processorFeeRate={processorFeeRate} />
+          <WithdrawButton available={available} />
           <Link
             href="/dashboard/activity?filter=withdrawals"
             className="inline-flex h-12 items-center justify-center gap-2 rounded-2xl bg-white/10 px-5 text-sm font-semibold text-white transition-colors duration-150 hover:bg-white/15"

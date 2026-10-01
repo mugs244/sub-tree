@@ -59,3 +59,33 @@ export async function notifyAccountDeleted(email: string | null, phone: string |
     }
   }
 }
+
+// Bank details decide where withdrawals go, so any change is announced on
+// both channels, like a password change.
+export async function notifyBankDetailsChanged(userId: number, bankName: string, last4: string): Promise<void> {
+  const user = await prisma.user.findUnique({ where: { id: userId }, select: { phone: true, email: true } })
+  if (!user) return
+
+  if (user.phone) {
+    await sendSms(user.phone, `Sub-tree: Your withdrawal bank account was changed to ${bankName} ending ${last4}. If this wasn't you, contact support immediately.`)
+  }
+
+  if (user.email) {
+    try {
+      await resend.emails.send({
+        from: FROM,
+        to: user.email,
+        subject: "Your Sub-tree bank details were changed",
+        html: `
+          <div style="font-family:sans-serif;max-width:400px;margin:0 auto;padding:24px">
+            <h2 style="margin:0 0 8px">Bank details changed</h2>
+            <p style="color:#374151">Withdrawals to a bank will now go to <strong>${bankName}</strong>, account ending <strong>${last4}</strong>.</p>
+            <p style="color:#dc2626;font-size:13px;margin-top:16px">If you didn't make this change, contact support immediately.</p>
+          </div>
+        `,
+      })
+    } catch (err) {
+      console.error("Bank-details email failed", { userId, err })
+    }
+  }
+}

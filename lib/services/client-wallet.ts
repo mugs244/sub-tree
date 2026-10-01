@@ -36,12 +36,66 @@ export async function computeWithdrawalFees(amountUgx: number): Promise<Withdraw
 
 export class ClientWalletError extends Error {
   constructor(
-    public readonly code: "INVALID_AMOUNT" | "INSUFFICIENT_BALANCE" | "NOT_FOUND",
+    public readonly code: "INVALID_AMOUNT" | "INSUFFICIENT_BALANCE" | "NOT_FOUND" | "NO_DESTINATION",
     message: string,
   ) {
     super(message)
     this.name = "ClientWalletError"
   }
+}
+
+// ── Payout destinations ─────────────────────────────────────────────────
+// Withdrawals only ever go to the creator's saved details: the verified
+// mobile money number from Settings, or the bank account saved there (which
+// needs an emailed code to change). Nothing typed during a withdrawal.
+
+export type PayoutMethod = "MOBILE_MONEY" | "BANK"
+
+export interface PayoutOptions {
+  mobileMoney: { number: string; masked: string } | null
+  bank: { bankName: string; accountName: string; maskedNumber: string } | null
+}
+
+export function maskPhone(phone: string): string {
+  const d = phone.replace(/D/g, "")
+  return d.length >= 7 ? `${d.slice(0, 4)} *** ${d.slice(-3)}` : phone
+}
+
+export function maskAccount(n: string): string {
+  return `•••• ${n.replace(/s/g, "").slice(-4)}`
+}
+
+export async function getPayoutOptions(userId: number): Promise<PayoutOptions> {
+  const u = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { momo_number: true, phone: true, bank_name: true, bank_account_name: true, bank_account_number: true },
+  })
+  // Same source the payout has always used: the donation (MoMo) number,
+  // falling back to the verified auth phone.
+  const number = u?.momo_number ?? u?.phone ?? null
+  return {
+    mobileMoney: number ? { number, masked: maskPhone(number) } : null,
+    bank: u?.bank_name && u.bank_account_name && u.bank_account_number
+      ? { bankName: u.bank_name, accountName: u.bank_account_name, maskedNumber: maskAccount(u.bank_account_number) }
+      : null,
+  }
+}
+
+export interface WithdrawalReceipt {
+  id: number
+  reference: string
+  amount: number
+  platformFee: number
+  processorFee: number
+  netAmount: number
+  method: PayoutMethod
+  destination: string
+  status: string
+  createdAt: string
+}
+
+export function withdrawalReference(id: number): string {
+  return `WD-${String(id).padStart(6, "0")}`
 }
 
 interface DonationRow {
@@ -111,9 +165,28 @@ export async function listClientWithdrawals(userId: number, limit = 20) {
 // concurrent requests can never both pass the check against the same funds —
 // the second waits for the first's transaction to commit, then reads its
 // up-to-date withdrawn total.
-export async function requestClientWithdrawal(userId: number, amountUgx: number, otpCode: string): Promise<void> {
+export async function requestClientWithdrawal(
+  userId: number,
+  amountUgx: number,
+  otpCode: string,
+  method: PayoutMethod = "MOBILE_MONEY",
+): Promise<WithdrawalReceipt> {
   if (!Number.isFinite(amountUgx) || amountUgx <= 0) {
     throw new ClientWalletError("INVALID_AMOUNT", "Amount must be a positive number")
+  }
+
+  // Resolve the destination before spending the code, so a missing number or
+  // bank account doesn't burn it.
+  const dest = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { momo_number: true, phone: true, bank_name: true, bank_account_name: true, bank_account_number: true },
+  })
+  const payoutPhone = dest?.momo_number ?? dest?.phone ?? null
+  if (method === "MOBILE_MONEY" && !payoutPhone) {
+    throw new ClientWalletError("NO_DESTINATION", "Add a mobile money number in Settings first")
+  }
+  if (method === "BANK" && !(dest?.bank_name && dest.bank_account_name && dest.bank_account_number)) {
+    throw new ClientWalletError("NO_DESTINATION", "Add your bank details in Settings first")
   }
 
   await verifyWithdrawalOtp(userId, otpCode)
@@ -140,17 +213,21 @@ export async function requestClientWithdrawal(userId: number, amountUgx: number,
         net_amount: fees.netAmount,
         user_id: userId,
         idempotency_key: randomUUID(),
+        payout_method: method,
+        ...(method === "BANK"
+          ? {
+              payout_bank_name: dest!.bank_name,
+              payout_bank_account_name: dest!.bank_account_name,
+              payout_bank_account_number: dest!.bank_account_number,
+            }
+          : { payout_phone: payoutPhone }),
       },
     })
   })
 
-  await notifyWithdrawalRequested({
-    userId,
-    amount: rounded,
-    platformFee: fees.platformFee,
-    processorFee: fees.processorFee,
-    netAmount: fees.netAmount,
-  })
+  const destination = method === "BANK"
+    ? `${dest!.bank_name} ${maskAccount(dest!.bank_account_number!)} · ${dest!.bank_account_name}`
+    : `Mobile money ${maskPhone(payoutPhone!)}`
 
   await createNotification({
     userId,
@@ -160,7 +237,28 @@ export async function requestClientWithdrawal(userId: number, amountUgx: number,
     metadata: { amount: rounded, netAmount: fees.netAmount },
   })
 
-  await attemptClientWithdrawalPayout(withdrawal.id)
+  // Bank transfers have no payout API yet — they stay PENDING for the team
+  // to send by hand and mark completed in Admin → Wallet.
+  if (method === "MOBILE_MONEY") await attemptClientWithdrawalPayout(withdrawal.id)
+
+  const final = await prisma.clientWithdrawal.findUniqueOrThrow({ where: { id: withdrawal.id }, select: { status: true } })
+  const receipt: WithdrawalReceipt = {
+    id: withdrawal.id,
+    reference: withdrawalReference(withdrawal.id),
+    amount: rounded,
+    platformFee: fees.platformFee,
+    processorFee: fees.processorFee,
+    netAmount: fees.netAmount,
+    method,
+    destination,
+    status: final.status,
+    createdAt: withdrawal.created_at.toISOString(),
+  }
+
+  // Emailed receipt (and a short SMS). Never throws into the request.
+  await notifyWithdrawalRequested({ userId, ...receipt })
+
+  return receipt
 }
 
 // Fires the real OpenFloat payout right after a withdrawal is recorded, so
@@ -173,15 +271,17 @@ export async function requestClientWithdrawal(userId: number, amountUgx: number,
 async function attemptClientWithdrawalPayout(withdrawalId: number): Promise<void> {
   const withdrawal = await prisma.clientWithdrawal.findUnique({
     where: { id: withdrawalId },
-    select: { user_id: true, net_amount: true, idempotency_key: true },
+    select: { user_id: true, net_amount: true, idempotency_key: true, payout_phone: true },
   })
   if (!withdrawal) return
 
-  const user = await prisma.user.findUnique({
+  // Pay the number snapshotted on the request; older requests predate the
+  // snapshot, so fall back to the creator's current number for those.
+  const user = withdrawal.payout_phone ? null : await prisma.user.findUnique({
     where: { id: withdrawal.user_id },
     select: { momo_number: true, phone: true },
   })
-  const phone = user?.momo_number ?? user?.phone
+  const phone = withdrawal.payout_phone ?? user?.momo_number ?? user?.phone
 
   if (!phone) {
     await markClientWithdrawalFailed(
@@ -245,6 +345,8 @@ export async function listAllClientWithdrawals(limit = 50) {
     select: {
       id: true, amount: true, platform_fee_amount: true, processor_fee_amount: true,
       net_amount: true, status: true, created_at: true, completed_at: true, user_id: true,
+      payout_method: true, payout_phone: true, payout_bank_name: true,
+      payout_bank_account_name: true, payout_bank_account_number: true,
       user: { select: { username: true, email: true } },
     },
   })

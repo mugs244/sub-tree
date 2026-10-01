@@ -17,47 +17,73 @@ function fmt(v: number): string {
   return `UGX ${Math.round(v).toLocaleString()}`
 }
 
-// Notification failures must never crash the withdrawal request itself —
-// same rule as donation SMS. Fire-and-forget from the caller's perspective.
-export async function notifyWithdrawalRequested(n: WithdrawalNotification): Promise<void> {
-  const user = await prisma.user.findUnique({
-    where: { id: n.userId },
-    select: { phone: true, email: true },
-  })
-  if (!user) return
+// The receipt fields are optional so the admin platform-revenue sweep
+// (lib/services/wallet.ts), which has no reference or destination, can reuse
+// this email.
+export interface WithdrawalReceiptNotification extends WithdrawalNotification {
+  reference?: string
+  method?: "MOBILE_MONEY" | "BANK"
+  destination?: string
+  status?: string
+  createdAt?: string
+}
 
-  const totalFee = n.platformFee + n.processorFee
+function whatHappensNext(r: WithdrawalReceiptNotification): string {
+  if (r.status === "FAILED") return "This withdrawal couldn't be sent. You'll get a separate message with the reason, and the amount is back in your balance."
+  if (r.method === "BANK") return "Bank transfers are sent by the Sub-tree team, usually within 1–3 business days. We'll email you when it's done."
+  if (r.status === "PROCESSING") return "It's on its way to your mobile money number — usually within a few minutes. We'll let you know when it arrives."
+  return "The Sub-tree team will send it to your mobile money number shortly. We'll let you know when it's done."
+}
 
-  if (user.phone) {
+// The withdrawal receipt, emailed as soon as a withdrawal is approved with
+// its code, plus a short SMS. Never throws into the request.
+export async function notifyWithdrawalRequested(r: WithdrawalReceiptNotification): Promise<void> {
+  const { name, email, phone } = await getNameEmailPhone(r.userId)
+  const totalFee = r.platformFee + r.processorFee
+
+  if (phone) {
     await sendSms(
-      user.phone,
-      `Sub-tree: Withdrawal request received for ${fmt(n.amount)}. Fee: ${fmt(totalFee)}. You'll receive ${fmt(n.netAmount)}. Didn't request this? Secure your account and contact support immediately.`,
+      phone,
+      `Sub-tree: Withdrawal ${r.reference ? `${r.reference} ` : ""}of ${fmt(r.amount)} approved. Fees ${fmt(totalFee)}, you'll receive ${fmt(r.netAmount)}. Not you? Contact support now.`,
     )
   }
 
-  if (user.email) {
-    try {
-      await resend.emails.send({
-        from: FROM,
-        to: user.email,
-        subject: `Withdrawal request received — ${fmt(n.amount)}`,
-        html: `
-          <div style="font-family:sans-serif;max-width:420px;margin:0 auto;padding:24px">
-            <h2 style="margin:0 0 8px">Withdrawal request received</h2>
-            <p style="color:#6b7280;margin:0 0 20px">We've received your request to withdraw funds. Here's the breakdown:</p>
-            <table style="width:100%;border-collapse:collapse;font-size:14px;margin-bottom:20px">
-              <tr><td style="padding:6px 0;color:#6b7280">Amount requested</td><td style="padding:6px 0;text-align:right;font-family:monospace">${fmt(n.amount)}</td></tr>
-              <tr><td style="padding:6px 0;color:#6b7280">Fees</td><td style="padding:6px 0;text-align:right;font-family:monospace">${fmt(totalFee)}</td></tr>
-              <tr style="border-top:1px solid #e5e7eb"><td style="padding:6px 0;font-weight:600">You&apos;ll receive</td><td style="padding:6px 0;text-align:right;font-family:monospace;font-weight:600">${fmt(n.netAmount)}</td></tr>
-            </table>
-            <p style="color:#6b7280;font-size:13px">This request is pending and is processed manually until automatic payouts are enabled.</p>
-            <p style="color:#dc2626;font-size:13px;margin-top:16px">Keep your account safe: never share your password or one-time codes with anyone, including anyone claiming to be Sub-tree support. If you didn&apos;t request this withdrawal, contact us immediately and change your password.</p>
+  if (!email) return
+  const date = new Date(r.createdAt ?? Date.now()).toLocaleString("en-UG", { timeZone: "Africa/Kampala", dateStyle: "medium", timeStyle: "short" })
+  const row = (label: string, value: string, strong = false) =>
+    `<tr><td style="padding:8px 0;color:${strong ? "#111827" : "#6b7280"};${strong ? "font-weight:700;" : ""}">${label}</td><td style="padding:8px 0;text-align:right;font-family:monospace;${strong ? "font-weight:700;font-size:16px;" : ""}">${value}</td></tr>`
+
+  try {
+    await resend.emails.send({
+      from: FROM,
+      to: email,
+      subject: `Withdrawal receipt${r.reference ? ` ${r.reference}` : ""} — ${fmt(r.netAmount)}`,
+      html: `
+        <div style="font-family:sans-serif;max-width:460px;margin:0 auto;padding:24px;color:#111827">
+          <div style="background:#111827;color:#ffffff;border-radius:16px;padding:20px 22px">
+            <div style="font-size:13px;opacity:.7">Sub-tree withdrawal receipt</div>
+            <div style="font-size:30px;font-weight:800;margin-top:6px">${fmt(r.netAmount)}</div>
+            ${r.destination ? `<div style="font-size:13px;opacity:.7;margin-top:2px">to ${r.destination}</div>` : ""}
           </div>
-        `,
-      })
-    } catch (err) {
-      console.error("Withdrawal email send failed", { userId: n.userId, err })
-    }
+          <p style="margin:20px 0 4px">Hi ${name},</p>
+          <p style="color:#4b5563;margin:0 0 12px">Here's the receipt for your withdrawal.</p>
+          <table style="width:100%;border-collapse:collapse;font-size:14px">
+            ${r.reference ? row("Reference", r.reference) : ""}
+            ${row("Date", date)}
+            ${row("Method", r.method === "BANK" ? "Bank transfer" : "Mobile money")}
+            ${row("Amount withdrawn", fmt(r.amount))}
+            ${row("Sub-tree fee", fmt(r.platformFee))}
+            ${row("Transfer cost", fmt(r.processorFee))}
+            <tr><td colspan="2" style="border-top:1px solid #e5e7eb"></td></tr>
+            ${row("You receive", fmt(r.netAmount), true)}
+          </table>
+          <p style="background:#fff1e6;border-radius:12px;padding:12px 14px;color:#9a3412;font-size:13px;margin-top:18px">${whatHappensNext(r)}</p>
+          <p style="color:#dc2626;font-size:12px;margin-top:16px">Didn't make this withdrawal? Change your password and reply to this email immediately.</p>
+        </div>
+      `,
+    })
+  } catch (err) {
+    console.error("Withdrawal receipt email failed", { userId: r.userId, err })
   }
 }
 

@@ -9,6 +9,7 @@ import { GiftMeToggle } from "@/components/GiftMeToggle"
 import { UsernameSettingsField } from "@/components/UsernameSettingsField"
 import { ChangePasswordForm } from "@/components/ChangePasswordForm"
 import { NumberChangeField } from "@/components/NumberChangeField"
+import { BankDetailsField } from "@/components/BankDetailsField"
 
 export default async function SettingsPage() {
   const session = await getSession()
@@ -24,6 +25,9 @@ export default async function SettingsPage() {
       tier: true,
       created_at: true,
       momo_number: true,
+      bank_name: true,
+      bank_account_name: true,
+      bank_account_number: true,
       profile: { select: { display_name: true, bio: true, avatar_url: true, gift_me_enabled: true } },
     },
   })
@@ -60,13 +64,6 @@ export default async function SettingsPage() {
             confirmUrl="/api/account/phone/confirm-change"
             fieldName="new_phone"
           />
-          <NumberChangeField
-            label="Donation number"
-            initialValue={user?.momo_number ?? null}
-            requestUrl="/api/account/momo-number/request-change"
-            confirmUrl="/api/account/momo-number/confirm-change"
-            fieldName="new_momo_number"
-          />
           <Row label="Plan" value={user?.tier === "PRO" ? "Pro" : "Free"} />
           <Row
             label="Member since"
@@ -75,6 +72,29 @@ export default async function SettingsPage() {
               : "—"}
           />
         </div>
+      </section>
+
+      {/* Linked from the withdraw flow (#payouts). Withdrawals only ever go
+          to these saved, verified details. */}
+      <section id="payouts" className="space-y-3 scroll-mt-20">
+        <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Payouts</h2>
+        <div className="bg-surface border border-border rounded-xl divide-y divide-border">
+          <NumberChangeField
+            label="Mobile money number"
+            initialValue={user?.momo_number ?? null}
+            requestUrl="/api/account/momo-number/request-change"
+            confirmUrl="/api/account/momo-number/confirm-change"
+            fieldName="new_momo_number"
+          />
+          <BankDetailsField
+            initial={user?.bank_name && user.bank_account_name && user.bank_account_number
+              ? { bankName: user.bank_name, accountName: user.bank_account_name, maskedNumber: `•••• ${user.bank_account_number.slice(-4)}` }
+              : null}
+          />
+        </div>
+        <p className="text-xs text-muted-foreground px-1">
+          Donations go to your mobile money number. Withdrawals can go to either.
+        </p>
       </section>
 
       <section className="space-y-3">

@@ -8,7 +8,7 @@ import { WalletCard } from "@/components/dashboard/WalletCard"
 export interface DashboardHomeData {
   displayName: string
   username: string
-  wallet: { available: number; totalReceived: number; inTransit: number; creatorFeeRate: number; processorFeeRate: number }
+  wallet: { available: number; totalReceived: number; inTransit: number }
   withdrawals: { id: number; amount: number; net_amount: number; status: string; created_at: Date }[]
   stats: { links: number; donations: number; views: number }
   providers: { mtn: number; airtel: number; card: number }

@@ -1,7 +1,6 @@
 import { getSession } from "@/lib/auth/session"
 import { prisma } from "@/lib/db"
 import { getClientBalance, listClientWithdrawals } from "@/lib/services/client-wallet"
-import { getFeeRate } from "@/lib/services/platform-settings"
 import { DashboardHome } from "@/components/dashboard/DashboardHome"
 
 export default async function DashboardHomePage() {
@@ -9,7 +8,7 @@ export default async function DashboardHomePage() {
   const userId = session!.userId
 
   // One parallel batch — none of these depend on each other.
-  const [user, donationStats, topLink, providerBreakdown, referrerBreakdown, balance, withdrawals, inTransit, creatorFeeRate, processorFeeRate] =
+  const [user, donationStats, topLink, providerBreakdown, referrerBreakdown, balance, withdrawals, inTransit] =
     await Promise.all([
       prisma.user.findUnique({
         where: { id: userId },
@@ -47,8 +46,6 @@ export default async function DashboardHomePage() {
         where: { user_id: userId, status: { in: ["PENDING", "PROCESSING"] } },
         _sum: { net_amount: true },
       }),
-      getFeeRate("fee_withdrawal_creator", 0.02),
-      getFeeRate("fee_withdrawal_processor", 0.01),
     ])
 
   const providerCount = (p: string) => providerBreakdown.find((r) => r.provider === p)?._count.id ?? 0
@@ -62,8 +59,6 @@ export default async function DashboardHomePage() {
           available: balance.available,
           totalReceived: donationStats._sum.amount ?? 0,
           inTransit: Number(inTransit._sum.net_amount ?? 0),
-          creatorFeeRate,
-          processorFeeRate,
         },
         withdrawals: withdrawals.map((w) => ({
           id: w.id,
