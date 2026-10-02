@@ -12,7 +12,7 @@ import type { ConnectProvider } from "@/lib/platform-catalog"
 // that platform by typing instead.
 //
 //   Spotify  SPOTIFY_CLIENT_ID, SPOTIFY_CLIENT_SECRET
-//   YouTube  GOOGLE_OAUTH_CLIENT_ID, GOOGLE_OAUTH_CLIENT_SECRET (YouTube Data API enabled)
+//   YouTube  YOUTUBE_CLIENT_ID, YOUTUBE_CLIENT_SECRET (a Google Cloud OAuth client, YouTube Data API enabled)
 //   TikTok   TIKTOK_CLIENT_KEY, TIKTOK_CLIENT_SECRET (Login Kit, needs TikTok's review)
 //   Twitch   TWITCH_CLIENT_ID, TWITCH_CLIENT_SECRET
 //   GitHub   GITHUB_CLIENT_ID, GITHUB_CLIENT_SECRET
@@ -77,8 +77,8 @@ const PROVIDERS: Record<ConnectProvider, ProviderConfig> = {
   },
   youtube: {
     name: "YouTube",
-    envId: "GOOGLE_OAUTH_CLIENT_ID",
-    envSecret: "GOOGLE_OAUTH_CLIENT_SECRET",
+    envId: "YOUTUBE_CLIENT_ID",
+    envSecret: "YOUTUBE_CLIENT_SECRET",
     authorizeUrl: "https://accounts.google.com/o/oauth2/v2/auth",
     scope: "https://www.googleapis.com/auth/youtube.readonly",
     extraAuthParams: { prompt: "select_account" },
