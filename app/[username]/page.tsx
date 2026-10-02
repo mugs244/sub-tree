@@ -15,6 +15,7 @@ import { getDonationLaunchStatus } from "@/lib/services/donation-launch"
 import { getProfileTemplate } from "@/lib/profile-templates"
 import { TemplatePage } from "@/components/profile-templates/TemplatePage"
 import { VerifiedBadge } from "@/components/VerifiedBadge"
+import { isBadgeLive } from "@/lib/services/billing"
 import type { SmartCardMeta } from "@/lib/services/smart-links"
 
 type Props = { params: Promise<{ username: string }> }
@@ -110,6 +111,7 @@ export default async function PublicProfilePage({ params }: Props) {
       id: true,
       deleted_at: true,
       verified_at: true,
+      verification_subscription: { select: { current_period_end: true } },
       tier: true,
       profile: {
         select: {
@@ -140,6 +142,8 @@ export default async function PublicProfilePage({ params }: Props) {
   if (!user || user.deleted_at || !user.profile) notFound()
 
   const { profile, links } = user
+  // Verified and the subscription is paid (or within its grace period).
+  const badgeLive = isBadgeLive(user.verified_at, user.verification_subscription)
   const { enabled: donationsEnabled } = await getDonationLaunchStatus()
 
   const isPro = (["PRO", "BUSINESS", "CONTENT_HOUSE"] as string[]).includes(user.tier)
@@ -157,7 +161,7 @@ export default async function PublicProfilePage({ params }: Props) {
         links={links}
         donationsEnabled={donationsEnabled}
         showBranding={showBranding}
-        verified={Boolean(user.verified_at)}
+        verified={badgeLive}
         trackers={<><PageViewTracker username={username} /><Suspense><ReferrerTracker /></Suspense></>}
       />
     )
@@ -212,7 +216,7 @@ export default async function PublicProfilePage({ params }: Props) {
         <div className="text-center space-y-2">
           <h1 className="inline-flex items-center justify-center gap-1.5 text-xl font-semibold tracking-tight">
             {profile.display_name}
-            {user.verified_at && <VerifiedBadge size={20} />}
+            {badgeLive && <VerifiedBadge size={20} />}
           </h1>
           <p className="text-xs text-muted-foreground font-mono">@{username}</p>
           {profile.bio && (

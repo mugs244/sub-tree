@@ -15,6 +15,10 @@ export type MomoCallbackPayload = {
   status: "SUCCESSFUL" | "FAILED"
   providerTxId?: string
   reason?: string
+  // Pesapal only: how it was paid (e.g. "Visa", "MTN UG") and the
+  // account_number sent with the order (used for card auto-renew).
+  paymentMethod?: string
+  accountNumber?: string
 }
 
 export interface MomoProvider {

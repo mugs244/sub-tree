@@ -60,6 +60,8 @@ model User {
   wallet_withdrawals WalletWithdrawal[]
   client_withdrawals ClientWithdrawal[]
   verification_requests VerificationRequest[]
+  verification_subscription VerificationSubscription?
+  invoices           Invoice[]
   withdrawal_otps    WithdrawalOtp[]
   phone_verifications PhoneVerification[]
   notifications      Notification[]
@@ -906,6 +908,55 @@ model VerificationRequest {
   updated_at     DateTime  @updatedAt
 
   user           User      @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@index([user_id])
+  @@index([status])
+}
+
+// The verification badge subscription (UGX 10,000/month or 100,000/year).
+// Paid before the Smile ID check; the badge shows while it's active, plus a
+// 3-day grace period. One row per creator, extended each time an invoice for
+// it is paid. Statuses: ACTIVE, LAPSED (past the grace period).
+model VerificationSubscription {
+  id                 Int       @id @default(autoincrement())
+  user_id            Int       @unique
+  plan               String    @default("MONTHLY") // MONTHLY | ANNUAL
+  status             String    @default("ACTIVE")
+  current_period_end DateTime
+  auto_renew_wallet  Boolean   @default(false) // charge the creator's Sub-tree wallet at renewal
+  card_recurring     Boolean   @default(false) // creator opted into Pesapal's card auto-charge
+  // Renewal emails already sent for the current period_end, so the daily
+  // cron never sends one twice.
+  reminded_7_for     DateTime?
+  reminded_1_for     DateTime?
+  lapsed_notified_for DateTime?
+  created_at         DateTime  @default(now())
+  updated_at         DateTime  @updatedAt
+
+  user               User      @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@index([current_period_end])
+}
+
+// A bill paid on the Sub-pay page (sub-tree.com/pay/<number>) — by card or
+// mobile money through Pesapal's embedded checkout, or from the creator's
+// Sub-tree wallet. Statuses: OPEN, PAID, VOID.
+model Invoice {
+  id                 Int       @id @default(autoincrement())
+  user_id            Int
+  purpose            String    @default("VERIFICATION")
+  plan               String    // MONTHLY | ANNUAL
+  amount             Int       // UGX
+  status             String    @default("OPEN")
+  due_at             DateTime
+  paid_at            DateTime?
+  payment_method     String?   // CARD | MOBILE_MONEY | WALLET
+  merchant_reference String    @unique // our id for this invoice at Pesapal
+  pesapal_tracking_id String?  @unique
+  created_at         DateTime  @default(now())
+  updated_at         DateTime  @updatedAt
+
+  user               User      @relation(fields: [user_id], references: [id], onDelete: Restrict)
 
   @@index([user_id])
   @@index([status])

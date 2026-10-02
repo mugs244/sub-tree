@@ -40,9 +40,13 @@ export default async function SettingsPage() {
 
   const verification = await getVerificationState(userId)
   const verificationLabel =
-    verification.stage === "verified" ? "Verified"
+    verification.stage === "verified"
+      ? verification.badgeLive
+        ? `Active${verification.periodEnd ? ` · renews ${new Date(verification.periodEnd).toLocaleDateString("en-UG", { day: "numeric", month: "short" })}` : ""}`
+        : "Renew"
     : verification.stage === "submitted" || verification.stage === "in_review" ? "Under review"
-    : verification.configured ? "Apply" : "Coming soon"
+    : !verification.configured ? "Coming soon"
+    : verification.paid ? "Continue" : "Apply"
 
   return (
     <div className="mx-auto max-w-xl space-y-5 px-4 pb-6 pt-4 md:px-8 md:py-10">
@@ -51,13 +55,13 @@ export default async function SettingsPage() {
         email={user?.email ?? null}
         avatarUrl={user?.profile?.avatar_url ?? null}
         bio={user?.profile?.bio ?? ""}
-        verified={verification.stage === "verified"}
+        verified={verification.badgeLive}
       />
 
       <Group title="Verification">
         <Link href="/dashboard/verification" className="flex items-center justify-between gap-3 px-4 py-3.5 transition-colors hover:bg-black/[0.02]">
           <RowLabel icon="verified" label={verification.stage === "verified" ? "Verified badge" : "Apply for verification badge"} />
-          <span className={["flex items-center gap-1 text-sm", verification.stage === "verified" ? "font-semibold text-[color:var(--dash-orange-text)]" : "text-muted-foreground"].join(" ")}>
+          <span className={["flex items-center gap-1 text-sm", verification.badgeLive ? "font-semibold text-[color:var(--dash-orange-text)]" : "text-muted-foreground"].join(" ")}>
             {verificationLabel}
             <ChevronRight className="h-4 w-4" />
           </span>

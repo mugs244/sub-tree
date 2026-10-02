@@ -32,6 +32,19 @@ export interface PesapalOrderParams {
   phone?: string
   referenceId: string
   payerMessage?: string
+  // Sub-pay invoices: payer details, plus account_number + subscription
+  // details, which make Pesapal offer card auto-renew in its checkout.
+  // https://developer.pesapal.com/how-to-integrate/e-commerce/api-30-json/recurringpayments
+  email?: string
+  firstName?: string
+  accountNumber?: string
+  subscription?: { startDate: Date; endDate: Date; frequency: "MONTHLY" | "YEARLY" }
+}
+
+// Pesapal wants dd-MM-yyyy.
+function pesapalDate(d: Date): string {
+  const p = (n: number) => String(n).padStart(2, "0")
+  return `${p(d.getUTCDate())}-${p(d.getUTCMonth() + 1)}-${d.getUTCFullYear()}`
 }
 
 const BASE_URLS: Record<string, string> = {
@@ -82,12 +95,22 @@ export async function submitOrder(params: PesapalOrderParams, callbackUrl: strin
       description: params.payerMessage ?? "Sub-tree donation",
       callback_url: callbackUrl,
       notification_id: process.env.PESAPAL_IPN_ID ?? "",
+      ...(params.accountNumber ? { account_number: params.accountNumber } : {}),
+      ...(params.subscription
+        ? {
+            subscription_details: {
+              start_date: pesapalDate(params.subscription.startDate),
+              end_date: pesapalDate(params.subscription.endDate),
+              frequency: params.subscription.frequency,
+            },
+          }
+        : {}),
       billing_address: {
         phone_number: phone,
         country_code: "UG",
-        first_name: "Donor",
+        first_name: params.firstName ?? "Donor",
         last_name: "",
-        email_address: "",
+        email_address: params.email ?? "",
         line_1: "",
         line_2: "",
         city: "",
@@ -126,19 +149,29 @@ export async function getTransactionStatus(orderTrackingId: string): Promise<Mom
 
     const data = (await res.json()) as {
       payment_status_code?: string
+      payment_status_description?: string
+      status_code?: number
       order_tracking_id?: string
       merchant_reference?: string
       description?: string
+      payment_method?: string
+      account_number?: string | null
     }
 
-    // Pesapal payment_status_code: "00" = completed, "01" = failed, "02" = reversed
-    const isSuccess = data.payment_status_code === "00"
+    // Completed per any of Pesapal's signals: payment_status_code "00",
+    // status_code 1, or the "Completed" description.
+    const isSuccess =
+      data.payment_status_code === "00" ||
+      data.status_code === 1 ||
+      data.payment_status_description?.toLowerCase() === "completed"
 
     return {
       referenceId: data.merchant_reference ?? orderTrackingId,
       status: isSuccess ? "SUCCESSFUL" : "FAILED",
       providerTxId: data.order_tracking_id,
       reason: isSuccess ? undefined : (data.description ?? "Payment did not complete"),
+      paymentMethod: data.payment_method,
+      accountNumber: data.account_number ?? undefined,
     }
   } catch {
     return null

@@ -1,8 +1,9 @@
 "use client"
 
 import { useState } from "react"
+import { useRouter } from "next/navigation"
 import Link from "next/link"
-import { IdCard, ScanFace, Mail, ShieldCheck, Loader2, Clock, AlertTriangle, Check } from "lucide-react"
+import { IdCard, ScanFace, Mail, ShieldCheck, Loader2, Clock, AlertTriangle, Check, RefreshCw } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { VerifiedBadge } from "@/components/VerifiedBadge"
@@ -126,6 +127,17 @@ export function VerificationFlow({ initial }: { initial: VerificationState }) {
 
   // ── Already verified / in progress / out of tries ───────────────────────
 
+  if (state.stage === "verified" && !state.badgeLive) {
+    return (
+      <Panel>
+        <PlanPicker
+          title="Your badge is hidden"
+          subtitle="Your verification subscription ended. Renew to bring your badge back — no new ID check needed."
+        />
+      </Panel>
+    )
+  }
+
   if (state.stage === "verified") {
     return (
       <Panel>
@@ -135,6 +147,18 @@ export function VerificationFlow({ initial }: { initial: VerificationState }) {
           <p className="mt-2 max-w-sm text-sm text-muted-foreground">
             Your verified badge is showing on your page{state.verifiedAt ? ` since ${new Date(state.verifiedAt).toLocaleDateString("en-UG", { day: "numeric", month: "long", year: "numeric" })}` : ""}.
           </p>
+          {state.periodEnd && (
+            <div className="mt-5 w-full rounded-2xl bg-card px-4 py-3 text-left text-sm">
+              <p className="flex items-center justify-between">
+                <span className="text-muted-foreground">{state.plan === "ANNUAL" ? "Annual" : "Monthly"} plan</span>
+                <span className="font-semibold">Renews {new Date(state.periodEnd).toLocaleDateString("en-UG", { day: "numeric", month: "short", year: "numeric" })}</span>
+              </p>
+              <p className="mt-1 flex items-center gap-1.5 text-xs text-muted-foreground">
+                <RefreshCw className="h-3.5 w-3.5" />
+                {state.autoRenewWallet ? "Auto-renews from your wallet" : state.cardRecurring ? "Auto-renews on your card" : "We'll email you an invoice before it's due"}
+              </p>
+            </div>
+          )}
         </div>
       </Panel>
     )
@@ -183,6 +207,18 @@ export function VerificationFlow({ initial }: { initial: VerificationState }) {
             Message support
           </Link>
         </div>
+      </Panel>
+    )
+  }
+
+  // Pay first: the subscription covers the identity check.
+  if (!state.paid) {
+    return (
+      <Panel>
+        <PlanPicker
+          title="Get your verified badge"
+          subtitle="Choose a plan to start. After paying you'll do a quick ID check, and your badge goes live once it passes."
+        />
       </Panel>
     )
   }
@@ -265,6 +301,81 @@ export function VerificationFlow({ initial }: { initial: VerificationState }) {
         </div>
       )}
     </Panel>
+  )
+}
+
+const PLAN_OPTIONS = [
+  { value: "MONTHLY", title: "Monthly", price: "UGX 10,000", per: "/ month", note: "Cancel anytime" },
+  { value: "ANNUAL", title: "Annual", price: "UGX 100,000", per: "/ year", note: "2 months free" },
+] as const
+
+// Choose monthly or annual, then pay on Sub-pay.
+function PlanPicker({ title, subtitle }: { title: string; subtitle: string }) {
+  const router = useRouter()
+  const [plan, setPlan] = useState<"MONTHLY" | "ANNUAL">("MONTHLY")
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  async function go() {
+    setBusy(true)
+    setError(null)
+    try {
+      const res = await fetch("/api/billing/verification/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ plan }),
+      })
+      const json = await res.json()
+      if (!res.ok) { setError(json.message ?? "Something went wrong"); return }
+      router.push(`/pay/${json.data.number}`)
+    } catch {
+      setError("Network error — please try again")
+      setBusy(false)
+    }
+  }
+
+  return (
+    <>
+      <div className="flex items-center gap-3">
+        <VerifiedBadge size={44} />
+        <div>
+          <h2 className="text-xl font-bold tracking-tight">{title}</h2>
+          <p className="text-sm text-muted-foreground">{subtitle}</p>
+        </div>
+      </div>
+      <div className="mt-6 grid grid-cols-2 gap-3" role="radiogroup" aria-label="Plan">
+        {PLAN_OPTIONS.map((o) => {
+          const active = plan === o.value
+          return (
+            <button
+              key={o.value}
+              type="button"
+              role="radio"
+              aria-checked={active}
+              onClick={() => setPlan(o.value)}
+              className={[
+                "relative rounded-2xl border-2 p-4 text-left transition-colors",
+                active ? "border-[#ff8a3d] bg-[color:var(--dash-orange-soft)]" : "border-border bg-card hover:border-foreground/20",
+              ].join(" ")}
+            >
+              {o.value === "ANNUAL" && (
+                <span className="absolute -top-2.5 right-3 rounded-full bg-[#111827] px-2 py-0.5 text-[10px] font-bold text-white">Best value</span>
+              )}
+              <span className="block text-sm font-semibold">{o.title}</span>
+              <span className="mt-2 block text-lg font-extrabold tracking-tight">{o.price}</span>
+              <span className="block text-xs text-muted-foreground">{o.per} · {o.note}</span>
+            </button>
+          )
+        })}
+      </div>
+      <p className="mt-4 text-xs leading-relaxed text-muted-foreground">
+        Pay by card, mobile money or from your Sub-tree wallet. Card and wallet payments can auto-renew; we email an invoice before each renewal.
+      </p>
+      {error && <p className="mt-3 text-sm text-destructive">{error}</p>}
+      <Button className="mt-5 h-12 w-full rounded-2xl font-semibold" disabled={busy} onClick={() => void go()}>
+        {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : "Continue to Sub-pay"}
+      </Button>
+    </>
   )
 }
 

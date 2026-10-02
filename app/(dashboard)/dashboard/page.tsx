@@ -2,13 +2,14 @@ import { getSession } from "@/lib/auth/session"
 import { prisma } from "@/lib/db"
 import { getClientBalance } from "@/lib/services/client-wallet"
 import { DashboardHome, type RecentTransaction } from "@/components/dashboard/DashboardHome"
+import { invoiceNumber } from "@/lib/services/billing"
 
 export default async function DashboardHomePage() {
   const session = await getSession()
   const userId = session!.userId
 
   // One parallel batch — none of these depend on each other.
-  const [user, received, balance, inTransit, donations, withdrawals] = await Promise.all([
+  const [user, received, balance, inTransit, donations, withdrawals, openInvoice] = await Promise.all([
     prisma.user.findUnique({
       where: { id: userId },
       select: { username: true, profile: { select: { display_name: true } } },
@@ -31,6 +32,11 @@ export default async function DashboardHomePage() {
       orderBy: { created_at: "desc" },
       take: 5,
       select: { id: true, amount: true, status: true, created_at: true, payout_method: true },
+    }),
+    prisma.invoice.findFirst({
+      where: { user_id: userId, status: "OPEN" },
+      orderBy: { due_at: "asc" },
+      select: { id: true, amount: true, due_at: true },
     }),
   ])
 
@@ -66,6 +72,7 @@ export default async function DashboardHomePage() {
           inTransit: Number(inTransit._sum.net_amount ?? 0),
         },
         recent,
+        dueInvoice: openInvoice ? { number: invoiceNumber(openInvoice.id), amount: openInvoice.amount, dueAt: openInvoice.due_at } : null,
       }}
     />
   )

@@ -1,5 +1,5 @@
 import Link from "next/link"
-import { ChevronRight, Heart, ArrowUpRight, Palette } from "lucide-react"
+import { ChevronRight, Heart, ArrowUpRight, Palette, Receipt } from "lucide-react"
 import { DonationLaunchNotice } from "@/components/DonationLaunchNotice"
 import { WalletCard } from "@/components/dashboard/WalletCard"
 
@@ -17,6 +17,8 @@ export interface DashboardHomeData {
   username: string
   wallet: { available: number; totalReceived: number; inTransit: number }
   recent: RecentTransaction[]
+  /** An unpaid Sub-pay invoice — shown as a Pay now banner. */
+  dueInvoice?: { number: string; amount: number; dueAt: Date } | null
 }
 
 const TZ = "Africa/Kampala"
@@ -43,7 +45,7 @@ const STATUS_LABEL: Record<string, string> = { PENDING: "Pending", PROCESSING: "
 // card and actions, one banner, then recent transactions. Insights (views,
 // link taps, breakdowns) live under Activity → Insights.
 export function DashboardHome({ data }: { data: DashboardHomeData }) {
-  const { displayName, username, wallet, recent } = data
+  const { displayName, username, wallet, recent, dueInvoice } = data
 
   return (
     <div className="mx-auto max-w-5xl space-y-6 px-4 pb-6 pt-2 md:px-8 md:py-8">
@@ -57,6 +59,23 @@ export function DashboardHome({ data }: { data: DashboardHomeData }) {
         <div className="space-y-4">
           <WalletCard username={username} {...wallet} />
 
+          {dueInvoice ? (
+            <Link
+              href={`/pay/${dueInvoice.number}`}
+              className="flex items-center gap-4 rounded-3xl bg-[#111827] p-5 text-white transition-colors duration-150 hover:bg-[#1f2937] dark:bg-card dark:ring-1 dark:ring-border"
+            >
+              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[#ff8a3d] text-[#111827]">
+                <Receipt className="h-5 w-5" strokeWidth={2} />
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="block font-semibold">Verification · UGX {dueInvoice.amount.toLocaleString("en-UG")}</span>
+                <span className="block text-xs text-white/65 dark:text-muted-foreground">
+                  Due {dueInvoice.dueAt.toLocaleDateString("en-UG", { timeZone: TZ, day: "numeric", month: "short" })} · {dueInvoice.number}
+                </span>
+              </span>
+              <span className="shrink-0 rounded-full bg-[#ff8a3d] px-3 py-1.5 text-xs font-bold text-[#111827]">Pay now</span>
+            </Link>
+          ) : (
           <Link
             href="/dashboard/appearance"
             className="flex items-center gap-4 rounded-3xl bg-[#111827] p-5 text-white transition-colors duration-150 hover:bg-[#1f2937] dark:bg-card dark:ring-1 dark:ring-border"
@@ -70,6 +89,7 @@ export function DashboardHome({ data }: { data: DashboardHomeData }) {
             </span>
             <ChevronRight className="h-5 w-5 shrink-0" strokeWidth={2.5} />
           </Link>
+          )}
 
           <DonationLaunchNotice inline />
         </div>

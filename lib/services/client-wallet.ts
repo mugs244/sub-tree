@@ -133,18 +133,29 @@ async function getWithdrawnTotal(userId: number, db: Db): Promise<number> {
   return agg._sum.amount ?? 0
 }
 
+// Sub-pay invoices the creator paid from their wallet (e.g. the verification
+// subscription) — money spent, so it's no longer available to withdraw.
+async function getWalletSpend(userId: number, db: Db): Promise<number> {
+  const agg = await db.invoice.aggregate({
+    where: { user_id: userId, status: "PAID", payment_method: "WALLET" },
+    _sum: { amount: true },
+  })
+  return agg._sum.amount ?? 0
+}
+
 export async function getClientBalance(userId: number, db: Db = prisma): Promise<{ earned: number; withdrawn: number; available: number }> {
   const donations = await db.donation.findMany({
     where: { user_id: userId, status: "COMPLETED" },
     select: { amount: true, created_at: true, fundraiser_id: true, creator_amount: true },
   })
 
-  const [earned, withdrawn] = await Promise.all([
+  const [earned, withdrawn, spent] = await Promise.all([
     creatorShareOf(donations),
     getWithdrawnTotal(userId, db),
+    getWalletSpend(userId, db),
   ])
 
-  return { earned, withdrawn, available: earned - withdrawn }
+  return { earned, withdrawn, available: earned - withdrawn - spent }
 }
 
 export async function listClientWithdrawals(userId: number, limit = 20) {

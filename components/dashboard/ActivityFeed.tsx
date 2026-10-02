@@ -23,6 +23,8 @@ export interface ActivityItem {
   unread?: boolean
   icon?: "heart" | "out" | "megaphone" | "message" | "bell"
   href?: string
+  /** Button label shown on the row, e.g. "Pay now". */
+  action?: string
 }
 
 const FILTERS: { value: ActivityFilter; label: string; kind?: ActivityKind }[] = [
@@ -176,7 +178,9 @@ function Row({ item }: { item: ActivityItem }) {
             {incoming ? "+" : "−"}{Math.abs(item.amount).toLocaleString()}
           </span>
         )}
-        {status ? (
+        {item.action ? (
+          <span className="inline-flex rounded-full bg-[#ff8a3d] px-3 py-1.5 text-xs font-bold text-[#111827]">{item.action}</span>
+        ) : status ? (
           <span className={["mt-0.5 inline-block rounded-full px-2 py-0.5 text-[10px] font-semibold", status.className].join(" ")}>
             {status.label}
           </span>

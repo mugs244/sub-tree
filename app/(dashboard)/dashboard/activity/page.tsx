@@ -104,7 +104,10 @@ export default async function ActivityPage({ searchParams }: Props) {
     })),
     ...notifications
       .filter((n) => !DUPLICATE_NOTIFICATION_TYPES.has(n.type))
-      .map((n): ActivityItem => ({
+      .map((n): ActivityItem => {
+        // Billing notices carry a link and button label in metadata.
+        const meta = (n.metadata ?? {}) as { href?: string; action?: string }
+        return {
         key: `n${n.id}`,
         kind: "update",
         at: n.created_at.toISOString(),
@@ -112,8 +115,10 @@ export default async function ActivityPage({ searchParams }: Props) {
         detail: n.body,
         unread: !n.read_at,
         icon: n.type === "SUPPORT_MESSAGE" ? "message" : n.type === "ANNOUNCEMENT" ? "megaphone" : "bell",
-        href: n.type === "SUPPORT_MESSAGE" ? "/dashboard/support" : undefined,
-      })),
+        href: meta.href ?? (n.type === "SUPPORT_MESSAGE" ? "/dashboard/support" : undefined),
+        action: meta.action,
+      }
+      }),
   ].sort((a, b) => b.at.localeCompare(a.at))
 
   const initialFilter: ActivityFilter =

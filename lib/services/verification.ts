@@ -5,6 +5,7 @@ import { createNotification } from "@/lib/services/notification"
 import { sendVerificationCode, verifyWithdrawalOtp } from "@/lib/services/withdrawal-otp"
 import { isSmileConfigured, mintSmileToken, type SmileSession } from "@/lib/services/smile-id"
 import { emailLayout, heading, greeting, p, notice, button } from "@/lib/email/template"
+import { isBadgeLive, isSubscriptionPaid } from "@/lib/services/billing"
 
 // The verification badge. Flow:
 //   start()        → email code to the account email
@@ -23,7 +24,7 @@ const COUNTED = ["SUBMITTED", "APPROVED", "IN_REVIEW", "REJECTED"]
 
 export class VerificationError extends Error {
   constructor(
-    public readonly code: "NOT_CONFIGURED" | "ALREADY_VERIFIED" | "IN_PROGRESS" | "NO_ATTEMPTS" | "NOT_FOUND",
+    public readonly code: "NOT_CONFIGURED" | "NOT_PAID" | "ALREADY_VERIFIED" | "IN_PROGRESS" | "NO_ATTEMPTS" | "NOT_FOUND",
     message: string,
   ) {
     super(message)
@@ -35,13 +36,21 @@ export type VerificationStage = "none" | "submitted" | "in_review" | "verified" 
 
 export interface VerificationState {
   configured: boolean
+  /** Subscription paid up to now (required before the ID check). */
+  paid: boolean
+  /** Badge currently visible (verified + subscription within grace). */
+  badgeLive: boolean
+  periodEnd: string | null
+  autoRenewWallet: boolean
+  cardRecurring: boolean
+  plan: string | null
   stage: VerificationStage
   verifiedAt: string | null
   attemptsLeft: number
 }
 
 export async function getVerificationState(userId: number): Promise<VerificationState> {
-  const [user, latest, used] = await Promise.all([
+  const [user, latest, used, sub] = await Promise.all([
     prisma.user.findUnique({ where: { id: userId }, select: { verified_at: true } }),
     prisma.verificationRequest.findFirst({
       where: { user_id: userId, status: { in: COUNTED } },
@@ -49,6 +58,7 @@ export async function getVerificationState(userId: number): Promise<Verification
       select: { status: true },
     }),
     prisma.verificationRequest.count({ where: { user_id: userId, status: { in: COUNTED } } }),
+    prisma.verificationSubscription.findUnique({ where: { user_id: userId } }),
   ])
   const stage: VerificationStage = user?.verified_at
     ? "verified"
@@ -58,6 +68,12 @@ export async function getVerificationState(userId: number): Promise<Verification
     : "none"
   return {
     configured: isSmileConfigured(),
+    paid: isSubscriptionPaid(sub),
+    badgeLive: isBadgeLive(user?.verified_at ?? null, sub),
+    periodEnd: sub?.current_period_end.toISOString() ?? null,
+    autoRenewWallet: sub?.auto_renew_wallet ?? false,
+    cardRecurring: sub?.card_recurring ?? false,
+    plan: sub?.plan ?? null,
     stage,
     verifiedAt: user?.verified_at?.toISOString() ?? null,
     attemptsLeft: Math.max(0, MAX_ATTEMPTS - used),
@@ -68,6 +84,8 @@ async function assertCanApply(userId: number): Promise<void> {
   if (!isSmileConfigured()) throw new VerificationError("NOT_CONFIGURED", "Verification is coming soon")
   const state = await getVerificationState(userId)
   if (state.stage === "verified") throw new VerificationError("ALREADY_VERIFIED", "Your account is already verified")
+  // Pay first: the subscription covers the (paid) Smile ID check.
+  if (!state.paid) throw new VerificationError("NOT_PAID", "Choose a plan and pay first")
   if (state.stage === "submitted" || state.stage === "in_review") {
     throw new VerificationError("IN_PROGRESS", "Your application is already being checked")
   }
