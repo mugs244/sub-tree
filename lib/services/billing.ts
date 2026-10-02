@@ -209,6 +209,39 @@ export async function setWalletAutoRenew(userId: number, on: boolean): Promise<v
   await prisma.verificationSubscription.updateMany({ where: { user_id: userId }, data: { auto_renew_wallet: on } })
 }
 
+// ── Admin ─────────────────────────────────────────────────────────────────
+
+// Record a payment taken outside Sub-pay (cash, bank transfer to the team).
+// Goes through the same path as a real payment: extends the subscription and
+// sends the receipt.
+export async function adminMarkInvoicePaid(invoiceId: number): Promise<void> {
+  const updated = await prisma.invoice.updateMany({
+    where: { id: invoiceId, status: "OPEN" },
+    data: { status: "PAID", paid_at: new Date(), payment_method: "MANUAL" },
+  })
+  if (updated.count === 0) throw new BillingError("ALREADY_PAID", "Invoice isn't open")
+  await applyPaidInvoice(invoiceId)
+}
+
+export async function adminVoidInvoice(invoiceId: number): Promise<void> {
+  const updated = await prisma.invoice.updateMany({ where: { id: invoiceId, status: "OPEN" }, data: { status: "VOID" } })
+  if (updated.count === 0) throw new BillingError("ALREADY_PAID", "Invoice isn't open")
+}
+
+// Free months (goodwill, support fixes). Starts from the current end date,
+// or today if lapsed; no invoice, no email.
+export async function adminExtendSubscription(userId: number, months: number): Promise<Date> {
+  const sub = await prisma.verificationSubscription.findUnique({ where: { user_id: userId } })
+  const from = sub && sub.current_period_end > new Date() ? sub.current_period_end : new Date()
+  const end = addMonths(from, months)
+  await prisma.verificationSubscription.upsert({
+    where: { user_id: userId },
+    create: { user_id: userId, plan: "MONTHLY", status: "ACTIVE", current_period_end: end },
+    update: { status: "ACTIVE", current_period_end: end },
+  })
+  return end
+}
+
 // ── After payment ─────────────────────────────────────────────────────────
 
 // Extends (or starts) the subscription by the invoice's plan, then sends the
@@ -242,7 +275,11 @@ async function applyPaidInvoice(invoiceId: number): Promise<void> {
     metadata: { href: firstTime ? "/dashboard/verification" : "/dashboard/settings" },
   })
 
-  const methodLabel = inv.payment_method === "WALLET" ? "Sub-tree wallet" : inv.payment_method === "CARD" ? "Card" : "Mobile money"
+  const methodLabel =
+    inv.payment_method === "WALLET" ? "Sub-tree wallet"
+    : inv.payment_method === "CARD" ? "Card"
+    : inv.payment_method === "MANUAL" ? "Recorded by Sub-tree"
+    : "Mobile money"
   await send(
     user.email,
     `Receipt ${invoiceNumber(inv.id)} — ${fmt(inv.amount)} paid`,

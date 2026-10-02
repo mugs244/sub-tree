@@ -7,6 +7,7 @@ import { isSmileConfigured, mintSmileToken, type SmileSession } from "@/lib/serv
 import { emailLayout, heading, greeting, p, notice, button } from "@/lib/email/template"
 import { isBadgeLive, isSubscriptionPaid } from "@/lib/services/billing"
 import { isAdmin } from "@/lib/services/admin"
+import { saveReviewImages, deleteReviewImages, type ImageKind } from "@/lib/services/verification-images"
 
 // The verification badge. Flow:
 //   start()        → email code to the account email
@@ -136,6 +137,8 @@ export interface SmileResult {
   status: string // clear | attention | block | error
   summary: string | null
   idFullName: string | null
+  /** Smile ID's 15-minute signed image links — saved only for reviews. */
+  imageLinks?: Partial<Record<ImageKind, string>>
 }
 
 // Called by the webhook once its signature has been checked. Idempotent:
@@ -160,7 +163,11 @@ export async function handleSmileResult(r: SmileResult): Promise<void> {
   })
 
   if (next === "APPROVED") await grantBadge(req.user_id, r.idFullName)
-  else if (next === "IN_REVIEW") await emailInReview(req.user_id)
+  else if (next === "IN_REVIEW") {
+    // Keep the photos only for this review; deleted when an admin decides.
+    if (r.imageLinks) await saveReviewImages(req.id, r.imageLinks)
+    await emailInReview(req.user_id)
+  }
   else if (next === "REJECTED") await emailRejected(req.user_id)
   else await emailTryAgain(req.user_id)
 }
@@ -172,6 +179,7 @@ export async function adminDecide(requestId: number, approve: boolean, adminId: 
     where: { id: requestId },
     data: { status: approve ? "APPROVED" : "REJECTED", reviewed_by: adminId, reviewed_at: new Date() },
   })
+  await deleteReviewImages(requestId)
   if (approve) await grantBadge(req.user_id, req.id_full_name)
   else await emailRejected(req.user_id)
 }
@@ -181,7 +189,7 @@ export async function listVerificationReviews() {
     where: { status: "IN_REVIEW" },
     orderBy: { submitted_at: "asc" },
     select: {
-      id: true, smile_job_id: true, smile_result: true, result_summary: true, id_full_name: true, submitted_at: true,
+      id: true, user_id: true, smile_job_id: true, smile_result: true, result_summary: true, id_full_name: true, submitted_at: true,
       user: { select: { username: true, email: true, profile: { select: { display_name: true } } } },
     },
   })

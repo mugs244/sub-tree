@@ -1,5 +1,6 @@
 "use client"
 
+import Link from "next/link"
 import { useState, useEffect, useMemo } from "react"
 import { Search } from "lucide-react"
 
@@ -126,9 +127,9 @@ export default function AdminUsersTable() {
                 filtered.map((u) => (
                   <tr key={u.id} className="hover:bg-surface/50 transition-colors duration-100">
                     <td className="px-4 py-3">
-                      <p className="font-medium">
+                      <Link href={`/admin/users/${u.id}`} className="font-medium hover:underline">
                         {u.display_name ?? u.username ?? "—"}
-                      </p>
+                      </Link>
                       {u.username && (
                         <p className="text-xs text-muted-foreground font-mono">
                           @{u.username}

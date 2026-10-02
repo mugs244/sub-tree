@@ -110,6 +110,19 @@ function checkOgScraper(): Promise<HealthCheckResult> {
   })
 }
 
+// Config-presence checks for services that cost money or send messages per
+// call (Smile ID, email, SMS) — a health check must never trigger those, so
+// "configured" is the only signal. Every entry in `envs` must be set; an
+// entry like "A|B" is satisfied by either variable.
+function configCheck(name: string, envs: string[], okMessage: string, missingMessage: string): Promise<HealthCheckResult> {
+  const missing = envs.filter((e) => !e.split("|").some((v) => process.env[v]))
+  return Promise.resolve(
+    missing.length === 0
+      ? { name, status: "ok", latencyMs: null, message: okMessage }
+      : { name, status: "unconfigured", latencyMs: null, message: `${missingMessage} Missing: ${missing.join(", ")}` },
+  )
+}
+
 export async function runHealthChecks(): Promise<HealthCheckResult[]> {
   return Promise.all([
     checkDatabase(),
@@ -117,6 +130,19 @@ export async function runHealthChecks(): Promise<HealthCheckResult[]> {
     checkAirtel(),
     checkPesapal(),
     checkOpenFloat(),
+    configCheck("Smile ID (verification)", ["SMILE_ID_PARTNER_ID", "SMILE_ID_API_KEY"],
+      `Configured (${process.env.SMILE_ID_ENV === "production" ? "production" : "sandbox"})`,
+      "The verification badge shows 'coming soon' to creators."),
+    configCheck("ID review photos", ["ID_IMAGES_KEY"],
+      "Encryption key set — 'attention' reviews show ID photos",
+      "Reviews won't show photos; use the Smile ID portal."),
+    configCheck("Google sign-in (Supabase)", ["NEXT_PUBLIC_SUPABASE_AUTH_SUPABASE_URL|NEXT_PUBLIC_SUPABASE_URL"],
+      "Configured", "Google sign-in shows 'coming soon'."),
+    configCheck("Email (Resend)", ["RESEND_API_KEY"], "Configured", "No emails (codes, receipts, alerts) can be sent."),
+    configCheck("SMS (eSMS Africa)", ["ESMSAFRICA_API_KEY"],
+      "Configured — make sure the account has balance", "No SMS codes or alerts are sent."),
+    configCheck("Daily billing cron", ["CRON_SECRET"],
+      "Secret set", "The billing cron endpoint isn't protected."),
     checkOgScraper(),
   ])
 }
