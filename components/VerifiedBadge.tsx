@@ -5,6 +5,8 @@
 // Pure SVG with no client code, so it renders the same in server pages,
 // templates and link-preview images.
 
+import { TreeGlyph } from "@/components/brand/TreeGlyph"
+
 export type BadgeStyle = "classic" | "tree"
 export const BADGE_STYLES: { value: BadgeStyle; label: string }[] = [
   { value: "classic", label: "Classic" },
@@ -40,21 +42,8 @@ export function VerifiedBadge({ size = 20, className = "", variant = "classic" }
     >
       <svg width={size} height={size} viewBox="0 0 24 24" aria-hidden="true">
         <path d={SEAL} fill={fill} stroke={fill} strokeWidth="1.6" strokeLinejoin="round" />
-        {variant === "tree" ? <TreeGlyph /> : <path d="M7.7 12.3l3 3 5.6-6" fill="none" stroke="#ffffff" strokeWidth="2.3" strokeLinecap="round" strokeLinejoin="round" />}
+        {variant === "tree" ? <TreeGlyph color="#ffffff" /> : <path d="M7.7 12.3l3 3 5.6-6" fill="none" stroke="#ffffff" strokeWidth="2.3" strokeLinecap="round" strokeLinejoin="round" />}
       </svg>
     </span>
-  )
-}
-
-// The Sub-tree tree: a rounded arrowhead on top, two stacked branches and a
-// trunk, drawn white to sit inside the badge.
-function TreeGlyph() {
-  return (
-    <g fill="none" stroke="#ffffff" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M12 5.3 L10 7.9 L12 7.05 L14 7.9 Z" fill="#ffffff" strokeWidth="1.25" />
-      <path d="M9.2 11.3 L12 9.15 L14.8 11.3" strokeWidth="1.45" />
-      <path d="M8.6 14.2 L12 11.65 L15.4 14.2" strokeWidth="1.45" />
-      <path d="M12 14.75 V17.7" strokeWidth="1.45" />
-    </g>
   )
 }

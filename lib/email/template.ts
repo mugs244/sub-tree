@@ -138,7 +138,7 @@ export function emailLayout({ preheader, body }: EmailLayoutOptions): string {
         <tr><td style="padding:0 6px 18px">
           <a href="${SITE}" style="text-decoration:none">
             <table role="presentation" cellspacing="0" cellpadding="0"><tr>
-              <td style="vertical-align:middle"><img src="${SITE}/email/icon.png" width="36" height="36" alt="" style="display:block;border:0;border-radius:9px"></td>
+              <td style="vertical-align:middle"><img src="${SITE}/email/icon.png" width="36" height="36" alt="" style="display:block;border:0;border-radius:50%"></td>
               <td style="vertical-align:middle;padding-left:10px;font-size:20px;font-weight:800;letter-spacing:-0.02em;color:${C.ink}">Sub<span style="color:${C.muted}">-</span>tree</td>
             </tr></table>
           </a>

@@ -1,4 +1,5 @@
 import { readFile } from "node:fs/promises"
+import { treeSvgDataUri } from "@/components/brand/TreeGlyph"
 import { join } from "node:path"
 
 // Shared pieces for the link-preview images (opengraph-image.tsx files), in
@@ -63,20 +64,15 @@ export function OgLogo({ size = 56 }: { size?: number }) {
         style={{
           width: size,
           height: size,
-          borderRadius: size * 0.24,
+          borderRadius: size,
           background: OG.ink,
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
         }}
       >
-        <svg width={size * 0.64} height={size * 0.64} viewBox="0 0 24 24" fill="none" stroke="#ffffff" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M12 3 L9 7 L12 7 L15 7 L12 3 Z" fill="#ffffff" />
-          <path d="M8 10 L12 6 L16 10" />
-          <path d="M7 14 L12 9 L17 14" />
-          <path d="M6 18 L12 12 L18 18" />
-          <path d="M12 18 L12 21" strokeWidth="2" />
-        </svg>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={treeSvgDataUri("#ffffff")} width={size * 0.62} height={size * 0.62} alt="" />
       </div>
       <div style={{ display: "flex", fontSize: size * 0.62, fontWeight: 800, letterSpacing: "-0.03em", color: OG.ink }}>
         Sub-tree
