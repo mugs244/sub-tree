@@ -150,7 +150,7 @@ export default function RefundsPage() {
             <a href="mailto:admin@sub-tree.com" className="underline underline-offset-4">
               admin@sub-tree.com
             </a>{" "}
-            — <Placeholder>[OPERATING ENTITY NAME — pending registration]</Placeholder>,{" "}
+            — Marketiffy Technologies Limited,{" "}
             <Placeholder>[REGISTERED ADDRESS]</Placeholder>.
           </p>
         </Section>

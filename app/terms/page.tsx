@@ -16,7 +16,7 @@ export default function TermsPage() {
         </p>
 
         <p>
-          The Platform is operated by <Placeholder>[OPERATING ENTITY NAME — pending registration]</Placeholder>, a
+          The Platform is operated by Marketiffy Technologies Limited, a
           company incorporated in Uganda with registration number{" "}
           <Placeholder>[REGISTRATION NO.]</Placeholder>, whose registered office is at{" "}
           <Placeholder>[REGISTERED ADDRESS]</Placeholder> (&ldquo;<strong>Sub-tree</strong>&rdquo;, &ldquo;
@@ -303,7 +303,7 @@ export default function TermsPage() {
             <a href="mailto:admin@sub-tree.com" className="underline underline-offset-4">
               admin@sub-tree.com
             </a>
-            , <Placeholder>[OPERATING ENTITY NAME — pending registration]</Placeholder>,{" "}
+            , Marketiffy Technologies Limited,{" "}
             <Placeholder>[REGISTERED ADDRESS]</Placeholder>.
           </Clause>
         </Section>
