@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
-import { LayoutDashboard, Users, BarChart2, Settings, LogOut, Wallet, Activity, MessageCircle, Megaphone, BadgeCheck, Receipt } from "lucide-react"
+import { LayoutDashboard, Users, BarChart2, Settings, LogOut, Wallet, Activity, MessageCircle, Megaphone, BadgeCheck, Receipt, Mail } from "lucide-react"
 import { Logo } from "@/components/brand/Logo"
 
 const NAV = [
@@ -13,6 +13,7 @@ const NAV = [
   { label: "Verifications",  href: "/admin/verifications", icon: BadgeCheck },
   { label: "Support",        href: "/admin/support",       icon: MessageCircle },
   { label: "Announcements",  href: "/admin/announcements", icon: Megaphone },
+  { label: "Emails",         href: "/admin/emails",        icon: Mail },
   { label: "System health",  href: "/admin/system-health", icon: Activity },
   { label: "Analytics",      href: "/admin/analytics",     icon: BarChart2 },
   { label: "Settings",       href: "/admin/settings",      icon: Settings },

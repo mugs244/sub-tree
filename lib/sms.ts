@@ -8,11 +8,14 @@
 //
 // Phone numbers must be in international format: +256XXXXXXXXX
 
+import { isEmailTestRun } from "@/lib/email/send"
+
 const ESMS_BASE = "https://sms.esmsafrica.io/api/messages/send"
 
 export async function sendSms(to: string, message: string): Promise<void> {
   const apiKey = process.env.ESMSAFRICA_API_KEY
-  if (!apiKey) return
+  // Skipped inside the admin email tester, which tests email only.
+  if (!apiKey || isEmailTestRun()) return
 
   // Normalize to international format
   const normalized = to.startsWith("+") ? to : `+${to.replace(/^0/, "256")}`

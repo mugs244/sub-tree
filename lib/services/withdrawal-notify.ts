@@ -1,10 +1,8 @@
-import { Resend } from "resend"
 import { prisma } from "@/lib/db"
+import { sendEmail } from "@/lib/email/send"
 import { sendSms } from "@/lib/sms"
 import { emailLayout, heading, greeting, p, amountCard, details, notice, securityNote, button } from "@/lib/email/template"
 
-const resend = new Resend(process.env.RESEND_API_KEY)
-const FROM = "Sub-tree <hello@sub-tree.com>"
 
 interface WithdrawalNotification {
   userId: number
@@ -62,8 +60,7 @@ export async function notifyWithdrawalRequested(r: WithdrawalReceiptNotification
   ]
 
   try {
-    await resend.emails.send({
-      from: FROM,
+    await sendEmail({
       to: email,
       subject: `Withdrawal receipt${r.reference ? ` ${r.reference}` : ""} — ${fmt(r.netAmount)}`,
       html: emailLayout({
@@ -107,8 +104,7 @@ export async function notifyWithdrawalCompleted(n: WithdrawalNotification): Prom
   if (!email) return
 
   try {
-    await resend.emails.send({
-      from: FROM,
+    await sendEmail({
       to: email,
       subject: `Withdrawal complete — ${fmt(n.netAmount)} sent`,
       html: emailLayout({
@@ -144,8 +140,7 @@ export async function notifyWithdrawalFailed(userId: number, amount: number): Pr
   if (!email) return
 
   try {
-    await resend.emails.send({
-      from: FROM,
+    await sendEmail({
       to: email,
       subject: `Your ${fmt(amount)} withdrawal couldn't be sent`,
       html: emailLayout({

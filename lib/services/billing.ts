@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto"
-import { Resend } from "resend"
+import { sendEmail } from "@/lib/email/send"
 import { prisma } from "@/lib/db"
 import { submitOrder, getTransactionStatus } from "@/lib/services/payments/pesapal"
 import { getClientBalance } from "@/lib/services/client-wallet"
@@ -17,8 +17,6 @@ import { emailLayout, heading, greeting, p, button, amountCard, details, notice 
 // daily cron (runVerificationBilling); mobile money is always a one-time
 // payment, so reminder emails carry a Pay now link.
 
-const resend = new Resend(process.env.RESEND_API_KEY)
-const FROM = "Sub-tree <hello@sub-tree.com>"
 const SITE = "https://sub-tree.com"
 const DAY = 86_400_000
 export const GRACE_DAYS = 3
@@ -275,36 +273,84 @@ async function applyPaidInvoice(invoiceId: number): Promise<void> {
     metadata: { href: firstTime ? "/dashboard/verification" : "/dashboard/settings" },
   })
 
-  const methodLabel =
-    inv.payment_method === "WALLET" ? "Sub-tree wallet"
-    : inv.payment_method === "CARD" ? "Card"
-    : inv.payment_method === "MANUAL" ? "Recorded by Sub-tree"
-    : "Mobile money"
-  await send(
-    user.email,
-    `Receipt ${invoiceNumber(inv.id)} — ${fmt(inv.amount)} paid`,
-    `Paid ${fmt(inv.amount)} for your Sub-tree verification.`,
-    heading("Payment received") +
-      greeting(user.profile?.display_name ?? user.username ?? "there") +
-      amountCard("Paid", fmt(inv.amount), `${PLANS[plan].label} verification · ${methodLabel}`) +
-      details([
-        ["Invoice", invoiceNumber(inv.id)],
-        ["Paid on", date(inv.paid_at ?? new Date())],
-        ["Plan", `${PLANS[plan].label} — ${fmt(PLANS[plan].amount)}/${PLANS[plan].per}`],
-        ["Active until", date(end)],
-      ]) +
-      (firstTime
-        ? notice("Next step: complete your ID check to switch on your badge.") + button("Continue to ID check", `${SITE}/dashboard/verification`)
-        : notice("Your verified badge stays on your page.", "success")),
-  )
+  await send(user.email, receiptEmail({
+    name: user.profile?.display_name ?? user.username ?? "there",
+    invoiceId: inv.id, amount: inv.amount, plan, method: inv.payment_method,
+    paidOn: inv.paid_at ?? new Date(), end, firstTime,
+  }))
 }
 
-async function send(to: string, subject: string, preheader: string, body: string): Promise<void> {
-  try {
-    await resend.emails.send({ from: FROM, to, subject, html: emailLayout({ preheader, body }) })
-  } catch (err) {
-    console.error("Billing email failed", { to, subject, err })
+// ── Emails ────────────────────────────────────────────────────────────────
+// Pure builders, so the admin email tester can send them with sample data.
+
+export interface BillingEmail { subject: string; preheader: string; body: string }
+
+export function receiptEmail(a: {
+  name: string; invoiceId: number; amount: number; plan: Plan; method: string | null; paidOn: Date; end: Date; firstTime: boolean
+}): BillingEmail {
+  const methodLabel =
+    a.method === "WALLET" ? "Sub-tree wallet"
+    : a.method === "CARD" ? "Card"
+    : a.method === "MANUAL" ? "Recorded by Sub-tree"
+    : "Mobile money"
+  return {
+    subject: `Receipt ${invoiceNumber(a.invoiceId)} — ${fmt(a.amount)} paid`,
+    preheader: `Paid ${fmt(a.amount)} for your Sub-tree verification.`,
+    body:
+      heading("Payment received") +
+      greeting(a.name) +
+      amountCard("Paid", fmt(a.amount), `${PLANS[a.plan].label} verification · ${methodLabel}`) +
+      details([
+        ["Invoice", invoiceNumber(a.invoiceId)],
+        ["Paid on", date(a.paidOn)],
+        ["Plan", `${PLANS[a.plan].label} — ${fmt(PLANS[a.plan].amount)}/${PLANS[a.plan].per}`],
+        ["Active until", date(a.end)],
+      ]) +
+      (a.firstTime
+        ? notice("Next step: complete your ID check to switch on your badge.") + button("Continue to ID check", `${SITE}/dashboard/verification`)
+        : notice("Your verified badge stays on your page.", "success")),
   }
+}
+
+export function lapsedEmail(a: { name: string; invoiceId: number; end: Date }): BillingEmail {
+  return {
+    subject: "Your verified badge is now hidden",
+    preheader: "Pay to bring it back — no new ID check needed.",
+    body:
+      heading("Your badge is hidden") + greeting(a.name) +
+      p(`Your verification subscription ended on ${date(a.end)}, so your verified badge is no longer showing. Pay now to bring it back straight away — you won't need to do the ID check again.`) +
+      button("Pay now", payUrl(a.invoiceId)),
+  }
+}
+
+export function walletRenewFailedEmail(a: { name: string; invoiceId: number; amount: number }): BillingEmail {
+  return {
+    subject: "We couldn't renew from your wallet",
+    preheader: "Your wallet balance is too low — pay another way.",
+    body:
+      heading("Wallet renewal didn't go through") + greeting(a.name) +
+      p(`Your wallet doesn't have ${fmt(a.amount)} for this renewal. Pay by card or mobile money to keep your badge — you have ${GRACE_DAYS} days.`) +
+      button("Pay now", payUrl(a.invoiceId)),
+  }
+}
+
+export function reminderEmail(a: {
+  name: string; invoiceId: number; amount: number; plan: Plan; end: Date; tomorrow: boolean; how: string
+}): BillingEmail {
+  return {
+    subject: `Invoice ${invoiceNumber(a.invoiceId)} — verification renews ${a.tomorrow ? "tomorrow" : "in 7 days"}`,
+    preheader: `${fmt(a.amount)} due ${date(a.end)}`,
+    body:
+      heading(a.tomorrow ? "Your verification renews tomorrow" : "Your verification renews soon") + greeting(a.name) +
+      amountCard("Amount due", fmt(a.amount), `Due ${date(a.end)}`) +
+      details([["Invoice", invoiceNumber(a.invoiceId)], ["Plan", `${PLANS[a.plan].label} verification`], ["Due", date(a.end)]]) +
+      p(a.how) + button("Pay now", payUrl(a.invoiceId)) +
+      p(`If it isn't paid, your badge stays for ${GRACE_DAYS} days after the due date, then it's hidden until you pay.`, { muted: true, size: 13 }),
+  }
+}
+
+async function send(to: string, e: BillingEmail): Promise<void> {
+  await sendEmail({ to, subject: e.subject, html: emailLayout({ preheader: e.preheader, body: e.body }) })
 }
 
 // ── Daily cron ────────────────────────────────────────────────────────────
@@ -336,10 +382,7 @@ export async function runVerificationBilling(): Promise<{ reminded: number; rene
           body: "Your verification subscription ended. Pay to bring your badge back — no new ID check needed.",
           metadata: { href: `/pay/${invoiceNumber(inv.id)}`, action: "Pay now" },
         })
-        await send(sub.user.email, "Your verified badge is now hidden", "Pay to bring it back — no new ID check needed.",
-          heading("Your badge is hidden") + greeting(name) +
-          p(`Your verification subscription ended on ${date(end)}, so your verified badge is no longer showing. Pay now to bring it back straight away — you won't need to do the ID check again.`) +
-          button("Pay now", payUrl(inv.id)))
+        await send(sub.user.email, lapsedEmail({ name, invoiceId: inv.id, end }))
         lapsed++
         continue
       }
@@ -352,10 +395,7 @@ export async function runVerificationBilling(): Promise<{ reminded: number; rene
           renewed++
         } catch (err) {
           if (err instanceof BillingError && err.code === "INSUFFICIENT_BALANCE" && left > -DAY) {
-            await send(sub.user.email, "We couldn't renew from your wallet", "Your wallet balance is too low — pay another way.",
-              heading("Wallet renewal didn't go through") + greeting(name) +
-              p(`Your wallet doesn't have ${fmt(inv.amount)} for this renewal. Pay by card or mobile money to keep your badge — you have ${GRACE_DAYS} days.`) +
-              button("Pay now", payUrl(inv.id)))
+            await send(sub.user.email, walletRenewFailedEmail({ name, invoiceId: inv.id, amount: inv.amount }))
           }
         }
         continue
@@ -378,13 +418,7 @@ export async function runVerificationBilling(): Promise<{ reminded: number; rene
         body: `${fmt(inv.amount)} due ${date(end)}. ${how}`,
         metadata: { href: `/pay/${invoiceNumber(inv.id)}`, action: "Pay now" },
       })
-      await send(sub.user.email, `Invoice ${invoiceNumber(inv.id)} — verification renews ${due1 ? "tomorrow" : "in 7 days"}`,
-        `${fmt(inv.amount)} due ${date(end)}`,
-        heading(due1 ? "Your verification renews tomorrow" : "Your verification renews soon") + greeting(name) +
-        amountCard("Amount due", fmt(inv.amount), `Due ${date(end)}`) +
-        details([["Invoice", invoiceNumber(inv.id)], ["Plan", `${PLANS[plan].label} verification`], ["Due", date(end)]]) +
-        p(how) + button("Pay now", payUrl(inv.id)) +
-        p(`If it isn't paid, your badge stays for ${GRACE_DAYS} days after the due date, then it's hidden until you pay.`, { muted: true, size: 13 }))
+      await send(sub.user.email, reminderEmail({ name, invoiceId: inv.id, amount: inv.amount, plan, end, tomorrow: due1, how }))
       await prisma.verificationSubscription.update({
         where: { id: sub.id },
         data: due1 ? { reminded_1_for: end, reminded_7_for: end } : { reminded_7_for: end },

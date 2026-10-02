@@ -1,11 +1,9 @@
-import { Resend } from "resend"
 import { prisma } from "@/lib/db"
+import { sendEmail } from "@/lib/email/send"
 import { sendSms } from "@/lib/sms"
 import { emailLayout, heading, p, strong, notice, details, button } from "@/lib/email/template"
 import type { LoginContext } from "@/lib/auth/login-context"
 
-const resend = new Resend(process.env.RESEND_API_KEY)
-const FROM = "Sub-tree <hello@sub-tree.com>"
 
 // Fire-and-forget from the caller's perspective — never throw into the
 // account action itself. Same rule as donation/withdrawal notifications.
@@ -19,8 +17,7 @@ export async function notifyPasswordChanged(userId: number): Promise<void> {
 
   if (user.email) {
     try {
-      await resend.emails.send({
-        from: FROM,
+      await sendEmail({
         to: user.email,
         subject: "Your Sub-tree password was changed",
         html: emailLayout({
@@ -41,8 +38,7 @@ export async function notifyAccountDeleted(email: string | null, phone: string |
 
   if (email) {
     try {
-      await resend.emails.send({
-        from: FROM,
+      await sendEmail({
         to: email,
         subject: "Your Sub-tree account was deleted",
         html: emailLayout({
@@ -68,8 +64,7 @@ export async function notifyBankDetailsChanged(userId: number, bankName: string,
 
   if (user.email) {
     try {
-      await resend.emails.send({
-        from: FROM,
+      await sendEmail({
         to: user.email,
         subject: "Your Sub-tree bank details were changed",
         html: emailLayout({
@@ -90,8 +85,7 @@ export async function notifyNewSignIn(userId: number, ctx: LoginContext, method:
   const user = await prisma.user.findUnique({ where: { id: userId }, select: { email: true } })
   if (!user?.email) return
   try {
-    await resend.emails.send({
-      from: FROM,
+    await sendEmail({
       to: user.email,
       subject: "New sign-in to your Sub-tree account",
       html: emailLayout({
@@ -122,8 +116,7 @@ export async function notifyEmailChanged(userId: number, oldEmail: string, newEm
     await sendSms(user.phone, `Sub-tree: Your account email was changed to ${newEmail}. If this wasn't you, contact support immediately.`)
   }
   try {
-    await resend.emails.send({
-      from: FROM,
+    await sendEmail({
       to: oldEmail,
       subject: "Your Sub-tree email was changed",
       html: emailLayout({

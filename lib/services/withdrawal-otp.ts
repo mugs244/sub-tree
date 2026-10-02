@@ -1,11 +1,9 @@
-import { Resend } from "resend"
 import { prisma } from "@/lib/db"
+import { sendEmail } from "@/lib/email/send"
 import { generateCode } from "@/lib/auth/email"
 import { sendSms } from "@/lib/sms"
 import { emailLayout, greeting, p, codeBox, notice, securityNote, strong } from "@/lib/email/template"
 
-const resend = new Resend(process.env.RESEND_API_KEY)
-const FROM = "Sub-tree <hello@sub-tree.com>"
 const CODE_TTL_MINUTES = 10
 
 // What a code authorises. A code is only ever accepted for the purpose it
@@ -67,8 +65,7 @@ export async function sendWithdrawalOtp(userId: number, amountUgx: number, chann
   }
 
   const name = user!.profile?.display_name ?? user!.username ?? "there"
-  await resend.emails.send({
-    from: FROM,
+  await sendEmail({
     to: user!.email,
     subject: "Your Sub-tree withdrawal code",
     html: codeEmail(name, `Use this code to approve your withdrawal of ${strong(amount)}:`, code, `Your code to approve a ${amount} withdrawal`),
@@ -85,8 +82,7 @@ export async function sendBankDetailsOtp(userId: number): Promise<void> {
 
   const code = await issueCode(userId, "BANK_DETAILS")
   const name = user.profile?.display_name ?? user.username ?? "there"
-  await resend.emails.send({
-    from: FROM,
+  await sendEmail({
     to: user.email,
     subject: "Confirm your Sub-tree bank details",
     html: codeEmail(name, "Use this code to save the bank account your withdrawals will be sent to:", code, "Your code to confirm your bank details"),
@@ -102,8 +98,7 @@ export async function sendEmailChangeCode(userId: number, newEmail: string): Pro
   })
   const code = await issueCode(userId, `EMAIL_CHANGE:${newEmail}`)
   const name = user?.profile?.display_name ?? user?.username ?? "there"
-  await resend.emails.send({
-    from: FROM,
+  await sendEmail({
     to: newEmail,
     subject: "Confirm your new Sub-tree email",
     html: emailLayout({
@@ -128,8 +123,7 @@ export async function sendVerificationCode(userId: number): Promise<void> {
 
   const code = await issueCode(userId, "VERIFICATION")
   const name = user.profile?.display_name ?? user.username ?? "there"
-  await resend.emails.send({
-    from: FROM,
+  await sendEmail({
     to: user.email,
     subject: "Your Sub-tree verification code",
     html: codeEmail(name, "Use this code to continue your application for the Sub-tree verified badge:", code, "Your code to continue verifying your account"),

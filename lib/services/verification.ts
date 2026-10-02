@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto"
-import { Resend } from "resend"
+import { sendEmail } from "@/lib/email/send"
 import { prisma } from "@/lib/db"
 import { createNotification } from "@/lib/services/notification"
 import { sendVerificationCode, verifyWithdrawalOtp } from "@/lib/services/withdrawal-otp"
@@ -19,8 +19,6 @@ import { saveReviewImages, deleteReviewImages, type ImageKind } from "@/lib/serv
 // Smile ID checks cost money, so each account gets MAX_ATTEMPTS tries
 // (an "error" result, where Smile ID couldn't process it, doesn't count).
 
-const resend = new Resend(process.env.RESEND_API_KEY)
-const FROM = "Sub-tree <hello@sub-tree.com>"
 export const MAX_ATTEMPTS = 3
 const COUNTED = ["SUBMITTED", "APPROVED", "IN_REVIEW", "REJECTED"]
 
@@ -208,11 +206,7 @@ async function contact(userId: number) {
 async function send(userId: number, subject: string, preheader: string, body: string): Promise<void> {
   const { email } = await contact(userId)
   if (!email) return
-  try {
-    await resend.emails.send({ from: FROM, to: email, subject, html: emailLayout({ preheader, body }) })
-  } catch (err) {
-    console.error("Verification email failed", { userId, subject, err })
-  }
+  await sendEmail({ to: email, subject, html: emailLayout({ preheader, body }) })
 }
 
 async function grantBadge(userId: number, idFullName: string | null): Promise<void> {
@@ -220,13 +214,18 @@ async function grantBadge(userId: number, idFullName: string | null): Promise<vo
     where: { id: userId },
     data: { verified_at: new Date(), ...(idFullName ? { verified_name: idFullName } : {}) },
   })
-  const { name, username } = await contact(userId)
   await createNotification({
     userId,
     type: "ANNOUNCEMENT",
     title: "You're verified",
     body: "Your verified badge is now showing on your Sub-tree page.",
   })
+  await emailVerified(userId)
+}
+
+// The verification emails are exported for the admin email tester.
+export async function emailVerified(userId: number): Promise<void> {
+  const { name, username } = await contact(userId)
   await send(
     userId,
     "You're verified on Sub-tree",
@@ -239,7 +238,7 @@ async function grantBadge(userId: number, idFullName: string | null): Promise<vo
   )
 }
 
-async function emailInReview(userId: number): Promise<void> {
+export async function emailInReview(userId: number): Promise<void> {
   const { name } = await contact(userId)
   await send(
     userId,
@@ -252,7 +251,7 @@ async function emailInReview(userId: number): Promise<void> {
   )
 }
 
-async function emailRejected(userId: number): Promise<void> {
+export async function emailRejected(userId: number): Promise<void> {
   const { name } = await contact(userId)
   const { attemptsLeft } = await getVerificationState(userId)
   await send(
@@ -269,7 +268,7 @@ async function emailRejected(userId: number): Promise<void> {
   )
 }
 
-async function emailTryAgain(userId: number): Promise<void> {
+export async function emailTryAgain(userId: number): Promise<void> {
   const { name } = await contact(userId)
   await send(
     userId,

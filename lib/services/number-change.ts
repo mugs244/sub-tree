@@ -1,12 +1,10 @@
-import { Resend } from "resend"
 import { prisma } from "@/lib/db"
+import { sendEmail } from "@/lib/email/send"
 import { sendSms } from "@/lib/sms"
 import { generateCode } from "@/lib/auth/email"
 import { sendPhoneVerificationCode, verifyPhoneCode } from "@/lib/services/phone-verification"
 import { emailLayout, heading, p, codeBox, strong, notice } from "@/lib/email/template"
 
-const resend = new Resend(process.env.RESEND_API_KEY)
-const FROM = "Sub-tree <hello@sub-tree.com>"
 const CODE_TTL_MINUTES = 15
 
 export type NumberKind = "phone" | "momo_number"
@@ -47,8 +45,7 @@ export async function requestNumberChange(
   await prisma.phoneVerification.deleteMany({ where: { user_id: userId, phone: newNumber } })
   await prisma.phoneVerification.create({ data: { user_id: userId, phone: newNumber, code, expires_at } })
 
-  await resend.emails.send({
-    from: FROM,
+  await sendEmail({
     to: user.email,
     subject: `${code} — confirm your new Sub-tree number`,
     html: emailLayout({
@@ -91,19 +88,18 @@ export async function confirmNumberChange(
   // Confirm on both channels regardless of which one delivered the code.
   await sendSms(newNumber, `Sub-tree: Your ${label} is now confirmed and saved.`)
 
-  if (user?.email) {
-    try {
-      await resend.emails.send({
-        from: FROM,
-        to: user.email,
-        subject: `Your Sub-tree ${label} was changed`,
-        html: emailLayout({
-          preheader: `Your ${label} is now ${newNumber}`,
-          body: heading(`Your ${label} was changed`) + p(`Your ${label} is now ${strong(newNumber)}.`, { html: true }) + notice("If you didn't make this change, contact support immediately by replying to this email.", "danger"),
-        }),
-      })
-    } catch (err) {
-      console.error(`${kind} change email failed`, { userId, err })
-    }
-  }
+  if (user?.email) await emailNumberChanged(user.email, kind, newNumber)
+}
+
+// Exported for the admin email tester.
+export async function emailNumberChanged(email: string, kind: NumberKind, newNumber: string): Promise<void> {
+  const label = KIND_LABEL[kind]
+  await sendEmail({
+    to: email,
+    subject: `Your Sub-tree ${label} was changed`,
+    html: emailLayout({
+      preheader: `Your ${label} is now ${newNumber}`,
+      body: heading(`Your ${label} was changed`) + p(`Your ${label} is now ${strong(newNumber)}.`, { html: true }) + notice("If you didn't make this change, contact support immediately by replying to this email.", "danger"),
+    }),
+  })
 }

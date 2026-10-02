@@ -1,10 +1,8 @@
-import { Resend } from "resend"
 import { prisma } from "@/lib/db"
+import { sendEmail } from "@/lib/email/send"
 import { emailLayout, heading, p, codeBox, button, strong, details, notice } from "@/lib/email/template"
 import type { LoginContext } from "@/lib/auth/login-context"
 
-const resend = new Resend(process.env.RESEND_API_KEY)
-const FROM = "Sub-tree <hello@sub-tree.com>"
 const CODE_TTL_MINUTES = 15
 
 export function generateCode(): string {
@@ -18,8 +16,7 @@ export async function sendVerificationEmail(userId: number, email: string): Prom
   await prisma.emailVerification.deleteMany({ where: { user_id: userId } })
   await prisma.emailVerification.create({ data: { user_id: userId, code, expires_at } })
 
-  await resend.emails.send({
-    from: FROM,
+  await sendEmail({
     to: email,
     subject: `${code} — your Sub-tree verification code`,
     html: emailLayout({
@@ -30,8 +27,7 @@ export async function sendVerificationEmail(userId: number, email: string): Prom
 }
 
 export async function sendWelcomeEmail(email: string, username: string): Promise<void> {
-  await resend.emails.send({
-    from: FROM,
+  await sendEmail({
     to: email,
     subject: `Welcome to Sub-tree, @${username}`,
     html: emailLayout({
@@ -65,8 +61,7 @@ export async function sendSigninCode(userId: number, email: string, ctx?: LoginC
   await prisma.emailVerification.deleteMany({ where: { user_id: userId } })
   await prisma.emailVerification.create({ data: { user_id: userId, code, expires_at } })
 
-  await resend.emails.send({
-    from: FROM,
+  await sendEmail({
     to: email,
     subject: `${code} — your Sub-tree sign-in code`,
     html: emailLayout({
@@ -88,8 +83,7 @@ export async function sendPasswordResetCode(userId: number, email: string, ctx?:
   await prisma.emailVerification.deleteMany({ where: { user_id: userId } })
   await prisma.emailVerification.create({ data: { user_id: userId, code, expires_at } })
 
-  await resend.emails.send({
-    from: FROM,
+  await sendEmail({
     to: email,
     subject: `${code} — reset your Sub-tree password`,
     html: emailLayout({
