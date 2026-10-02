@@ -11,7 +11,7 @@ import { SmartLinkCard } from "@/components/SmartLinkCard"
 import { DonationLaunchNotice } from "@/components/DonationLaunchNotice"
 import { GiftMeSection } from "@/components/GiftMeSection"
 import { detectPlatform } from "@/lib/utils/platform"
-import { getDonationLaunchStatus } from "@/lib/services/donation-launch"
+import { getDonationLaunchStatusForViewer } from "@/lib/services/donation-launch"
 import { getProfileTemplate } from "@/lib/profile-templates"
 import { TemplatePage } from "@/components/profile-templates/TemplatePage"
 import { VerifiedBadge } from "@/components/VerifiedBadge"
@@ -144,7 +144,7 @@ export default async function PublicProfilePage({ params }: Props) {
   const { profile, links } = user
   // Verified and the subscription is paid (or within its grace period).
   const badgeLive = isBadgeLive(user.verified_at, user.verification_subscription)
-  const { enabled: donationsEnabled } = await getDonationLaunchStatus()
+  const { enabled: donationsEnabled } = await getDonationLaunchStatusForViewer()
 
   const isPro = (["PRO", "BUSINESS", "CONTENT_HOUSE"] as string[]).includes(user.tier)
   const showBranding = !isPro || !profile.hide_branding

@@ -45,7 +45,7 @@ export default async function SettingsPage() {
         ? `Active${verification.periodEnd ? ` · renews ${new Date(verification.periodEnd).toLocaleDateString("en-UG", { day: "numeric", month: "short" })}` : ""}`
         : "Renew"
     : verification.stage === "submitted" || verification.stage === "in_review" ? "Under review"
-    : !verification.configured ? "Coming soon"
+    : !verification.configured && !verification.testMode ? "Coming soon"
     : verification.paid ? "Continue" : "Apply"
 
   return (

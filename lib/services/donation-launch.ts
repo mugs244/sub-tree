@@ -2,6 +2,8 @@ import { Resend } from "resend"
 import { prisma } from "@/lib/db"
 import { getSetting, getSettingAsBool, updateSetting } from "@/lib/services/platform-settings"
 import { emailLayout, heading, p, button } from "@/lib/email/template"
+import { getSession } from "@/lib/auth/session"
+import { isAdmin } from "@/lib/services/admin"
 
 const resend = new Resend(process.env.RESEND_API_KEY)
 const FROM = "Sub-tree <hello@sub-tree.com>"
@@ -21,6 +23,18 @@ export async function getDonationLaunchStatus(): Promise<DonationLaunchStatus> {
   ])
   const launchAt = launchAtRaw ? new Date(launchAtRaw) : null
   return { enabled, launchAt: launchAt && !isNaN(launchAt.getTime()) ? launchAt : null }
+}
+
+// Admin test mode: a signed-in admin can make real test donations while
+// donations are still closed for everyone else. Nobody else sees a change,
+// and no "donations are live" emails go out — that only happens when the
+// switch in Admin → Settings is turned on.
+export async function getDonationLaunchStatusForViewer(): Promise<DonationLaunchStatus & { adminTest: boolean }> {
+  const status = await getDonationLaunchStatus()
+  if (status.enabled) return { ...status, adminTest: false }
+  const session = await getSession()
+  const admin = Boolean(session && isAdmin(session.userId))
+  return { ...status, enabled: admin, adminTest: admin }
 }
 
 export class DonationLaunchError extends Error {

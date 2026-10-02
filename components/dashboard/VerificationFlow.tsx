@@ -184,7 +184,7 @@ export function VerificationFlow({ initial }: { initial: VerificationState }) {
     )
   }
 
-  if (!state.configured) {
+  if (!state.configured && !state.testMode) {
     return (
       <Panel>
         <div className="py-6 text-center">
@@ -215,10 +215,30 @@ export function VerificationFlow({ initial }: { initial: VerificationState }) {
   if (!state.paid) {
     return (
       <Panel>
+        {state.testMode && (
+          <p className="mb-5 rounded-2xl bg-amber-100 px-4 py-3 text-xs font-medium text-amber-900">
+            Admin test mode — only admins see this until Smile ID is connected. Payments are real.
+          </p>
+        )}
         <PlanPicker
           title="Get your verified badge"
           subtitle="Choose a plan to start. After paying you'll do a quick ID check, and your badge goes live once it passes."
         />
+      </Panel>
+    )
+  }
+
+  // Admin test mode: paid, but Smile ID isn't connected yet.
+  if (!state.configured) {
+    return (
+      <Panel>
+        <div className="py-6 text-center">
+          <Check className="mx-auto h-10 w-10 text-success" />
+          <h2 className="mt-4 text-xl font-bold tracking-tight">Payment works</h2>
+          <p className="mt-2 text-sm text-muted-foreground">
+            Admin test mode: your subscription is paid. The ID check unlocks once the Smile ID keys are added in Vercel.
+          </p>
+        </div>
       </Panel>
     )
   }

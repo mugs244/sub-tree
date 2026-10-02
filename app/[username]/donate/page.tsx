@@ -1,7 +1,7 @@
 import { notFound, redirect } from "next/navigation"
 import { prisma } from "@/lib/db"
 import { DonateForm } from "@/components/DonateForm"
-import { getDonationLaunchStatus } from "@/lib/services/donation-launch"
+import { getDonationLaunchStatusForViewer } from "@/lib/services/donation-launch"
 
 type Props = { params: Promise<{ username: string }> }
 
@@ -32,12 +32,17 @@ export default async function DonatePage({ params }: Props) {
 
   if (!user || user.deleted_at || !user.profile) notFound()
 
-  const { enabled: donationsEnabled } = await getDonationLaunchStatus()
+  const { enabled: donationsEnabled, adminTest } = await getDonationLaunchStatusForViewer()
   if (!donationsEnabled) redirect(`/${username}`)
 
   return (
     <main className="min-h-screen bg-surface flex flex-col items-center justify-center px-4 py-12">
       <div className="w-full max-w-sm space-y-6">
+        {adminTest && (
+          <p className="rounded-xl bg-amber-100 px-4 py-3 text-center text-xs font-medium text-amber-900">
+            Admin test mode — donations are still closed for everyone else. Payments here are real.
+          </p>
+        )}
         <div className="text-center space-y-1">
           {user.profile.avatar_url && (
             <img

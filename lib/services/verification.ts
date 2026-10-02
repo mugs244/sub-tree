@@ -6,6 +6,7 @@ import { sendVerificationCode, verifyWithdrawalOtp } from "@/lib/services/withdr
 import { isSmileConfigured, mintSmileToken, type SmileSession } from "@/lib/services/smile-id"
 import { emailLayout, heading, greeting, p, notice, button } from "@/lib/email/template"
 import { isBadgeLive, isSubscriptionPaid } from "@/lib/services/billing"
+import { isAdmin } from "@/lib/services/admin"
 
 // The verification badge. Flow:
 //   start()        → email code to the account email
@@ -36,6 +37,8 @@ export type VerificationStage = "none" | "submitted" | "in_review" | "verified" 
 
 export interface VerificationState {
   configured: boolean
+  /** Admin testing before Smile ID is connected: Sub-pay works, the ID check doesn't yet. */
+  testMode: boolean
   /** Subscription paid up to now (required before the ID check). */
   paid: boolean
   /** Badge currently visible (verified + subscription within grace). */
@@ -68,6 +71,7 @@ export async function getVerificationState(userId: number): Promise<Verification
     : "none"
   return {
     configured: isSmileConfigured(),
+    testMode: !isSmileConfigured() && isAdmin(userId),
     paid: isSubscriptionPaid(sub),
     badgeLive: isBadgeLive(user?.verified_at ?? null, sub),
     periodEnd: sub?.current_period_end.toISOString() ?? null,

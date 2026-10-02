@@ -7,7 +7,7 @@ import { submitOrder as submitPesapalOrder } from "@/lib/services/payments/pesap
 import { openFloat } from "@/lib/services/payments/openfloat"
 import { mtnMomo } from "@/lib/services/momo/mtn"
 import { airtelMoney } from "@/lib/services/momo/airtel"
-import { getDonationLaunchStatus } from "@/lib/services/donation-launch"
+import { getDonationLaunchStatusForViewer } from "@/lib/services/donation-launch"
 import type { MomoProvider } from "@/lib/services/momo/types"
 
 const initiateSchema = z
@@ -47,7 +47,7 @@ export async function POST(req: Request): Promise<NextResponse> {
   // The dashboard/public-profile UI already greys out the donate button
   // based on this, but that's cosmetic only — this is the real gate. Without
   // it the endpoint is fully live regardless of the admin toggle.
-  const { enabled: donationsEnabled } = await getDonationLaunchStatus()
+  const { enabled: donationsEnabled } = await getDonationLaunchStatusForViewer()
   if (!donationsEnabled) {
     return NextResponse.json(
       { error: "DONATIONS_NOT_LIVE", message: "Donations aren't open yet — check back soon." },

@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server"
-import { getDonationLaunchStatus } from "@/lib/services/donation-launch"
+import { getDonationLaunchStatusForViewer } from "@/lib/services/donation-launch"
 
 export async function GET(): Promise<NextResponse> {
-  const status = await getDonationLaunchStatus()
+  // Admins in test mode see donations as open (the notice hides for them).
+  const status = await getDonationLaunchStatusForViewer()
   return NextResponse.json({
     data: { enabled: status.enabled, launchAt: status.launchAt?.toISOString() ?? null },
   })
