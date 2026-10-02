@@ -6,7 +6,7 @@ export const metadata = { title: "Terms of Service" }
 export default function TermsPage() {
   return (
     <div className="max-w-3xl mx-auto px-4 sm:px-6 py-12 md:py-16 space-y-8">
-      <LegalPageHeader title="Sub-tree — Terms of Service" effectiveDate="15 July 2026" lastUpdated="15 July 2026" />
+      <LegalPageHeader title="Sub-tree — Terms of Service" effectiveDate="15 July 2026" lastUpdated="2 October 2026" />
 
       <div className="space-y-6 text-[15px] leading-relaxed">
         <p>
@@ -62,8 +62,10 @@ export default function TermsPage() {
             <a href="mailto:admin@sub-tree.com" className="underline underline-offset-4">
               admin@sub-tree.com
             </a>{" "}
-            if you suspect unauthorised access to your account. We are not liable for losses arising from your
-            failure to safeguard your credentials.
+            if you suspect unauthorised access to your account. You are responsible for keeping your password,
+            email account, phone and sign-in codes secure. We are not liable for losses arising from your failure
+            to safeguard your credentials, or for theft, hacked accounts, or withdrawals not made by you, as set
+            out in clause 10.2.
           </Clause>
         </Section>
 
@@ -225,13 +227,23 @@ export default function TermsPage() {
               <li>Sub-tree is not liable for losses caused by our payment partners, authentication provider, hosting provider, or other third parties.</li>
             </ul>
           </Clause>
-          <Clause n="10.2">
-            Where liability cannot lawfully be excluded, our total aggregate liability to you arising out of or in
+          <Clause n="10.2" lead="Theft, hacked accounts and unauthorised withdrawals.">
+            Sub-tree is not liable for any loss arising from theft, a compromised or hacked account, or any
+            withdrawal or other transaction not made by the account owner, including where your password,
+            email, phone, SIM card or sign-in codes were obtained by someone else. If, after investigating, we
+            determine that such a loss was caused by a fault in Sub-tree&rsquo;s own systems, we may, at our
+            discretion, reimburse <strong>up to 25%</strong>{" "}of the income you lost. The amount reimbursed
+            depends on the size of the loss, is assessed case by case, and may be lower than 25% for larger
+            amounts. We may change this reimbursement percentage from time to time under clause 12. Any
+            reimbursement is made as a goodwill remedy and does not admit any further liability.
+          </Clause>
+          <Clause n="10.3">
+            Except as set out in clause 10.2, where liability cannot lawfully be excluded, our total aggregate liability to you arising out of or in
             connection with the Platform is limited to the greater of (a) the total fees you paid to Sub-tree in
             the <strong>three (3) months</strong>{" "}preceding the event giving rise to the claim, or (b){" "}
             <Placeholder>UGX [AMOUNT — TBD]</Placeholder>.
           </Clause>
-          <Clause n="10.3">
+          <Clause n="10.4">
             Nothing in these Terms excludes liability that cannot be excluded under Ugandan law, including for
             fraud or death or personal injury caused by negligence.
           </Clause>
