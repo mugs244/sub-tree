@@ -19,7 +19,7 @@ const NAV_ITEMS: NavItem[] = [
   { label: "Links",      href: "/dashboard/links",      icon: Link2 },
   { label: "Activity",   href: "/dashboard/activity",   icon: Activity },
   { label: "Appearance", href: "/dashboard/appearance", icon: Palette },
-  { label: "Settings",   href: "/dashboard/settings",   icon: Settings, alsoActiveOn: ["/dashboard/support"] },
+  { label: "Settings",   href: "/dashboard/settings",   icon: Settings, alsoActiveOn: ["/dashboard/support", "/dashboard/verification"] },
 ]
 
 function isActive(pathname: string, href: string, alsoActiveOn?: string[]) {
@@ -181,6 +181,7 @@ const PAGE_TITLES: Record<string, string> = {
   "/dashboard/appearance": "Appearance",
   "/dashboard/settings": "Settings",
   "/dashboard/support": "Support",
+  "/dashboard/verification": "Verification",
 }
 
 function pageTitle(pathname: string): string {

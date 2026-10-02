@@ -13,6 +13,7 @@ import { EmailChangeField } from "@/components/EmailChangeField"
 import { ThemeToggle } from "@/components/dashboard/ThemeToggle"
 import { RowLabel, type SettingsIcon } from "@/components/settings/RowLabel"
 import { ProfileHeader, SignOutRow } from "@/components/settings/SettingsClientParts"
+import { getVerificationState } from "@/lib/services/verification"
 
 // Settings, laid out like a phone app's profile screen: who you are on top,
 // then grouped cards of icon rows with the current value on the right.
@@ -37,6 +38,12 @@ export default async function SettingsPage() {
     },
   })
 
+  const verification = await getVerificationState(userId)
+  const verificationLabel =
+    verification.stage === "verified" ? "Verified"
+    : verification.stage === "submitted" || verification.stage === "in_review" ? "Under review"
+    : verification.configured ? "Apply" : "Coming soon"
+
   return (
     <div className="mx-auto max-w-xl space-y-5 px-4 pb-6 pt-4 md:px-8 md:py-10">
       <ProfileHeader
@@ -44,7 +51,18 @@ export default async function SettingsPage() {
         email={user?.email ?? null}
         avatarUrl={user?.profile?.avatar_url ?? null}
         bio={user?.profile?.bio ?? ""}
+        verified={verification.stage === "verified"}
       />
+
+      <Group title="Verification">
+        <Link href="/dashboard/verification" className="flex items-center justify-between gap-3 px-4 py-3.5 transition-colors hover:bg-black/[0.02]">
+          <RowLabel icon="verified" label={verification.stage === "verified" ? "Verified badge" : "Apply for verification badge"} />
+          <span className={["flex items-center gap-1 text-sm", verification.stage === "verified" ? "font-semibold text-[color:var(--dash-orange-text)]" : "text-muted-foreground"].join(" ")}>
+            {verificationLabel}
+            <ChevronRight className="h-4 w-4" />
+          </span>
+        </Link>
+      </Group>
 
       {/* Linked from the withdraw flow (#payouts). Withdrawals only ever go
           to these saved, verified details. */}

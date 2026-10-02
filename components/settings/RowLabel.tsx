@@ -1,4 +1,4 @@
-import { Smartphone, Landmark, AtSign, KeyRound, Mail, Phone, CalendarDays, SunMoon, Gift, Headphones, LogOut, Trash2 } from "lucide-react"
+import { Smartphone, Landmark, AtSign, KeyRound, Mail, Phone, CalendarDays, SunMoon, Gift, Headphones, LogOut, Trash2, BadgeCheck } from "lucide-react"
 
 // Icons are passed by name, not as components: the Settings page is a
 // server component and its rows are client components, and React can't pass
@@ -16,6 +16,7 @@ const ICONS = {
   support: Headphones,
   logout: LogOut,
   trash: Trash2,
+  verified: BadgeCheck,
 } as const
 
 export type SettingsIcon = keyof typeof ICONS

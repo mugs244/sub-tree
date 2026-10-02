@@ -23,6 +23,11 @@ model User {
   bank_account_name        String?
   bank_account_number      String?
   bank_details_updated_at  DateTime?
+  // Verification badge (Smile ID document + face check). verified_at set =
+  // badge shows. verified_name is the name on the ID — private, for admin
+  // review only, never shown publicly.
+  verified_at              DateTime?
+  verified_name            String?
   account_type      AccountType     @default(INDIVIDUAL)
   tier              Tier            @default(FREE)
   last_active_at    DateTime?
@@ -54,6 +59,7 @@ model User {
   email_verifications EmailVerification[]
   wallet_withdrawals WalletWithdrawal[]
   client_withdrawals ClientWithdrawal[]
+  verification_requests VerificationRequest[]
   withdrawal_otps    WithdrawalOtp[]
   phone_verifications PhoneVerification[]
   notifications      Notification[]
@@ -876,4 +882,31 @@ model DonationLaunchSubscriber {
   user        User?     @relation(fields: [user_id], references: [id], onDelete: Cascade)
 
   @@index([notified_at])
+}
+
+// One attempt at the verification badge. ID photos and face images go
+// straight from the creator's phone to Smile ID — none of them are stored
+// here, only the outcome. Statuses: AWAITING_CAPTURE (email code passed,
+// Smile ID widget opened), SUBMITTED (images sent, waiting for the result),
+// APPROVED, IN_REVIEW (Smile ID said "attention" — an admin decides),
+// REJECTED, ERROR (Smile ID couldn't process it; doesn't use up a try).
+model VerificationRequest {
+  id             Int       @id @default(autoincrement())
+  user_id        Int
+  status         String    @default("AWAITING_CAPTURE")
+  smile_user_id  String    @unique // our id for this attempt, echoed back in Smile ID's webhook
+  smile_job_id   String?
+  smile_result   String?   // clear | attention | block | error
+  result_summary String?   // Smile ID's reason text/codes, for admins
+  id_full_name   String?   // name read from the ID, for admins
+  reviewed_by    Int?
+  reviewed_at    DateTime?
+  submitted_at   DateTime?
+  created_at     DateTime  @default(now())
+  updated_at     DateTime  @updatedAt
+
+  user           User      @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@index([user_id])
+  @@index([status])
 }

@@ -12,7 +12,7 @@ const CODE_TTL_MINUTES = 10
 // was sent for, so a bank-details code can't approve a withdrawal.
 // EMAIL_CHANGE carries the new address, so a code only confirms the exact
 // email it was sent to.
-export type OtpPurpose = "WITHDRAWAL" | "BANK_DETAILS" | `EMAIL_CHANGE:${string}`
+export type OtpPurpose = "WITHDRAWAL" | "BANK_DETAILS" | "VERIFICATION" | `EMAIL_CHANGE:${string}`
 export type OtpChannel = "email" | "sms"
 
 export class WithdrawalOtpError extends Error {
@@ -114,6 +114,25 @@ export async function sendEmailChangeCode(userId: number, newEmail: string): Pro
         codeBox(code, CODE_TTL_MINUTES) +
         notice("Didn't ask for this? Ignore this email — nothing changes unless someone enters the code."),
     }),
+  })
+}
+
+// First step of applying for the verification badge — proves the account's
+// email is the creator's before any (paid) Smile ID check runs.
+export async function sendVerificationCode(userId: number): Promise<void> {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { email: true, username: true, profile: { select: { display_name: true } } },
+  })
+  if (!user?.email) throw new WithdrawalOtpError("NO_EMAIL", "No email on file for this account")
+
+  const code = await issueCode(userId, "VERIFICATION")
+  const name = user.profile?.display_name ?? user.username ?? "there"
+  await resend.emails.send({
+    from: FROM,
+    to: user.email,
+    subject: "Your Sub-tree verification code",
+    html: codeEmail(name, "Use this code to continue your application for the Sub-tree verified badge:", code, "Your code to continue verifying your account"),
   })
 }
 

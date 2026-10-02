@@ -2,13 +2,14 @@
 
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
-import { LayoutDashboard, Users, BarChart2, Settings, LogOut, Wallet, Activity, MessageCircle, Megaphone } from "lucide-react"
+import { LayoutDashboard, Users, BarChart2, Settings, LogOut, Wallet, Activity, MessageCircle, Megaphone, BadgeCheck } from "lucide-react"
 import { Logo } from "@/components/brand/Logo"
 
 const NAV = [
   { label: "Dashboard",      href: "/admin",               icon: LayoutDashboard },
   { label: "Users",          href: "/admin/users",         icon: Users },
   { label: "Wallet",         href: "/admin/wallet",        icon: Wallet },
+  { label: "Verifications",  href: "/admin/verifications", icon: BadgeCheck },
   { label: "Support",        href: "/admin/support",       icon: MessageCircle },
   { label: "Announcements",  href: "/admin/announcements", icon: Megaphone },
   { label: "System health",  href: "/admin/system-health", icon: Activity },
