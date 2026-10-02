@@ -28,6 +28,8 @@ model User {
   // review only, never shown publicly.
   verified_at              DateTime?
   verified_name            String?
+  // Which verified badge the creator chose: "classic" (blue tick) or "tree".
+  badge_style              String          @default("classic")
   account_type      AccountType     @default(INDIVIDUAL)
   tier              Tier            @default(FREE)
   last_active_at    DateTime?

@@ -8,7 +8,7 @@ import { GiftMeSection } from "@/components/GiftMeSection"
 import { detectPlatform } from "@/lib/utils/platform"
 import type { SmartCardMeta } from "@/lib/services/smart-links"
 import type { ProfileTemplate, TemplateFont } from "@/lib/profile-templates"
-import { VerifiedBadge } from "@/components/VerifiedBadge"
+import { VerifiedBadge, type BadgeStyle } from "@/components/VerifiedBadge"
 
 const inter = Inter({ subsets: ["latin"], weight: ["400", "500", "600", "700"] })
 const FONT_CLASS: Record<TemplateFont, string> = { geist: "", inter: inter.className }
@@ -35,6 +35,8 @@ export interface TemplatePageProps {
   showBranding: boolean
   /** Shows the verified badge next to the name. */
   verified?: boolean
+  /** Which badge the creator chose. */
+  badgeStyle?: BadgeStyle
   // Page-view and referrer trackers from the profile page, rendered as-is.
   trackers: React.ReactNode
 }
@@ -89,7 +91,7 @@ function Branding({ show, color }: { show: boolean; color: string }) {
 }
 
 // ── "pop": Sub-tree landing style ─────────────────────────────────────────
-function PopLayout({ template, username, profile, links, donationsEnabled, showBranding, verified }: TemplatePageProps) {
+function PopLayout({ template, username, profile, links, donationsEnabled, showBranding, verified, badgeStyle }: TemplatePageProps) {
   const c = template.colors
   const radius = radiusFor(profile.button_style, "rounded-2xl")
 
@@ -118,7 +120,7 @@ function PopLayout({ template, username, profile, links, donationsEnabled, showB
         <div className="text-center space-y-2">
           <h1 className="inline-flex items-center justify-center gap-2 text-3xl font-bold tracking-tighter">
             {profile.display_name}
-            {verified && <VerifiedBadge size={26} />}
+            {verified && <VerifiedBadge size={26} variant={badgeStyle} />}
           </h1>
           <p style={{ color: c.handle }} className="text-sm font-semibold">@{username}</p>
           {profile.bio && <p style={{ color: c.muted }} className="text-sm leading-relaxed pt-1">{profile.bio}</p>}
@@ -198,7 +200,7 @@ function linkSubtitle(url: string): string {
   }
 }
 
-function RowsLayout({ template, username, profile, links, donationsEnabled, showBranding, verified }: TemplatePageProps) {
+function RowsLayout({ template, username, profile, links, donationsEnabled, showBranding, verified, badgeStyle }: TemplatePageProps) {
   const c = template.colors
   const radius = radiusFor(profile.button_style, "rounded-xl")
   const rowClass = ["flex w-full items-center gap-4 px-5 py-3.5 text-left shadow-[0_2px_6px_rgba(17,24,39,0.08)] transition-[filter,transform] duration-150 hover:brightness-105 active:scale-[0.99]", radius].join(" ")
@@ -217,7 +219,7 @@ function RowsLayout({ template, username, profile, links, donationsEnabled, show
 
       <h1 className="mt-5 inline-flex items-center justify-center gap-1.5 text-center text-[26px] font-semibold tracking-tight">
         {profile.display_name}
-        {verified && <VerifiedBadge size={24} />}
+        {verified && <VerifiedBadge size={24} variant={badgeStyle} />}
       </h1>
       <p style={{ color: c.handle }} className="mt-0.5 text-sm font-medium">@{username}</p>
       {profile.bio && (

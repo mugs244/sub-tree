@@ -7,6 +7,7 @@ import { isSmileConfigured, mintSmileToken, type SmileSession } from "@/lib/serv
 import { emailLayout, heading, greeting, p, notice, button } from "@/lib/email/template"
 import { isBadgeLive, isSubscriptionPaid } from "@/lib/services/billing"
 import { isAdmin } from "@/lib/services/admin"
+import { isBadgeStyle, type BadgeStyle } from "@/components/VerifiedBadge"
 import { saveReviewImages, deleteReviewImages, type ImageKind } from "@/lib/services/verification-images"
 
 // The verification badge. Flow:
@@ -49,11 +50,12 @@ export interface VerificationState {
   stage: VerificationStage
   verifiedAt: string | null
   attemptsLeft: number
+  badgeStyle: BadgeStyle
 }
 
 export async function getVerificationState(userId: number): Promise<VerificationState> {
   const [user, latest, used, sub] = await Promise.all([
-    prisma.user.findUnique({ where: { id: userId }, select: { verified_at: true } }),
+    prisma.user.findUnique({ where: { id: userId }, select: { verified_at: true, badge_style: true } }),
     prisma.verificationRequest.findFirst({
       where: { user_id: userId, status: { in: COUNTED } },
       orderBy: { created_at: "desc" },
@@ -80,7 +82,13 @@ export async function getVerificationState(userId: number): Promise<Verification
     stage,
     verifiedAt: user?.verified_at?.toISOString() ?? null,
     attemptsLeft: Math.max(0, MAX_ATTEMPTS - used),
+    badgeStyle: isBadgeStyle(user?.badge_style) ? user.badge_style : "classic",
   }
+}
+
+// Classic (blue tick) or tree — can be changed any time, before or after verifying.
+export async function setBadgeStyle(userId: number, style: BadgeStyle): Promise<void> {
+  await prisma.user.update({ where: { id: userId }, data: { badge_style: style } })
 }
 
 async function assertCanApply(userId: number): Promise<void> {

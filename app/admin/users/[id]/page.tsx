@@ -5,7 +5,7 @@ import { getUserDetail } from "@/lib/services/admin-console"
 import { invoiceNumber, PLANS, type Plan } from "@/lib/services/billing"
 import { withdrawalReference } from "@/lib/services/client-wallet"
 import { AdminAction } from "@/components/admin/AdminAction"
-import { VerifiedBadge } from "@/components/VerifiedBadge"
+import { VerifiedBadge, isBadgeStyle } from "@/components/VerifiedBadge"
 
 export const metadata = { title: "User — Admin" }
 type Props = { params: Promise<{ id: string }> }
@@ -50,7 +50,7 @@ export default async function AdminUserPage({ params }: Props) {
         <div className="min-w-0 flex-1">
           <h1 className="flex items-center gap-2 text-2xl font-semibold tracking-tight">
             {u.profile?.display_name ?? u.username}
-            {u.badgeLive && <VerifiedBadge size={22} />}
+            {u.badgeLive && <VerifiedBadge size={22} variant={isBadgeStyle(u.badge_style) ? u.badge_style : "classic"} />}
           </h1>
           <p className="text-sm text-muted-foreground">@{u.username} · #{u.id} · joined {day(u.created_at)}{u.deleted_at ? " · DELETED" : ""}</p>
         </div>
@@ -84,6 +84,7 @@ export default async function AdminUserPage({ params }: Props) {
         <Card title="Verification badge">
           <Row k="Status" v={u.badgeLive ? "Badge showing" : u.verified_at ? "Verified, badge hidden (unpaid)" : "Not verified"} />
           <Row k="Verified on" v={day(u.verified_at)} />
+          <Row k="Badge style" v={u.badge_style === "tree" ? "Sub-tree" : "Classic"} />
           <Row k="Name on ID" v={u.verified_name ?? "—"} />
           <Row k="Plan" v={sub ? `${PLANS[sub.plan as Plan]?.label ?? sub.plan} · ${sub.status.toLowerCase()}` : "—"} />
           <Row k="Paid until" v={day(sub?.current_period_end)} />

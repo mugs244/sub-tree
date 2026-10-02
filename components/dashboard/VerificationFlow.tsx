@@ -6,7 +6,8 @@ import Link from "next/link"
 import { IdCard, ScanFace, Mail, ShieldCheck, Loader2, Clock, AlertTriangle, Check, RefreshCw } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { VerifiedBadge } from "@/components/VerifiedBadge"
+import { VerifiedBadge, type BadgeStyle } from "@/components/VerifiedBadge"
+import { BadgeStylePicker } from "@/components/dashboard/BadgeStylePicker"
 import type { VerificationState } from "@/lib/services/verification"
 
 // Applying for the verification badge: intro → email code → Smile ID's
@@ -47,6 +48,7 @@ function loadScript(src: string): Promise<void> {
 
 export function VerificationFlow({ initial }: { initial: VerificationState }) {
   const [state, setState] = useState(initial)
+  const setStyle = (badgeStyle: BadgeStyle) => setState((s) => ({ ...s, badgeStyle }))
   const [step, setStep] = useState<Step>("intro")
   const [code, setCode] = useState("")
   const [busy, setBusy] = useState(false)
@@ -131,6 +133,8 @@ export function VerificationFlow({ initial }: { initial: VerificationState }) {
     return (
       <Panel>
         <PlanPicker
+          style={state.badgeStyle}
+          onStyle={setStyle}
           title="Your badge is hidden"
           subtitle="Your verification subscription ended. Renew to bring your badge back — no new ID check needed."
         />
@@ -142,7 +146,7 @@ export function VerificationFlow({ initial }: { initial: VerificationState }) {
     return (
       <Panel>
         <div className="flex flex-col items-center py-6 text-center">
-          <VerifiedBadge size={64} />
+          <VerifiedBadge size={64} variant={state.badgeStyle} />
           <h2 className="mt-4 text-2xl font-bold tracking-tight">You&apos;re verified</h2>
           <p className="mt-2 max-w-sm text-sm text-muted-foreground">
             Your verified badge is showing on your page{state.verifiedAt ? ` since ${new Date(state.verifiedAt).toLocaleDateString("en-UG", { day: "numeric", month: "long", year: "numeric" })}` : ""}.
@@ -159,6 +163,9 @@ export function VerificationFlow({ initial }: { initial: VerificationState }) {
               </p>
             </div>
           )}
+          <div className="mt-5 w-full text-left">
+            <BadgeStylePicker value={state.badgeStyle} onChange={setStyle} />
+          </div>
         </div>
       </Panel>
     )
@@ -221,6 +228,8 @@ export function VerificationFlow({ initial }: { initial: VerificationState }) {
           </p>
         )}
         <PlanPicker
+          style={state.badgeStyle}
+          onStyle={setStyle}
           title="Get your verified badge"
           subtitle="Choose a plan to start. After paying you'll do a quick ID check, and your badge goes live once it passes."
         />
@@ -256,7 +265,7 @@ export function VerificationFlow({ initial }: { initial: VerificationState }) {
       {step === "intro" && (
         <>
           <div className="flex items-center gap-3">
-            <VerifiedBadge size={44} />
+            <VerifiedBadge size={44} variant={state.badgeStyle} />
             <div>
               <h2 className="text-xl font-bold tracking-tight">Get your verified badge</h2>
               <p className="text-sm text-muted-foreground">Show supporters a real, ID-checked person runs your page.</p>
@@ -268,6 +277,10 @@ export function VerificationFlow({ initial }: { initial: VerificationState }) {
             <Need icon={IdCard} title="Your Ugandan national ID" body="A photo of the front and the back." />
             <Need icon={ScanFace} title="A quick face scan" body="To match you to the photo on your ID." />
           </ol>
+
+          <div className="mt-6">
+            <BadgeStylePicker value={state.badgeStyle} onChange={setStyle} />
+          </div>
 
           <div className="mt-5 rounded-2xl bg-surface p-4 text-xs leading-relaxed text-muted-foreground">
             <p className="font-semibold text-foreground">Tips</p>
@@ -330,7 +343,7 @@ const PLAN_OPTIONS = [
 ] as const
 
 // Choose monthly or annual, then pay on Sub-pay.
-function PlanPicker({ title, subtitle }: { title: string; subtitle: string }) {
+function PlanPicker({ title, subtitle, style, onStyle }: { title: string; subtitle: string; style: BadgeStyle; onStyle: (s: BadgeStyle) => void }) {
   const router = useRouter()
   const [plan, setPlan] = useState<"MONTHLY" | "ANNUAL">("MONTHLY")
   const [busy, setBusy] = useState(false)
@@ -357,11 +370,14 @@ function PlanPicker({ title, subtitle }: { title: string; subtitle: string }) {
   return (
     <>
       <div className="flex items-center gap-3">
-        <VerifiedBadge size={44} />
+        <VerifiedBadge size={44} variant={style} />
         <div>
           <h2 className="text-xl font-bold tracking-tight">{title}</h2>
           <p className="text-sm text-muted-foreground">{subtitle}</p>
         </div>
+      </div>
+      <div className="mt-6">
+        <BadgeStylePicker value={style} onChange={onStyle} />
       </div>
       <div className="mt-6 grid grid-cols-2 gap-3" role="radiogroup" aria-label="Plan">
         {PLAN_OPTIONS.map((o) => {

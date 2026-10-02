@@ -13,7 +13,7 @@ import { detectPlatform } from "@/lib/utils/platform"
 import { getDonationLaunchStatusForViewer } from "@/lib/services/donation-launch"
 import { getProfileTemplate } from "@/lib/profile-templates"
 import { TemplatePage } from "@/components/profile-templates/TemplatePage"
-import { VerifiedBadge } from "@/components/VerifiedBadge"
+import { VerifiedBadge, isBadgeStyle } from "@/components/VerifiedBadge"
 import { isBadgeLive } from "@/lib/services/billing"
 import type { SmartCardMeta } from "@/lib/services/smart-links"
 
@@ -110,6 +110,7 @@ export default async function PublicProfilePage({ params }: Props) {
       id: true,
       deleted_at: true,
       verified_at: true,
+      badge_style: true,
       verification_subscription: { select: { current_period_end: true } },
       tier: true,
       profile: {
@@ -143,6 +144,7 @@ export default async function PublicProfilePage({ params }: Props) {
   const { profile, links } = user
   // Verified and the subscription is paid (or within its grace period).
   const badgeLive = isBadgeLive(user.verified_at, user.verification_subscription)
+  const badgeStyle = isBadgeStyle(user.badge_style) ? user.badge_style : "classic"
   const { enabled: donationsEnabled } = await getDonationLaunchStatusForViewer()
 
   const isPro = (["PRO", "BUSINESS", "CONTENT_HOUSE"] as string[]).includes(user.tier)
@@ -161,6 +163,7 @@ export default async function PublicProfilePage({ params }: Props) {
         donationsEnabled={donationsEnabled}
         showBranding={showBranding}
         verified={badgeLive}
+        badgeStyle={badgeStyle}
         trackers={<><PageViewTracker username={username} /><Suspense><ReferrerTracker /></Suspense></>}
       />
     )
@@ -215,7 +218,7 @@ export default async function PublicProfilePage({ params }: Props) {
         <div className="text-center space-y-2">
           <h1 className="inline-flex items-center justify-center gap-1.5 text-xl font-semibold tracking-tight">
             {profile.display_name}
-            {badgeLive && <VerifiedBadge size={20} />}
+            {badgeLive && <VerifiedBadge size={20} variant={badgeStyle} />}
           </h1>
           <p className="text-xs text-muted-foreground font-mono">@{username}</p>
           {profile.bio && (

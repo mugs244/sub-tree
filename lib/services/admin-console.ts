@@ -60,7 +60,7 @@ export async function getUserDetail(userId: number) {
       id: true, username: true, email: true, phone: true, momo_number: true, created_at: true, last_active_at: true,
       deleted_at: true, email_verified_at: true, password_hash: true,
       bank_name: true, bank_account_name: true, bank_account_number: true,
-      verified_at: true, verified_name: true,
+      verified_at: true, verified_name: true, badge_style: true,
       profile: { select: { display_name: true, avatar_url: true, bio: true, theme_preset: true, view_count: true, country_code: true } },
       verification_subscription: true,
       _count: { select: { links: true, sessions: true } },

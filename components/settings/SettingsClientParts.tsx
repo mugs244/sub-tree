@@ -4,7 +4,7 @@ import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { EditProfileForm } from "@/components/EditProfileForm"
 import { RowLabel } from "@/components/settings/RowLabel"
-import { VerifiedBadge } from "@/components/VerifiedBadge"
+import { VerifiedBadge, type BadgeStyle } from "@/components/VerifiedBadge"
 
 // Centred profile header for Settings: photo, name, email and an Edit
 // profile button that opens the profile form underneath.
@@ -14,12 +14,14 @@ export function ProfileHeader({
   avatarUrl,
   bio,
   verified = false,
+  badgeStyle = "classic",
 }: {
   displayName: string
   email: string | null
   avatarUrl: string | null
   bio: string
   verified?: boolean
+  badgeStyle?: BadgeStyle
 }) {
   const [editing, setEditing] = useState(false)
 
@@ -35,7 +37,7 @@ export function ProfileHeader({
       )}
       <h1 className="mt-3 inline-flex items-center gap-1.5 text-2xl font-bold tracking-tight">
         {displayName}
-        {verified && <VerifiedBadge size={22} />}
+        {verified && <VerifiedBadge size={22} variant={badgeStyle} />}
       </h1>
       {email && <p className="text-sm text-muted-foreground">{email}</p>}
       <button

@@ -56,6 +56,7 @@ export default async function SettingsPage() {
         avatarUrl={user?.profile?.avatar_url ?? null}
         bio={user?.profile?.bio ?? ""}
         verified={verification.badgeLive}
+        badgeStyle={verification.badgeStyle}
       />
 
       <Group title="Verification">
