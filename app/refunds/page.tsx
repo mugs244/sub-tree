@@ -1,5 +1,5 @@
 import Link from "next/link"
-import { Placeholder, LegalPageHeader, Section, Clause } from "@/components/legal/LegalDoc"
+import { LegalPageHeader, Section, Clause } from "@/components/legal/LegalDoc"
 
 export const metadata = { title: "Refund & Dispute Policy" }
 
@@ -9,7 +9,7 @@ export default function RefundsPage() {
       <LegalPageHeader
         title="Sub-tree — Refund & Dispute Policy"
         effectiveDate="15 July 2026"
-        lastUpdated="15 July 2026"
+        lastUpdated="2 October 2026"
       />
 
       <div className="space-y-6 text-[15px] leading-relaxed">
@@ -56,7 +56,7 @@ export default function RefundsPage() {
             </li>
             <li>
               <strong>Failed delivery of a promised benefit</strong>{" "}— where a Creator expressly offered a specific
-              good, service, or benefit in exchange for payment and did not deliver it (see clause 4).
+              good, service, or benefit in exchange for payment and did not deliver it (see clause 5).
             </li>
             <li>
               <strong>Where required by law</strong>{" "}or by our payment partners&apos; rules.
@@ -88,7 +88,39 @@ export default function RefundsPage() {
           </p>
         </Section>
 
-        <Section n="4" title="Creator-offered goods and services">
+        <Section n="4" title="Sub-tree subscriptions (verification badge)">
+          <p>
+            Payments to Sub-tree itself — such as the verification badge subscription paid through Sub-pay — can
+            be refunded only within a <strong>time window</strong>{" "}and only while your{" "}
+            <strong>usage meter</strong>{" "}is below its limit.
+          </p>
+          <ul className="list-disc pl-6 space-y-1">
+            <li>
+              <strong>Time window:</strong>{" "}you must request the refund within <strong>7 days</strong>{" "}of
+              the payment date shown on your receipt.
+            </li>
+            <li>
+              <strong>Usage meter:</strong>{" "}we record how much of a paid subscription has been used. A
+              subscription counts as used once you have started the ID check, or once the verified badge has
+              appeared on your page.
+            </li>
+            <li>
+              Once the usage meter has passed that point, the payment is <strong>no longer refundable</strong>,
+              even if you are still inside the 7-day window.
+            </li>
+            <li>
+              Renewals follow the same rules from the date each renewal is paid. Turning off auto-renew stops
+              future charges but does not refund the current period.
+            </li>
+          </ul>
+          <p>
+            Approved refunds are returned to the original payment method or your Sub-tree wallet, less any
+            payment partner fees that cannot be recovered. We may change the time window and usage limits from
+            time to time; the version in force on the date you paid applies.
+          </p>
+        </Section>
+
+        <Section n="5" title="Creator-offered goods and services">
           <p>
             If a Creator offered a specific good, service, subscription, or benefit in exchange for payment, that
             is a <strong>direct contract between the Supporter and the Creator</strong>. The Creator is responsible
@@ -101,7 +133,7 @@ export default function RefundsPage() {
           </p>
         </Section>
 
-        <Section n="5" title="Chargebacks">
+        <Section n="6" title="Chargebacks">
           <p>
             If you dispute a payment directly with your bank or mobile-money provider (a &ldquo;chargeback&rdquo;)
             instead of contacting us first, we ask that you contact{" "}
@@ -126,7 +158,7 @@ export default function RefundsPage() {
           </ul>
         </Section>
 
-        <Section n="6" title="Creator payout disputes">
+        <Section n="7" title="Creator payout disputes">
           <p>
             If you are a Creator and believe a payout is incorrect, delayed, or missing, contact{" "}
             <a href="mailto:admin@sub-tree.com" className="underline underline-offset-4">
@@ -138,20 +170,24 @@ export default function RefundsPage() {
           </p>
         </Section>
 
-        <Section n="7" title="Fraud and abuse">
+        <Section n="8" title="Fraud and abuse">
           <p>
             Fraudulent refund or chargeback claims, or attempts to abuse this policy, are prohibited and may lead
             to loss of access, withholding of funds, and reporting to authorities.
           </p>
         </Section>
 
-        <Section n="8" title="Contact">
+        <Section n="9" title="Contact">
           <p>
+            Email us at{" "}
             <a href="mailto:admin@sub-tree.com" className="underline underline-offset-4">
               admin@sub-tree.com
             </a>{" "}
-            — Marketiffy Technologies Limited,{" "}
-            <Placeholder>[REGISTERED ADDRESS]</Placeholder>.
+            or visit{" "}
+            <a href="https://marketiffytechnologies.com" target="_blank" rel="noopener noreferrer" className="underline underline-offset-4">
+              marketiffytechnologies.com
+            </a>
+            . Sub-tree is operated by Marketiffy Technologies Limited.
           </p>
         </Section>
       </div>

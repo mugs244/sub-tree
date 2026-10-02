@@ -16,10 +16,8 @@ export default function TermsPage() {
         </p>
 
         <p>
-          The Platform is operated by Marketiffy Technologies Limited, a
-          company incorporated in Uganda with registration number{" "}
-          <Placeholder>[REGISTRATION NO.]</Placeholder>, whose registered office is at{" "}
-          <Placeholder>[REGISTERED ADDRESS]</Placeholder> (&ldquo;<strong>Sub-tree</strong>&rdquo;, &ldquo;
+          The Platform is operated by Marketiffy Technologies Limited, a company incorporated in Uganda
+          (&ldquo;<strong>Sub-tree</strong>&rdquo;, &ldquo;
           <strong>we</strong>&rdquo;, &ldquo;<strong>us</strong>&rdquo;, or &ldquo;<strong>our</strong>&rdquo;).
         </p>
 
@@ -311,12 +309,15 @@ export default function TermsPage() {
             including within our corporate group.
           </Clause>
           <Clause n="15.5" lead="Contact.">
-            Questions about these Terms:{" "}
+            Questions about these Terms: email us at{" "}
             <a href="mailto:admin@sub-tree.com" className="underline underline-offset-4">
               admin@sub-tree.com
+            </a>{" "}
+            or visit{" "}
+            <a href="https://marketiffytechnologies.com" target="_blank" rel="noopener noreferrer" className="underline underline-offset-4">
+              marketiffytechnologies.com
             </a>
-            , Marketiffy Technologies Limited,{" "}
-            <Placeholder>[REGISTERED ADDRESS]</Placeholder>.
+            .
           </Clause>
         </Section>
       </div>
