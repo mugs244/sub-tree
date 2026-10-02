@@ -37,7 +37,7 @@ export function ActivityInsights({ data }: { data: InsightsData }) {
               <li key={l.id} className="space-y-1.5">
                 <div className="flex items-center justify-between gap-3 text-sm">
                   <span className="flex min-w-0 items-center gap-2">
-                    <PlatformIcon platform={detectPlatform(l.url)} className="h-4 w-4 shrink-0 text-muted-foreground" />
+                    <PlatformIcon platform={detectPlatform(l.url)} className="h-4 w-4 shrink-0 text-foreground" colored />
                     <span className="truncate font-medium">{l.label}</span>
                   </span>
                   <span className="shrink-0 tabular-nums text-muted-foreground">{l.clicks.toLocaleString()} taps</span>

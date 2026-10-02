@@ -115,7 +115,7 @@ export function LinkCard({ link, isFirst, isLast, onUpdate, onDelete, onReorder 
 
           {/* ── Content row ──────────────────────────────────── */}
           <div className="flex items-center gap-3 px-4 py-4">
-            <PlatformIcon platform={detectPlatform(link.url)} className="h-5 w-5 shrink-0 text-muted-foreground" />
+            <PlatformIcon platform={detectPlatform(link.url)} className="h-5 w-5 shrink-0 text-foreground" colored />
             <div className="flex-1 min-w-0">
               <p className={`text-sm font-medium leading-snug truncate ${!link.is_enabled ? "line-through text-muted-foreground" : ""}`}>
                 {link.label}

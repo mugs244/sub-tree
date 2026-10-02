@@ -70,7 +70,7 @@ export function AddLinkPanel({
               onClick={() => pick(p)}
               className="relative flex flex-col items-center gap-1.5 rounded-xl border border-border bg-background px-1 py-3 text-xs font-medium transition-colors hover:border-foreground/30"
             >
-              <PlatformIcon platform={p.icon} className="h-6 w-6" />
+              <PlatformIcon platform={p.icon} className="h-6 w-6" colored />
               <span className="truncate">{p.name}</span>
               {p.connect && connectProviders.includes(p.connect) && (
                 <span className="absolute right-1.5 top-1.5 h-1.5 w-1.5 rounded-full bg-[#ff8a3d]" title="Can connect automatically" />
@@ -111,7 +111,7 @@ export function AddLinkPanel({
         <button type="button" onClick={() => setPicked(null)} aria-label="Back to platforms" className="rounded-lg p-1 text-muted-foreground hover:text-foreground">
           <ArrowLeft className="h-4 w-4" />
         </button>
-        {entry ? <PlatformIcon platform={entry.icon} className="h-6 w-6" /> : <Globe className="h-6 w-6" strokeWidth={1.5} />}
+        {entry ? <PlatformIcon platform={entry.icon} className="h-6 w-6" colored /> : <Globe className="h-6 w-6" strokeWidth={1.5} />}
         <p className="text-sm font-semibold">{entry?.name ?? "Other link"}</p>
       </div>
 
