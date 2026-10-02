@@ -164,7 +164,7 @@ function PopLayout({ template, username, profile, links, donationsEnabled, showB
               style={{ backgroundColor: c.accent, color: c.accentText, borderColor: c.ledge }}
               className={["pop-press flex w-full items-center justify-center border-2 px-4 py-3.5 text-sm font-bold", radius].join(" ")}
             >
-              Support {profile.display_name} 💛
+              Gift {profile.display_name} 💛
             </a>
           ) : (
             <>
@@ -173,7 +173,7 @@ function PopLayout({ template, username, profile, links, donationsEnabled, showB
                 style={{ backgroundColor: c.linkBg, color: c.muted, borderColor: c.border }}
                 className={["flex w-full cursor-not-allowed select-none items-center justify-center border-2 border-dashed px-4 py-3 text-sm font-medium", radius].join(" ")}
               >
-                Support {profile.display_name}
+                Gift {profile.display_name}
               </div>
             </>
           )}
@@ -250,7 +250,7 @@ function RowsLayout({ template, username, profile, links, donationsEnabled, show
           <a href={`/${username}/donate`} style={{ backgroundColor: c.accent, color: c.accentText }} className={rowClass}>
             <Heart className="h-6 w-6 shrink-0" />
             <span className="min-w-0 flex-1">
-              <span className="block truncate text-[17px] font-semibold leading-tight">Support {profile.display_name}</span>
+              <span className="block truncate text-[17px] font-semibold leading-tight">Gift {profile.display_name}</span>
               <span className="block truncate text-[13px] opacity-90">Send a gift with mobile money</span>
             </span>
             <ChevronRight className="h-5 w-5 shrink-0" strokeWidth={2.5} />
@@ -263,7 +263,7 @@ function RowsLayout({ template, username, profile, links, donationsEnabled, show
             >
               <Heart className="h-6 w-6 shrink-0" />
               <span className="min-w-0 flex-1">
-                <span className="block truncate text-[17px] font-semibold leading-tight">Support {profile.display_name}</span>
+                <span className="block truncate text-[17px] font-semibold leading-tight">Gift {profile.display_name}</span>
                 <span className="block truncate text-[13px]">Mobile money donations open soon</span>
               </span>
             </div>

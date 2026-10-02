@@ -103,7 +103,7 @@ export function FanFeedClient({ initialPosts }: Props) {
                       {post.visibility === "SUPPORTERS_ONLY" ? (
                         <>
                           <Link href={`/${post.user.username}/donate`} className="text-primary hover:underline">
-                            Support {name}
+                            Gift {name}
                           </Link>{" "}
                           to unlock this post
                         </>

@@ -99,7 +99,7 @@ export default async function OgImage({ params }: Props) {
             </div>
           ))}
           <div style={{ display: "flex", justifyContent: "center", padding: "18px 0", borderRadius: 18, background: OG.orange, border: `3px solid ${OG.ink}`, fontSize: 26, fontWeight: 800, color: OG.ink }}>
-            {`Support ${firstName}`}
+            {`Gift ${firstName}`}
           </div>
         </div>
         </div>

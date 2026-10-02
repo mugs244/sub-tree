@@ -16,7 +16,7 @@ export async function generateMetadata({ params }: Props) {
     select: { display_name: true },
   })
   if (!profile) return {}
-  return { title: `Support ${profile.display_name} — Sub-tree` }
+  return { title: `Send ${profile.display_name} a gift — Sub-tree` }
 }
 
 export default async function DonatePage({ params }: Props) {
@@ -52,7 +52,7 @@ export default async function DonatePage({ params }: Props) {
             />
           )}
           <h1 className="text-xl font-semibold tracking-tight">
-            Support {user.profile.display_name}
+            Send {user.profile.display_name} a gift
           </h1>
           <p className="text-sm text-muted-foreground">@{username}</p>
         </div>

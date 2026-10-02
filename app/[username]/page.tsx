@@ -273,7 +273,7 @@ export default async function PublicProfilePage({ params }: Props) {
                 buttonClass,
               ].join(" ")}
             >
-              Support {profile.display_name} 💛
+              Gift {profile.display_name} 💛
             </a>
           ) : (
             <>
@@ -284,7 +284,7 @@ export default async function PublicProfilePage({ params }: Props) {
                   buttonClass,
                 ].join(" ")}
               >
-                Support {profile.display_name}
+                Gift {profile.display_name}
               </div>
             </>
           )}

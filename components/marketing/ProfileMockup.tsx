@@ -26,7 +26,7 @@ export function ProfileMockup() {
           ))}
         </div>
         <div className="w-full rounded-lg bg-primary text-primary-foreground px-3 py-2 text-xs font-medium text-center">
-          Support Amara 💛
+          Gift Amara 💛
         </div>
         <p className="text-center text-[9px] text-muted-foreground">
           Powered by Sub-tree

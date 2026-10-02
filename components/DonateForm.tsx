@@ -273,7 +273,7 @@ export function DonateForm({ username, displayName, fundraiserId }: DonateFormPr
         {submitting ? (
           <><Loader2 className="h-4 w-4 animate-spin mr-2" />Processing…</>
         ) : (
-          `Donate UGX ${resolvedAmount > 0 ? resolvedAmount.toLocaleString() : "—"}`
+          `Send gift · UGX ${resolvedAmount > 0 ? resolvedAmount.toLocaleString() : "—"}`
         )}
       </Button>
 

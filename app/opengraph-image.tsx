@@ -89,7 +89,7 @@ function ProfileCard() {
         </div>
       ))}
       <div style={{ display: "flex", justifyContent: "center", width: "100%", padding: "13px 0", borderRadius: 16, background: OG.orange, border: `3px solid ${OG.ink}`, fontSize: 20, fontWeight: 800, color: OG.ink }}>
-        Support Amara
+        Gift Amara
       </div>
     </div>
   )

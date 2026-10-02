@@ -669,7 +669,7 @@ function DonatePreview() {
         </div>
       </div>
       <div className="w-full rounded-lg bg-primary text-primary-foreground py-2 text-[10px] font-medium text-center">
-        Donate UGX 5,000
+        Send gift · UGX 5,000
       </div>
       <p className="text-center text-[9px] text-muted-foreground">
         MTN MoMo · Airtel Money

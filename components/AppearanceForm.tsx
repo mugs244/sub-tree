@@ -413,7 +413,7 @@ export function AppearanceForm({
                 className="w-full py-2 text-[10px] font-medium text-center mt-1"
                 style={{ borderRadius: activeButton.radius, background: previewVars.accent, color: previewVars.accentFg }}
               >
-                Support {displayName.split(" ")[0]}
+                Gift {displayName.split(" ")[0]}
               </div>
             </div>
 
@@ -597,7 +597,7 @@ function TemplatePreview({
             className="mt-1 w-full border-2 py-2 text-center text-[10px] font-bold"
             style={{ borderRadius: radius, background: c.accent, color: c.accentText, borderColor: c.ledge, boxShadow: `0 3px 0 0 ${c.ledge}` }}
           >
-            Support {displayName.split(" ")[0]}
+            Gift {displayName.split(" ")[0]}
           </div>
         </div>
         {showBranding && <p className="text-[9px]" style={{ color: c.muted }}>Powered by Sub-tree</p>}
