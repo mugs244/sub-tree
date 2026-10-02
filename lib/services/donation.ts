@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/db"
-import { sendSms } from "@/lib/sms"
+import { emailGiftReceived, LARGE_GIFT_UGX } from "@/lib/services/gift-notify"
 import { getFeeRate } from "@/lib/services/platform-settings"
 import { createNotification } from "@/lib/services/notification"
 import type { MomoCallbackPayload } from "./momo/types"
@@ -43,7 +43,7 @@ export async function handleMomoCallback(
         ...(providerTxId ? { provider_tx_id: providerTxId } : {}),
         ...(newStatus === "COMPLETED" ? { platform_fee: platformFee, creator_amount: creatorAmount } : {}),
       },
-      select: { amount: true, donor_name: true, user_id: true },
+      select: { amount: true, donor_name: true, user_id: true, note: true, creator_amount: true },
     })
 
     await tx.donationEvent.create({
@@ -62,15 +62,18 @@ export async function handleMomoCallback(
   })
 
   if (newStatus === "COMPLETED") {
-    const creator = await prisma.user.findUnique({
-      where: { id: updatedDonation.user_id },
-      select: { phone: true },
-    })
     const donor = updatedDonation.donor_name ?? "Someone"
     const amount = updatedDonation.amount.toLocaleString()
 
-    if (creator?.phone) {
-      await sendSms(creator.phone, `${donor} just donated UGX ${amount} to you on Sub-tree. 🎉`)
+    // Gifts of UGX 5,000+ get an email (never SMS); every gift shows in-app.
+    if (updatedDonation.amount >= LARGE_GIFT_UGX) {
+      await emailGiftReceived({
+        userId: updatedDonation.user_id,
+        amount: updatedDonation.amount,
+        creatorAmount: updatedDonation.creator_amount,
+        donorName: updatedDonation.donor_name,
+        note: updatedDonation.note,
+      })
     }
 
     await createNotification({

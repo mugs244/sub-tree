@@ -8,6 +8,7 @@ import { notifyWithdrawalRequested, notifyWithdrawalCompleted, notifyWithdrawalF
 import { emailVerified, emailInReview, emailRejected, emailTryAgain } from "@/lib/services/verification"
 import { receiptEmail, reminderEmail, lapsedEmail, walletRenewFailedEmail, type BillingEmail } from "@/lib/services/billing"
 import { emailLayout } from "@/lib/email/template"
+import { emailGiftReceived } from "@/lib/services/gift-notify"
 
 // Admin → Emails: sends a real copy of any Sub-tree email to the signed-in
 // admin's own inbox, through the same code path creators get, with sample
@@ -50,6 +51,15 @@ export const EMAIL_GROUPS: { group: string; emails: { key: string; label: string
       { key: "bank_code", label: "Confirm bank details (code)", send: (me) => sendBankDetailsOtp(me.id) },
       { key: "bank_changed", label: "Bank details changed", send: (me) => notifyBankDetailsChanged(me.id, "Stanbic Bank", "4321") },
       { key: "account_deleted", label: "Account deleted", send: (me) => notifyAccountDeleted(me.email, null) },
+    ],
+  },
+  {
+    group: "Gifts",
+    emails: [
+      {
+        key: "gift_received", label: "Gift received (UGX 5,000 or more)",
+        send: (me) => emailGiftReceived({ userId: me.id, amount: 20_000, creatorAmount: 19_000, donorName: "Aisha N.", note: "Loved your last video, keep going" }),
+      },
     ],
   },
   {
