@@ -31,6 +31,7 @@ export async function listLinks(userId: number) {
       smart_card_meta: true,
       smart_card_fetched_at: true,
       render_as_plain: true,
+      connected_provider: true,
       created_at: true,
     },
   })

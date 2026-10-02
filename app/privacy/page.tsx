@@ -49,6 +49,15 @@ export default function PrivacyPage() {
             </p>
           </div>
           <div>
+            <p className="font-medium">Connected accounts</p>
+            <p>
+              If you add a link by connecting a platform (for example YouTube, Spotify, TikTok, Twitch or GitHub), you sign in
+              to that platform and it shares your basic public profile with us: your account ID, username and profile link.
+              We use this only to add and keep that link tied to your account. We don&apos;t post anything, read your messages
+              or keep the platform&apos;s access token. Deleting the link removes the connection.
+            </p>
+          </div>
+          <div>
             <p className="font-medium">Contact and payout details</p>
             <p>
               Your phone number, the mobile money number you receive and withdraw to, and, if you add one, your bank name,

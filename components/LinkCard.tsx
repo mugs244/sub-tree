@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { ChevronUp, ChevronDown, Pencil, Trash2, Loader2, Check, X, ExternalLink, RefreshCw, Image } from "lucide-react"
+import { ChevronUp, ChevronDown, Pencil, Trash2, Loader2, Check, X, ExternalLink, RefreshCw, Image, Link2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -19,6 +19,8 @@ export interface LinkItem {
   link_type: string
   smart_card_meta: unknown
   render_as_plain: boolean
+  /** Set when added by signing in to the platform. */
+  connected_provider?: string | null
 }
 
 interface LinkCardProps {
@@ -119,7 +121,14 @@ export function LinkCard({ link, isFirst, isLast, onUpdate, onDelete, onReorder 
                 {link.label}
               </p>
               <p className="text-xs text-muted-foreground font-mono truncate mt-0.5">{link.url}</p>
-              <p className="text-xs text-muted-foreground mt-0.5">{link.clicks} click{link.clicks !== 1 ? "s" : ""}</p>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                {link.clicks} click{link.clicks !== 1 ? "s" : ""}
+                {link.connected_provider && (
+                  <span className="ml-2 inline-flex items-center gap-1 rounded-full bg-success-bg px-1.5 py-px text-[10px] font-semibold text-success">
+                    <Link2 className="h-2.5 w-2.5" /> Connected
+                  </span>
+                )}
+              </p>
             </div>
 
             <button

@@ -1,76 +1,58 @@
 "use client"
 
 import { useState } from "react"
-import { Plus } from "lucide-react"
+import { useRouter } from "next/navigation"
+import { Plus, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
 import { LinkCard, type LinkItem } from "@/components/LinkCard"
+import { AddLinkPanel } from "@/components/AddLinkPanel"
+import { CATALOG, buildManualUrl, type ConnectProvider } from "@/lib/platform-catalog"
 
 interface LinksManagerProps {
   initialLinks: LinkItem[]
+  /** Platforms whose Connect (sign-in) is set up. */
+  connectProviders: ConnectProvider[]
+  /** Set after coming back from a platform's sign-in. */
+  connected: { provider: string; linkId: number } | null
+  connectError: string | null
 }
 
-export function LinksManager({ initialLinks }: LinksManagerProps) {
+export function LinksManager({ initialLinks, connectProviders, connected, connectError }: LinksManagerProps) {
+  const router = useRouter()
   const [links, setLinks] = useState<LinkItem[]>(initialLinks)
   const [showAdd, setShowAdd] = useState(false)
-  const [newUrl, setNewUrl] = useState("")
-  const [newLabel, setNewLabel] = useState("")
   const [addError, setAddError] = useState<string | null>(null)
+  const [notice, setNotice] = useState<{ provider: string; linkId: number } | null>(connected)
+  const [noticeError, setNoticeError] = useState<string | null>(connectError)
 
-  async function handleAdd(e: React.SyntheticEvent<HTMLFormElement>) {
-    e.preventDefault()
+  // Adds a link; returns an error message, or null when it worked.
+  async function addLinkRequest(url: string, label: string): Promise<string | null> {
     setAddError(null)
-    if (!newUrl.trim() || !newLabel.trim()) {
-      setAddError("Both URL and label are required")
-      return
-    }
-
-    const savedUrl = newUrl.trim()
-    const savedLabel = newLabel.trim()
-    const tempId = -(Date.now())
-    const tempLink: LinkItem = {
-      id: tempId,
-      url: savedUrl,
-      label: savedLabel,
-      is_enabled: true,
-      position: links.length,
-      clicks: 0,
-      link_type: "URL",
-      smart_card_meta: null,
-      render_as_plain: false,
-    }
-
-    setLinks((cur) => [...cur, tempLink])
-    setNewUrl("")
-    setNewLabel("")
-    setShowAdd(false)
-
     try {
       const res = await fetch("/api/links", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ url: savedUrl, label: savedLabel }),
+        body: JSON.stringify({ url, label }),
       })
       if (!res.ok) {
-        const body = (await res.json()) as { message: string }
-        setLinks((cur) => cur.filter((l) => l.id !== tempId))
-        setAddError(body.message ?? "Could not add link")
-        setShowAdd(true)
-        setNewUrl(savedUrl)
-        setNewLabel(savedLabel)
-        return
+        const body = (await res.json().catch(() => ({}))) as { message?: string }
+        return body.message ?? "Could not add link"
       }
       const fresh = await fetch("/api/links")
       const { data } = (await fresh.json()) as { data: LinkItem[] }
       setLinks(data)
+      setShowAdd(false)
+      return null
     } catch {
-      setLinks((cur) => cur.filter((l) => l.id !== tempId))
-      setAddError("Could not add link — please try again")
-      setShowAdd(true)
-      setNewUrl(savedUrl)
-      setNewLabel(savedLabel)
+      return "Could not add link — please try again"
     }
+  }
+
+  function dismissNotice() {
+    setNotice(null)
+    setNoticeError(null)
+    router.replace("/dashboard/links", { scroll: false })
   }
 
   async function handleUpdate(id: number, data: Partial<Pick<LinkItem, "url" | "label" | "is_enabled" | "render_as_plain">>) {
@@ -118,8 +100,26 @@ export function LinksManager({ initialLinks }: LinksManagerProps) {
     }
   }
 
+  const connectedName = notice ? CATALOG.find((c) => c.connect === notice.provider)?.name ?? "Account" : null
+
   return (
     <div className="space-y-3">
+      {noticeError && (
+        <div className="flex items-start justify-between gap-3 rounded-xl bg-error-bg px-4 py-3 text-sm text-error">
+          <span>{noticeError}</span>
+          <button type="button" onClick={dismissNotice} aria-label="Dismiss"><X className="h-4 w-4" /></button>
+        </div>
+      )}
+      {notice && (
+        notice.provider === "spotify"
+          ? <SpotifyFollowUp linkId={notice.linkId} onSave={(url) => handleUpdate(notice.linkId, { url })} onDone={dismissNotice} />
+          : (
+            <div className="flex items-start justify-between gap-3 rounded-xl bg-success-bg px-4 py-3 text-sm text-success">
+              <span>{connectedName} connected — your profile link has been added.</span>
+              <button type="button" onClick={dismissNotice} aria-label="Dismiss"><X className="h-4 w-4" /></button>
+            </div>
+          )
+      )}
       {links.length === 0 && !showAdd && (
         <p className="text-sm text-muted-foreground text-center py-8">
           No links yet. Add your first one below.
@@ -141,50 +141,7 @@ export function LinksManager({ initialLinks }: LinksManagerProps) {
       {addError && <p className="text-xs text-destructive">{addError}</p>}
 
       {showAdd ? (
-        <form
-          onSubmit={handleAdd}
-          className="bg-surface border border-border rounded-xl p-4 space-y-3"
-        >
-          <div className="space-y-1.5">
-            <Label htmlFor="new-label" className="text-sm font-medium">Label</Label>
-            <Input
-              id="new-label"
-              value={newLabel}
-              onChange={(e) => setNewLabel(e.target.value)}
-              placeholder="My website"
-              className="h-11"
-              autoFocus
-            />
-          </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="new-url" className="text-sm font-medium">URL</Label>
-            <Input
-              id="new-url"
-              type="url"
-              value={newUrl}
-              onChange={(e) => setNewUrl(e.target.value)}
-              placeholder="https://…"
-              className="h-11 font-mono text-sm"
-            />
-          </div>
-          <div className="flex gap-2">
-            <Button type="submit" className="h-11 flex-1">Add link</Button>
-            <Button
-              type="button"
-              variant="ghost"
-              className="h-11 flex-1"
-              onClick={() => {
-                navigator?.vibrate?.(20)
-                setShowAdd(false)
-                setAddError(null)
-                setNewUrl("")
-                setNewLabel("")
-              }}
-            >
-              Cancel
-            </Button>
-          </div>
-        </form>
+        <AddLinkPanel connectProviders={connectProviders} onAdd={addLinkRequest} onCancel={() => setShowAdd(false)} />
       ) : (
         <Button
           variant="outline"
@@ -199,5 +156,44 @@ export function LinksManager({ initialLinks }: LinksManagerProps) {
         </Button>
       )}
     </div>
+  )
+}
+
+// Spotify sign-in only proves the listener account. Artists and podcasters
+// swap in their artist or show page so fans land on their music.
+function SpotifyFollowUp({ onSave, onDone }: { linkId: number; onSave: (url: string) => Promise<void>; onDone: () => void }) {
+  const [value, setValue] = useState("")
+  const [error, setError] = useState<string | null>(null)
+  const [busy, setBusy] = useState(false)
+  const spotify = CATALOG.find((c) => c.id === "spotify")!
+
+  async function save(e: React.SyntheticEvent<HTMLFormElement>) {
+    e.preventDefault()
+    const built = buildManualUrl(spotify, value)
+    if ("error" in built) return setError(built.error)
+    setBusy(true)
+    try {
+      await onSave(built.url)
+      onDone()
+    } catch {
+      setError("Couldn't save — please try again")
+      setBusy(false)
+    }
+  }
+
+  return (
+    <form onSubmit={save} className="space-y-3 rounded-xl border border-border bg-surface p-4">
+      <p className="text-sm font-semibold">Spotify connected</p>
+      <p className="text-xs text-muted-foreground">
+        Your Spotify account is tied to Sub-tree. Are you an artist or podcaster? Paste your artist or show link so fans go
+        straight to your music — or skip to keep your profile link.
+      </p>
+      <Input value={value} onChange={(e) => setValue(e.target.value)} placeholder="https://open.spotify.com/artist/…" className="h-11 font-mono text-sm" autoCapitalize="none" />
+      {error && <p className="text-xs text-destructive">{error}</p>}
+      <div className="flex gap-2">
+        <Button type="submit" className="h-10 flex-1" disabled={busy}>{busy ? "Saving…" : "Use this link"}</Button>
+        <Button type="button" variant="ghost" className="h-10 flex-1" onClick={onDone}>Skip</Button>
+      </div>
+    </form>
   )
 }
