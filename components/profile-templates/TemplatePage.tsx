@@ -4,7 +4,6 @@ import { ChevronRight, Heart } from "lucide-react"
 import { TrackedLink } from "@/components/TrackedLink"
 import { PlatformIcon } from "@/components/PlatformIcon"
 import { SmartLinkCard } from "@/components/SmartLinkCard"
-import { DonationLaunchNotice } from "@/components/DonationLaunchNotice"
 import { GiftMeSection } from "@/components/GiftMeSection"
 import { detectPlatform } from "@/lib/utils/platform"
 import type { SmartCardMeta } from "@/lib/services/smart-links"
@@ -176,9 +175,6 @@ function PopLayout({ template, username, profile, links, donationsEnabled, showB
               >
                 Support {profile.display_name}
               </div>
-              <div className="mt-3">
-                <DonationLaunchNotice compact />
-              </div>
             </>
           )}
         </div>
@@ -271,7 +267,6 @@ function RowsLayout({ template, username, profile, links, donationsEnabled, show
                 <span className="block truncate text-[13px]">Mobile money donations open soon</span>
               </span>
             </div>
-            <DonationLaunchNotice compact />
           </>
         )}
       </div>

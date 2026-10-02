@@ -1,6 +1,5 @@
 import Link from "next/link"
 import { ChevronRight, Heart, ArrowUpRight, Palette, Receipt } from "lucide-react"
-import { DonationLaunchNotice } from "@/components/DonationLaunchNotice"
 import { WalletCard } from "@/components/dashboard/WalletCard"
 
 export interface RecentTransaction {
@@ -90,8 +89,6 @@ export function DashboardHome({ data }: { data: DashboardHomeData }) {
             <ChevronRight className="h-5 w-5 shrink-0" strokeWidth={2.5} />
           </Link>
           )}
-
-          <DonationLaunchNotice inline />
         </div>
 
         <section>

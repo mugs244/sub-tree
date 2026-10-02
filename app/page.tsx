@@ -1,7 +1,6 @@
 import Link from "next/link"
 import { Logo } from "@/components/brand/Logo"
 import { PlatformIcon } from "@/components/PlatformIcon"
-import { DonationLaunchNotice } from "@/components/DonationLaunchNotice"
 import { CookiePreferencesButton } from "@/components/CookiePreferencesButton"
 import { ProfileMockup } from "@/components/marketing/ProfileMockup"
 import { Heart, ArrowRight, Smartphone, Check, Minus, Sparkle, Copy } from "lucide-react"
@@ -168,10 +167,6 @@ export default async function LandingPage() {
                 </Link>
               </nav>
             </header>
-
-            <div className="relative z-10 mt-4">
-              <DonationLaunchNotice inline />
-            </div>
 
             {/* Floating platform tiles — real Simple Icons, not drawn props */}
             <FloatingTiles />

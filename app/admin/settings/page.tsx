@@ -3,7 +3,7 @@ import { getSession } from "@/lib/auth/session"
 import { isAdmin } from "@/lib/services/admin"
 import { prisma } from "@/lib/db"
 import { getFeeRate } from "@/lib/services/platform-settings"
-import { getDonationLaunchStatus, countPendingSubscribers } from "@/lib/services/donation-launch"
+import { getDonationLaunchStatus } from "@/lib/services/donation-launch"
 import { AdminSettingsClient } from "./AdminSettingsClient"
 import { DonationsLaunchCard } from "./DonationsLaunchCard"
 
@@ -13,7 +13,7 @@ export default async function AdminSettingsPage() {
   const session = await getSession()
   if (!session || !isAdmin(session.userId)) redirect("/")
 
-  const [settings, auditLogs, donationRate, withdrawalCreatorRate, withdrawalProcessorRate, donationLaunch, pendingSubscribers] = await Promise.all([
+  const [settings, auditLogs, donationRate, withdrawalCreatorRate, withdrawalProcessorRate, donationLaunch] = await Promise.all([
     prisma.platformSetting.findMany({ orderBy: { key: "asc" } }),
     prisma.platformSettingAuditLog.findMany({
       orderBy: { changed_at: "desc" },
@@ -23,7 +23,6 @@ export default async function AdminSettingsPage() {
     getFeeRate("fee_withdrawal_creator", 0.02),
     getFeeRate("fee_withdrawal_processor", 0.01),
     getDonationLaunchStatus(),
-    countPendingSubscribers(),
   ])
 
   const serializedSettings = settings.map((s) => ({
@@ -43,13 +42,12 @@ export default async function AdminSettingsPage() {
         <p className="text-xs font-mono text-muted-foreground mb-1">Admin</p>
         <h1 className="text-2xl font-semibold tracking-tight">Platform settings</h1>
         <p className="text-sm text-muted-foreground mt-1">
-          Fee rates and platform-wide configuration. Changes take effect within 5 minutes.
+          Fee rates and platform-wide configuration. Changes take effect immediately.
         </p>
       </div>
       <DonationsLaunchCard
         initialEnabled={donationLaunch.enabled}
         initialLaunchAt={donationLaunch.launchAt?.toISOString() ?? null}
-        initialPendingSubscribers={pendingSubscribers}
       />
       <AdminSettingsClient
         settings={serializedSettings}

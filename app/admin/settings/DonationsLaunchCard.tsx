@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button"
 interface Props {
   initialEnabled: boolean
   initialLaunchAt: string | null
-  initialPendingSubscribers: number
 }
 
 // Local datetime-local input expects "YYYY-MM-DDTHH:mm" with no timezone —
@@ -18,10 +17,9 @@ function toLocalInputValue(iso: string | null): string {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
 }
 
-export function DonationsLaunchCard({ initialEnabled, initialLaunchAt, initialPendingSubscribers }: Props) {
+export function DonationsLaunchCard({ initialEnabled, initialLaunchAt }: Props) {
   const [enabled, setEnabled] = useState(initialEnabled)
   const [launchAtLocal, setLaunchAtLocal] = useState(toLocalInputValue(initialLaunchAt))
-  const [pendingSubscribers, setPendingSubscribers] = useState(initialPendingSubscribers)
   const [saving, setSaving] = useState(false)
   const [message, setMessage] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -45,12 +43,7 @@ export function DonationsLaunchCard({ initialEnabled, initialLaunchAt, initialPe
         return
       }
       setEnabled(nextEnabled)
-      if (body.data.notifiedCount > 0) {
-        setMessage(`Donations enabled — notified ${body.data.notifiedCount} waiting subscriber${body.data.notifiedCount === 1 ? "" : "s"}.`)
-        setPendingSubscribers(0)
-      } else {
-        setMessage("Saved.")
-      }
+      setMessage(nextEnabled ? "Donations are open on every creator's page." : "Donations are closed.")
     } catch {
       setError("Failed to save")
     } finally {
@@ -64,8 +57,8 @@ export function DonationsLaunchCard({ initialEnabled, initialLaunchAt, initialPe
         <div>
           <h2 className="text-sm font-medium">Donations launch gate</h2>
           <p className="text-xs text-muted-foreground mt-1">
-            While disabled, the public donate button is greyed out everywhere and visitors can opt in to be
-            emailed the moment you enable it. {pendingSubscribers} waiting to be notified.
+            While disabled, the Support button is greyed out on every creator&apos;s page (admins can still
+            make test donations). Turning it on opens donations straight away — no emails are sent.
           </p>
         </div>
         <span

@@ -2,7 +2,7 @@ import { NextResponse } from "next/server"
 import { z } from "zod"
 import { getSession } from "@/lib/auth/session"
 import { isAdmin } from "@/lib/services/admin"
-import { getDonationLaunchStatus, setDonationLaunchStatus, countPendingSubscribers } from "@/lib/services/donation-launch"
+import { getDonationLaunchStatus, setDonationLaunchStatus } from "@/lib/services/donation-launch"
 
 export async function GET(): Promise<NextResponse> {
   const session = await getSession()
@@ -10,13 +10,9 @@ export async function GET(): Promise<NextResponse> {
     return NextResponse.json({ error: "UNAUTHORIZED" }, { status: 401 })
   }
 
-  const [status, pendingSubscribers] = await Promise.all([
-    getDonationLaunchStatus(),
-    countPendingSubscribers(),
-  ])
-
+  const status = await getDonationLaunchStatus()
   return NextResponse.json({
-    data: { enabled: status.enabled, launchAt: status.launchAt?.toISOString() ?? null, pendingSubscribers },
+    data: { enabled: status.enabled, launchAt: status.launchAt?.toISOString() ?? null },
   })
 }
 
@@ -51,6 +47,6 @@ export async function PATCH(req: Request): Promise<NextResponse> {
     }
   }
 
-  const result = await setDonationLaunchStatus(parsed.data.enabled, launchAt, session.userId)
-  return NextResponse.json({ data: result })
+  await setDonationLaunchStatus(parsed.data.enabled, launchAt, session.userId)
+  return NextResponse.json({ data: { enabled: parsed.data.enabled } })
 }

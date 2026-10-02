@@ -8,7 +8,6 @@ import { PageViewTracker } from "@/components/PageViewTracker"
 import { PlatformIcon } from "@/components/PlatformIcon"
 import { ReferrerTracker } from "@/components/ReferrerTracker"
 import { SmartLinkCard } from "@/components/SmartLinkCard"
-import { DonationLaunchNotice } from "@/components/DonationLaunchNotice"
 import { GiftMeSection } from "@/components/GiftMeSection"
 import { detectPlatform } from "@/lib/utils/platform"
 import { getDonationLaunchStatusForViewer } from "@/lib/services/donation-launch"
@@ -286,9 +285,6 @@ export default async function PublicProfilePage({ params }: Props) {
                 ].join(" ")}
               >
                 Support {profile.display_name}
-              </div>
-              <div className="mt-3">
-                <DonationLaunchNotice compact />
               </div>
             </>
           )}
