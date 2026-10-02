@@ -123,6 +123,43 @@ function configCheck(name: string, envs: string[], okMessage: string, missingMes
   )
 }
 
+// Link "Connect" keys. Each check asks the platform whether the keys are
+// valid without signing anyone in: Twitch issues an app token for good
+// keys; Google answers a dummy code with "invalid_grant" when the client
+// is real and "invalid_client" when it isn't.
+function checkTwitchConnect(): Promise<HealthCheckResult> {
+  const id = process.env.TWITCH_CLIENT_ID
+  const secret = process.env.TWITCH_CLIENT_SECRET
+  if (!id || !secret) {
+    return Promise.resolve({ name: "Twitch connect", status: "unconfigured", latencyMs: null, message: `Missing: ${[!id && "TWITCH_CLIENT_ID", !secret && "TWITCH_CLIENT_SECRET"].filter(Boolean).join(", ")}` })
+  }
+  return timed("Twitch connect", async () => {
+    const res = await fetch("https://id.twitch.tv/oauth2/token", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({ client_id: id, client_secret: secret, grant_type: "client_credentials" }),
+    })
+    if (!res.ok) throw new Error(`Twitch rejected the keys: ${res.status} ${await res.text()}`)
+  })
+}
+
+function checkYouTubeConnect(): Promise<HealthCheckResult> {
+  const id = process.env.YOUTUBE_CLIENT_ID
+  const secret = process.env.YOUTUBE_CLIENT_SECRET
+  if (!id || !secret) {
+    return Promise.resolve({ name: "YouTube connect", status: "unconfigured", latencyMs: null, message: `Missing: ${[!id && "YOUTUBE_CLIENT_ID", !secret && "YOUTUBE_CLIENT_SECRET"].filter(Boolean).join(", ")}` })
+  }
+  return timed("YouTube connect", async () => {
+    const res = await fetch("https://oauth2.googleapis.com/token", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({ client_id: id, client_secret: secret, code: "health-check", grant_type: "authorization_code", redirect_uri: "https://sub-tree.com/api/connect/youtube/callback" }),
+    })
+    const body = (await res.json().catch(() => ({}))) as { error?: string; error_description?: string }
+    if (body.error !== "invalid_grant") throw new Error(`Google rejected the keys: ${body.error ?? res.status} ${body.error_description ?? ""}`.trim())
+  })
+}
+
 export async function runHealthChecks(): Promise<HealthCheckResult[]> {
   return Promise.all([
     checkDatabase(),
@@ -143,6 +180,8 @@ export async function runHealthChecks(): Promise<HealthCheckResult[]> {
       "Configured — make sure the account has balance", "No SMS codes or alerts are sent."),
     configCheck("Daily billing cron", ["CRON_SECRET"],
       "Secret set", "The billing cron endpoint isn't protected."),
+    checkTwitchConnect(),
+    checkYouTubeConnect(),
     checkOgScraper(),
   ])
 }
