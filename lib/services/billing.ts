@@ -72,6 +72,53 @@ export async function getBillingState(userId: number) {
   return { sub, openInvoice }
 }
 
+// ── Refund window and usage meter (Refund policy, section 4) ──────────────
+// A paid verification invoice can be refunded within REFUND_WINDOW_DAYS of
+// payment, but only until it's "used": the ID check was started after the
+// payment, or the verified badge is showing. Refunds themselves are handled
+// by the team (email), this only tells the creator and admins where it stands.
+
+export const REFUND_WINDOW_DAYS = 7
+
+export interface RefundMeter {
+  invoiceNumber: string
+  amount: number
+  paidAt: string
+  windowEndsAt: string
+  /** 0–1: how much of the time window has passed. */
+  timeUsed: number
+  daysLeft: number
+  checkStarted: boolean
+  badgeShowing: boolean
+  eligible: boolean
+}
+
+export async function getRefundMeter(userId: number): Promise<RefundMeter | null> {
+  const inv = await prisma.invoice.findFirst({
+    where: { user_id: userId, purpose: "VERIFICATION", status: "PAID", paid_at: { gte: new Date(Date.now() - REFUND_WINDOW_DAYS * DAY) } },
+    orderBy: { paid_at: "desc" },
+  })
+  if (!inv?.paid_at) return null
+  const [user, started] = await Promise.all([
+    prisma.user.findUnique({ where: { id: userId }, select: { verified_at: true } }),
+    prisma.verificationRequest.count({ where: { user_id: userId, created_at: { gte: inv.paid_at } } }),
+  ])
+  const windowEnds = inv.paid_at.getTime() + REFUND_WINDOW_DAYS * DAY
+  const checkStarted = started > 0
+  const badgeShowing = Boolean(user?.verified_at)
+  return {
+    invoiceNumber: invoiceNumber(inv.id),
+    amount: inv.amount,
+    paidAt: inv.paid_at.toISOString(),
+    windowEndsAt: new Date(windowEnds).toISOString(),
+    timeUsed: Math.min(1, Math.max(0, (Date.now() - inv.paid_at.getTime()) / (REFUND_WINDOW_DAYS * DAY))),
+    daysLeft: Math.max(0, Math.ceil((windowEnds - Date.now()) / DAY)),
+    checkStarted,
+    badgeShowing,
+    eligible: Date.now() < windowEnds && !checkStarted && !badgeShowing,
+  }
+}
+
 // ── Invoices ──────────────────────────────────────────────────────────────
 
 // One open verification invoice at a time — choosing a different plan

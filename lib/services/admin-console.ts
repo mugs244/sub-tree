@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/db"
 import { getClientBalance } from "@/lib/services/client-wallet"
-import { isBadgeLive } from "@/lib/services/billing"
+import { isBadgeLive, getRefundMeter } from "@/lib/services/billing"
 
 // Data for the admin portal: what needs someone's attention right now,
 // headline revenue, and a full picture of one creator.
@@ -68,7 +68,7 @@ export async function getUserDetail(userId: number) {
   })
   if (!user) return null
 
-  const [balance, gifts, withdrawals, invoices, verifications] = await Promise.all([
+  const [balance, gifts, withdrawals, invoices, verifications, refund] = await Promise.all([
     getClientBalance(userId),
     prisma.donation.findMany({
       where: { user_id: userId },
@@ -94,6 +94,7 @@ export async function getUserDetail(userId: number) {
       take: 10,
       select: { id: true, status: true, smile_job_id: true, smile_result: true, result_summary: true, created_at: true },
     }),
+    getRefundMeter(userId),
   ])
 
   const { password_hash, ...rest } = user
@@ -106,6 +107,7 @@ export async function getUserDetail(userId: number) {
     withdrawals: withdrawals.map((w) => ({ ...w, amount: Number(w.amount), net_amount: Number(w.net_amount) })),
     invoices,
     verifications,
+    refund,
   }
 }
 

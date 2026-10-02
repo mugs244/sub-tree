@@ -507,6 +507,9 @@ export default async function LandingPage() {
             <Link href="/terms" className="text-xs text-white/70 hover:text-white transition-colors duration-150">
               Terms
             </Link>
+            <Link href="/privacy" className="text-xs text-white/70 hover:text-white transition-colors duration-150">
+              Privacy
+            </Link>
             <Link href="/cookies" className="text-xs text-white/70 hover:text-white transition-colors duration-150">
               Cookies
             </Link>

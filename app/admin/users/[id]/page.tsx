@@ -87,6 +87,14 @@ export default async function AdminUserPage({ params }: Props) {
           <Row k="Name on ID" v={u.verified_name ?? "—"} />
           <Row k="Plan" v={sub ? `${PLANS[sub.plan as Plan]?.label ?? sub.plan} · ${sub.status.toLowerCase()}` : "—"} />
           <Row k="Paid until" v={day(sub?.current_period_end)} />
+          {u.refund && (
+            <Row
+              k="Refund"
+              v={u.refund.eligible
+                ? `Refundable until ${day(new Date(u.refund.windowEndsAt))} (${u.refund.invoiceNumber})`
+                : `Not refundable — ${u.refund.checkStarted ? "ID check started" : u.refund.badgeShowing ? "badge showing" : "window closed"}`}
+            />
+          )}
           <Row k="Auto-renew" v={sub ? [sub.auto_renew_wallet && "wallet", sub.card_recurring && "card"].filter(Boolean).join(" + ") || "off" : "—"} />
           <div className="flex flex-wrap gap-2 pt-2">
             <AdminAction url={actions} body={{ action: "extend_subscription", months: 1 }} label="Give 1 free month" confirm="Extend their subscription by 1 month for free?" tone="success" />

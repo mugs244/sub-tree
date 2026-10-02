@@ -67,7 +67,9 @@ export default function SignUpPage() {
         <p className="text-xs leading-relaxed text-muted-foreground">
           By clicking &ldquo;Create account&rdquo;, you are creating a Sub-tree account and you agree to Sub-tree&apos;s{" "}
           <Link href="/terms" target="_blank" className="font-medium text-foreground hover:underline">Terms of Service</Link>
-          {" "}and{" "}
+          , acknowledge the{" "}
+          <Link href="/privacy" target="_blank" className="font-medium text-foreground hover:underline">Privacy Policy</Link>
+          {" "}and agree to the{" "}
           <Link href="/cookies" target="_blank" className="font-medium text-foreground hover:underline">Cookie Policy</Link>.
         </p>
       </form>

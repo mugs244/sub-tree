@@ -1,3 +1,4 @@
+import Link from "next/link"
 import { LegalPageHeader, Section } from "@/components/legal/LegalDoc"
 import { CookiePreferencesButton } from "@/components/CookiePreferencesButton"
 
@@ -11,7 +12,8 @@ export default function CookiesPage() {
       <div className="space-y-6 text-[15px] leading-relaxed">
         <p>
           This Cookie Policy explains how the Sub-tree platform (the &ldquo;<strong>Platform</strong>&rdquo;) uses
-          cookies and similar technologies. It should be read together with our Privacy Policy.
+          cookies and similar technologies. It should be read together with our{" "}
+          <Link href="/privacy" className="underline underline-offset-4">Privacy Policy</Link>.
         </p>
 
         <hr className="border-border" />
