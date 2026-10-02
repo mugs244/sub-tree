@@ -6,6 +6,8 @@ import { createSession, applySessionCookie } from "@/lib/auth/session"
 import { findOrCreateOAuthUser } from "@/lib/auth/oauth"
 import { isAdmin } from "@/lib/services/admin"
 import { getIpFromHeaders } from "@/lib/utils/geo"
+import { getLoginContext } from "@/lib/auth/login-context"
+import { notifyNewSignIn } from "@/lib/services/security-notify"
 
 // Supabase redirects here after Google/Apple sign-in with a one-time code.
 // We exchange it for the provider-verified email, map that to a Sub-tree
@@ -39,7 +41,9 @@ export async function GET(req: Request) {
     const { data, error } = await supabase.auth.exchangeCodeForSession(code)
     if (error || !data.user?.email) return fail("oauth_failed")
 
-    const { userId } = await findOrCreateOAuthUser(data.user.email, getIpFromHeaders(req.headers))
+    const { userId, created } = await findOrCreateOAuthUser(data.user.email, getIpFromHeaders(req.headers))
+    // Brand-new accounts get no "new sign-in" alert — that would be noise.
+    if (!created) await notifyNewSignIn(userId, getLoginContext(req.headers), "Google")
     await supabase.auth.signOut({ scope: "local" })
 
     const { token, expires_at } = await createSession(userId)

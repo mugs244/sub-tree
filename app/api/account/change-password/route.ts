@@ -6,6 +6,7 @@ import { getSession } from "@/lib/auth/session"
 import { hashPassword, verifyPassword } from "@/lib/auth/password"
 import { notifyPasswordChanged } from "@/lib/services/security-notify"
 import { prisma } from "@/lib/db"
+import { checkRateLimit } from "@/lib/rateLimit"
 
 const schema = z.object({
   current_password: z.string().min(1, "Current password is required"),
@@ -40,6 +41,12 @@ export async function POST(req: Request): Promise<NextResponse> {
       { error: "NO_PASSWORD_SET", message: "No password set on this account — use \"Forgot password\" to set one" },
       { status: 400 },
     )
+  }
+
+  // Don't let a stolen session brute-force the current password.
+  const rl = checkRateLimit(`change-password:${session.userId}`, { windowMs: 15 * 60 * 1000, max: 5 })
+  if (!rl.allowed) {
+    return NextResponse.json({ error: "RATE_LIMITED", message: "Too many attempts. Please wait a few minutes." }, { status: 429 })
   }
 
   const valid = await verifyPassword(parsed.data.current_password, user.password_hash)

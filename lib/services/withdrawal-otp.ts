@@ -10,7 +10,9 @@ const CODE_TTL_MINUTES = 10
 
 // What a code authorises. A code is only ever accepted for the purpose it
 // was sent for, so a bank-details code can't approve a withdrawal.
-export type OtpPurpose = "WITHDRAWAL" | "BANK_DETAILS"
+// EMAIL_CHANGE carries the new address, so a code only confirms the exact
+// email it was sent to.
+export type OtpPurpose = "WITHDRAWAL" | "BANK_DETAILS" | `EMAIL_CHANGE:${string}`
 export type OtpChannel = "email" | "sms"
 
 export class WithdrawalOtpError extends Error {
@@ -88,6 +90,30 @@ export async function sendBankDetailsOtp(userId: number): Promise<void> {
     to: user.email,
     subject: "Confirm your Sub-tree bank details",
     html: codeEmail(name, "Use this code to save the bank account your withdrawals will be sent to:", code, "Your code to confirm your bank details"),
+  })
+}
+
+// Code for changing the account email — sent to the NEW address, proving
+// the creator owns it. The caller has already checked their password.
+export async function sendEmailChangeCode(userId: number, newEmail: string): Promise<void> {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { username: true, profile: { select: { display_name: true } } },
+  })
+  const code = await issueCode(userId, `EMAIL_CHANGE:${newEmail}`)
+  const name = user?.profile?.display_name ?? user?.username ?? "there"
+  await resend.emails.send({
+    from: FROM,
+    to: newEmail,
+    subject: "Confirm your new Sub-tree email",
+    html: emailLayout({
+      preheader: `Your code to confirm ${newEmail}`,
+      body:
+        greeting(name) +
+        p(`Enter this code in Sub-tree to make ${strong(newEmail)} your account email:`, { html: true }) +
+        codeBox(code, CODE_TTL_MINUTES) +
+        notice("Didn't ask for this? Ignore this email — nothing changes unless someone enters the code."),
+    }),
   })
 }
 

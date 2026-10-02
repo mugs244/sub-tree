@@ -9,6 +9,7 @@ import { UsernameSettingsField } from "@/components/UsernameSettingsField"
 import { ChangePasswordForm } from "@/components/ChangePasswordForm"
 import { NumberChangeField } from "@/components/NumberChangeField"
 import { BankDetailsField } from "@/components/BankDetailsField"
+import { EmailChangeField } from "@/components/EmailChangeField"
 import { ThemeToggle } from "@/components/dashboard/ThemeToggle"
 import { RowLabel, type SettingsIcon } from "@/components/settings/RowLabel"
 import { ProfileHeader, SignOutRow } from "@/components/settings/SettingsClientParts"
@@ -25,6 +26,7 @@ export default async function SettingsPage() {
     select: {
       username: true,
       email: true,
+      password_hash: true,
       phone: true,
       created_at: true,
       momo_number: true,
@@ -66,7 +68,7 @@ export default async function SettingsPage() {
       <Group title="Account">
         {user?.username && <UsernameSettingsField icon="username" initialUsername={user.username} />}
         <ChangePasswordForm icon="password" />
-        <ValueRow icon="email" label="Email" value={user?.email ?? "—"} />
+        <EmailChangeField icon="email" initialEmail={user?.email ?? ""} hasPassword={Boolean(user?.password_hash)} />
         <NumberChangeField
           icon="phone"
           label="Phone"

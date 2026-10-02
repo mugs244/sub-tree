@@ -1,7 +1,8 @@
 import { Resend } from "resend"
 import { prisma } from "@/lib/db"
 import { sendSms } from "@/lib/sms"
-import { emailLayout, heading, p, strong, notice } from "@/lib/email/template"
+import { emailLayout, heading, p, strong, notice, details, button } from "@/lib/email/template"
+import type { LoginContext } from "@/lib/auth/login-context"
 
 const resend = new Resend(process.env.RESEND_API_KEY)
 const FROM = "Sub-tree <hello@sub-tree.com>"
@@ -79,5 +80,61 @@ export async function notifyBankDetailsChanged(userId: number, bankName: string,
     } catch (err) {
       console.error("Bank-details email failed", { userId, err })
     }
+  }
+}
+
+// Sent after every successful password or Google sign-in (a sign-in code
+// email already shows the attempt itself). Email only, so it's free and
+// doesn't nag by SMS.
+export async function notifyNewSignIn(userId: number, ctx: LoginContext, method: "Password" | "Google"): Promise<void> {
+  const user = await prisma.user.findUnique({ where: { id: userId }, select: { email: true } })
+  if (!user?.email) return
+  try {
+    await resend.emails.send({
+      from: FROM,
+      to: user.email,
+      subject: "New sign-in to your Sub-tree account",
+      html: emailLayout({
+        preheader: `${ctx.device}${ctx.location ? ` near ${ctx.location}` : ""}`,
+        body:
+          heading("New sign-in") +
+          p("Your Sub-tree account was just signed in to.") +
+          details([
+            ["When", ctx.time],
+            ["Device", ctx.device],
+            ...(ctx.location ? [["Near", ctx.location] as [string, string]] : []),
+            ["Signed in with", method],
+          ]) +
+          notice("If this was you, there's nothing to do. If it wasn't, reset your password now — that signs the other person out.", "info") +
+          button("Reset password", "https://sub-tree.com/forgot-password"),
+      }),
+    })
+  } catch (err) {
+    console.error("New sign-in email failed", { userId, err })
+  }
+}
+
+// The old address hears about an email change, since it's the one the real
+// owner still reads if the change wasn't them. SMS too, when there's a phone.
+export async function notifyEmailChanged(userId: number, oldEmail: string, newEmail: string): Promise<void> {
+  const user = await prisma.user.findUnique({ where: { id: userId }, select: { phone: true } })
+  if (user?.phone) {
+    await sendSms(user.phone, `Sub-tree: Your account email was changed to ${newEmail}. If this wasn't you, contact support immediately.`)
+  }
+  try {
+    await resend.emails.send({
+      from: FROM,
+      to: oldEmail,
+      subject: "Your Sub-tree email was changed",
+      html: emailLayout({
+        preheader: `Your account email is now ${newEmail}`,
+        body:
+          heading("Email changed") +
+          p(`Your Sub-tree account email was changed from ${strong(oldEmail)} to ${strong(newEmail)}. Sign-in codes and receipts now go there.`, { html: true }) +
+          notice("If you didn't make this change, reply to this email immediately so we can secure your account.", "danger"),
+      }),
+    })
+  } catch (err) {
+    console.error("Email-changed alert failed", { userId, err })
   }
 }

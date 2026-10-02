@@ -1,6 +1,7 @@
 import { Resend } from "resend"
 import { prisma } from "@/lib/db"
-import { emailLayout, heading, p, codeBox, button, strong } from "@/lib/email/template"
+import { emailLayout, heading, p, codeBox, button, strong, details, notice } from "@/lib/email/template"
+import type { LoginContext } from "@/lib/auth/login-context"
 
 const resend = new Resend(process.env.RESEND_API_KEY)
 const FROM = "Sub-tree <hello@sub-tree.com>"
@@ -46,7 +47,18 @@ export async function sendWelcomeEmail(email: string, username: string): Promise
   })
 }
 
-export async function sendSigninCode(userId: number, email: string): Promise<void> {
+// Where an attempt came from, shown in code emails so an unexpected one
+// stands out.
+function attemptBlock(ctx?: LoginContext): string {
+  if (!ctx) return ""
+  return p("Request details", { size: 13, muted: true }) + details([
+    ["When", ctx.time],
+    ["Device", ctx.device],
+    ...(ctx.location ? [["Near", ctx.location] as [string, string]] : []),
+  ])
+}
+
+export async function sendSigninCode(userId: number, email: string, ctx?: LoginContext): Promise<void> {
   const code = generateCode()
   const expires_at = new Date(Date.now() + CODE_TTL_MINUTES * 60 * 1000)
 
@@ -59,12 +71,17 @@ export async function sendSigninCode(userId: number, email: string): Promise<voi
     subject: `${code} — your Sub-tree sign-in code`,
     html: emailLayout({
       preheader: `Your sign-in code is ${code}`,
-      body: heading("Your sign-in code") + p("Enter this code in Sub-tree to sign in:") + codeBox(code, CODE_TTL_MINUTES) + p("If you didn't try to sign in, you can ignore this email — your account is safe.", { muted: true, size: 13 }),
+      body:
+        heading("Your sign-in code") +
+        p("Someone is signing in to your Sub-tree account. Enter this code to continue:") +
+        codeBox(code, CODE_TTL_MINUTES) +
+        attemptBlock(ctx) +
+        notice("Wasn't you? Don't share this code with anyone — your account stays safe as long as nobody has it. If you keep getting these, change your password.", "danger"),
     }),
   })
 }
 
-export async function sendPasswordResetCode(userId: number, email: string): Promise<void> {
+export async function sendPasswordResetCode(userId: number, email: string, ctx?: LoginContext): Promise<void> {
   const code = generateCode()
   const expires_at = new Date(Date.now() + CODE_TTL_MINUTES * 60 * 1000)
 
@@ -77,7 +94,12 @@ export async function sendPasswordResetCode(userId: number, email: string): Prom
     subject: `${code} — reset your Sub-tree password`,
     html: emailLayout({
       preheader: `Your password reset code is ${code}`,
-      body: heading("Reset your password") + p("Enter this code in Sub-tree to set a new password:") + codeBox(code, CODE_TTL_MINUTES) + p("If you didn't ask to reset your password, you can ignore this email — your password won't change.", { muted: true, size: 13 }),
+      body:
+        heading("Reset your password") +
+        p("Enter this code in Sub-tree to set a new password:") +
+        codeBox(code, CODE_TTL_MINUTES) +
+        attemptBlock(ctx) +
+        notice("Didn't ask to reset your password? Ignore this email — your password won't change unless someone enters this code. Never share it.", "danger"),
     }),
   })
 }

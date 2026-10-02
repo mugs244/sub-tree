@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { prisma } from "@/lib/db"
 import { sendPasswordResetCode } from "@/lib/auth/email"
+import { getLoginContext } from "@/lib/auth/login-context"
 import { checkRateLimit } from "@/lib/rateLimit"
 import { z } from "zod"
 
@@ -32,7 +33,7 @@ export async function POST(req: Request) {
     }
 
     try {
-      await sendPasswordResetCode(user.id, parsed.data.email)
+      await sendPasswordResetCode(user.id, parsed.data.email, getLoginContext(req.headers))
     } catch (err) {
       console.error("Failed to send password reset code:", err)
       return NextResponse.json({ error: "Failed to send code — try again" }, { status: 500 })

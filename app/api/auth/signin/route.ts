@@ -3,6 +3,9 @@ import { prisma } from "@/lib/db"
 import { verifyPassword } from "@/lib/auth/password"
 import { createSession, applySessionCookie } from "@/lib/auth/session"
 import { isAdmin } from "@/lib/services/admin"
+import { notifyNewSignIn } from "@/lib/services/security-notify"
+import { getLoginContext } from "@/lib/auth/login-context"
+import { checkRateLimit } from "@/lib/rateLimit"
 import { z } from "zod"
 
 const schema = z.object({
@@ -22,6 +25,13 @@ export async function POST(req: Request) {
 
     const { email, password } = parsed.data
 
+    // Slow down password guessing: 10 tries per 15 minutes per email.
+    // (In-memory per server instance — a speed bump, not a hard lock.)
+    const rl = checkRateLimit(`signin:${email.trim().toLowerCase()}`, { windowMs: 15 * 60 * 1000, max: 10 })
+    if (!rl.allowed) {
+      return NextResponse.json({ error: "Too many sign-in attempts. Please wait a few minutes or sign in with a code." }, { status: 429 })
+    }
+
     const user = await prisma.user.findUnique({
       where: { email },
       select: { id: true, password_hash: true, email_verified_at: true, deleted_at: true },
@@ -39,6 +49,7 @@ export async function POST(req: Request) {
     }
 
     const { token, expires_at } = await createSession(user.id)
+    await notifyNewSignIn(user.id, getLoginContext(req.headers), "Password")
     const res = NextResponse.json({ ok: true, isAdmin: isAdmin(user.id) })
     return applySessionCookie(res, token, expires_at)
   } catch (err) {
