@@ -131,6 +131,28 @@ export const metadata = {
 // rates shown here should reflect whatever an admin has configured right now.
 export const dynamic = "force-dynamic"
 
+const STRUCTURED_DATA = {
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "Organization",
+      "@id": "https://sub-tree.com/#organization",
+      name: "Sub-tree",
+      legalName: "Marketiffy Technologies Limited",
+      url: "https://sub-tree.com",
+      logo: "https://sub-tree.com/logo.png",
+      email: "admin@sub-tree.com",
+    },
+    {
+      "@type": "WebSite",
+      "@id": "https://sub-tree.com/#website",
+      name: "Sub-tree",
+      url: "https://sub-tree.com",
+      publisher: { "@id": "https://sub-tree.com/#organization" },
+    },
+  ],
+}
+
 export default async function LandingPage() {
   const [donationFeeRate, withdrawalCreatorRate, withdrawalProcessorRate] = await Promise.all([
     getFeeRate("fee_donation_free", 0.05),
@@ -143,6 +165,8 @@ export default async function LandingPage() {
 
   return (
     <div className="flex flex-col min-h-screen bg-[color:var(--landing-bg)] text-foreground">
+      {/* Tells Google the site name and logo shown in search results. */}
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(STRUCTURED_DATA) }} />
       <main className="flex-1">
         {/* ── Hero panel ──────────────────────────────────── */}
         <section className="px-3 pt-3 sm:px-6 sm:pt-6">
