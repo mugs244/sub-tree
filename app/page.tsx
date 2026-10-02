@@ -491,7 +491,7 @@ export default async function LandingPage() {
             </CookiePreferencesButton>
           </nav>
           <p className="text-xs text-white/60 sm:text-right">
-            &copy; {new Date().getFullYear()} Sub-tree
+            &copy; {new Date().getFullYear()} Sub-tree · Marketiffy Technologies Limited
           </p>
         </div>
       </footer>
