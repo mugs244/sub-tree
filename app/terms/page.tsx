@@ -1,5 +1,5 @@
 import Link from "next/link"
-import { Placeholder, LegalPageHeader, Section, Clause } from "@/components/legal/LegalDoc"
+import { LegalPageHeader, Section, Clause } from "@/components/legal/LegalDoc"
 
 export const metadata = { title: "Terms of Service" }
 
@@ -236,10 +236,11 @@ export default function TermsPage() {
             reimbursement is made as a goodwill remedy and does not admit any further liability.
           </Clause>
           <Clause n="10.3">
-            Except as set out in clause 10.2, where liability cannot lawfully be excluded, our total aggregate liability to you arising out of or in
-            connection with the Platform is limited to the greater of (a) the total fees you paid to Sub-tree in
-            the <strong>three (3) months</strong>{" "}preceding the event giving rise to the claim, or (b){" "}
-            <Placeholder>UGX [AMOUNT — TBD]</Placeholder>.
+            Except as set out in clause 10.2, where liability cannot lawfully be excluded, the amount of any
+            liability we accept is <strong>assessed case by case</strong>, based on what happened: the cause of the
+            loss, whether and to what extent Sub-tree was at fault, the amount actually lost, and what you and any
+            third parties (such as payment partners) contributed to it. We will investigate each claim and tell you
+            the outcome and the amount, if any, in writing.
           </Clause>
           <Clause n="10.4">
             Nothing in these Terms excludes liability that cannot be excluded under Ugandan law, including for
