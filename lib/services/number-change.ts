@@ -85,8 +85,6 @@ export async function confirmNumberChange(
     await sendSms(oldNumber, `Sub-tree: Your ${label} was changed. If this wasn't you, contact support immediately.`)
   }
 
-  // Confirm on both channels regardless of which one delivered the code.
-  await sendSms(newNumber, `Sub-tree: Your ${label} is now confirmed and saved.`)
 
   if (user?.email) await emailNumberChanged(user.email, kind, newNumber)
 }

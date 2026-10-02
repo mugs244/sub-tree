@@ -1,6 +1,5 @@
 import { prisma } from "@/lib/db"
 import { sendEmail } from "@/lib/email/send"
-import { sendSms } from "@/lib/sms"
 import { emailLayout, heading, greeting, p, amountCard, details, notice, securityNote, button } from "@/lib/email/template"
 
 
@@ -37,15 +36,8 @@ function whatHappensNext(r: WithdrawalReceiptNotification): string {
 // The withdrawal receipt, emailed as soon as a withdrawal is approved with
 // its code, plus a short SMS. Never throws into the request.
 export async function notifyWithdrawalRequested(r: WithdrawalReceiptNotification): Promise<void> {
-  const { name, email, phone } = await getNameEmailPhone(r.userId)
+  const { name, email } = await getNameEmailPhone(r.userId)
   const totalFee = r.platformFee + r.processorFee
-
-  if (phone) {
-    await sendSms(
-      phone,
-      `Sub-tree: Withdrawal ${r.reference ? `${r.reference} ` : ""}of ${fmt(r.amount)} approved. Fees ${fmt(totalFee)}, you'll receive ${fmt(r.netAmount)}. Not you? Contact support now.`,
-    )
-  }
 
   if (!email) return
   const date = new Date(r.createdAt ?? Date.now()).toLocaleString("en-UG", { timeZone: "Africa/Kampala", dateStyle: "medium", timeStyle: "short" })
@@ -95,11 +87,7 @@ async function getNameEmailPhone(userId: number): Promise<{ name: string; email:
 // Fired when an admin marks a withdrawal COMPLETED — the money has actually
 // been sent (manually, until the real payout API is wired in).
 export async function notifyWithdrawalCompleted(n: WithdrawalNotification): Promise<void> {
-  const { name, email, phone } = await getNameEmailPhone(n.userId)
-
-  if (phone) {
-    await sendSms(phone, `Sub-tree: Your withdrawal of ${fmt(n.amount)} is complete. You'll receive ${fmt(n.netAmount)} after fees.`)
-  }
+  const { name, email } = await getNameEmailPhone(n.userId)
 
   if (!email) return
 
@@ -131,11 +119,7 @@ export async function notifyWithdrawalCompleted(n: WithdrawalNotification): Prom
 
 // Fired when an admin marks a withdrawal FAILED.
 export async function notifyWithdrawalFailed(userId: number, amount: number): Promise<void> {
-  const { name, email, phone } = await getNameEmailPhone(userId)
-
-  if (phone) {
-    await sendSms(phone, `Sub-tree: Your withdrawal of ${fmt(amount)} failed. Check your payment details and try again, or contact support.`)
-  }
+  const { name, email } = await getNameEmailPhone(userId)
 
   if (!email) return
 

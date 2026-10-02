@@ -1,7 +1,6 @@
 import { prisma } from "@/lib/db"
 import { pesapal } from "@/lib/services/payments/pesapal"
 import { openFloat } from "@/lib/services/payments/openfloat"
-import { sendSms } from "@/lib/sms"
 import type { Tier, SubscriptionStatus } from "@prisma/client"
 import { randomUUID } from "crypto"
 
@@ -180,11 +179,6 @@ export async function activateSubscription(idempotencyKey: string): Promise<void
       },
     }),
   ])
-
-  if (sub.user.phone) {
-    const tierLabel = sub.tier.replace("_", " ").toLowerCase()
-    await sendSms(sub.user.phone, `Your Sub-tree ${tierLabel} plan is now active.`)
-  }
 }
 
 // Called when payment fails or is rejected
@@ -212,13 +206,6 @@ export async function failSubscription(idempotencyKey: string): Promise<void> {
       },
     }),
   ])
-
-  if (sub.user.phone) {
-    await sendSms(
-      sub.user.phone,
-      `Your Sub-tree subscription payment could not be collected. Your account has been moved to the free plan.`,
-    )
-  }
 }
 
 // Daily cron: charge users whose trial has expired + renew active subscriptions
@@ -321,13 +308,6 @@ export async function runBillingCycle(): Promise<{ charged: number; failed: numb
         },
       }),
     ])
-
-    if (sub.user.phone) {
-      await sendSms(
-        sub.user.phone,
-        `Your Sub-tree subscription has expired. Visit sub-tree.com to resubscribe.`,
-      )
-    }
   }
 
   return { charged, failed }

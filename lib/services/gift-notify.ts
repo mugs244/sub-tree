@@ -2,9 +2,8 @@ import { prisma } from "@/lib/db"
 import { sendEmail } from "@/lib/email/send"
 import { emailLayout, heading, greeting, p, amountCard, details, notice, button } from "@/lib/email/template"
 
-// Gifts of this size or more get an email to the creator (no SMS). Smaller
-// gifts only show in the dashboard's Activity feed.
-export const LARGE_GIFT_UGX = 5_000
+// Every gift gets an email to the creator, never an SMS — SMS is kept for
+// codes and security alerts because it costs per message.
 
 const fmt = (n: number) => `UGX ${Math.round(n).toLocaleString("en-UG")}`
 
@@ -47,8 +46,7 @@ export async function emailGiftReceived(g: GiftEmail): Promise<void> {
         amountCard("Gift received", fmt(g.amount), g.creatorAmount != null ? `${fmt(g.creatorAmount)} to your balance after fees` : undefined) +
         (g.note?.trim() ? notice(`“${g.note.trim()}”`) : "") +
         details(rows, { emphasiseLast: g.creatorAmount != null }) +
-        button("Open your wallet", "https://sub-tree.com/dashboard") +
-        p(`You get an email for every gift of ${fmt(LARGE_GIFT_UGX)} or more. Smaller gifts show in your Activity feed.`, { muted: true, size: 13 }),
+        button("Open your wallet", "https://sub-tree.com/dashboard"),
     }),
   })
 }

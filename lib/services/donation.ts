@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/db"
-import { emailGiftReceived, LARGE_GIFT_UGX } from "@/lib/services/gift-notify"
+import { emailGiftReceived } from "@/lib/services/gift-notify"
 import { getFeeRate } from "@/lib/services/platform-settings"
 import { createNotification } from "@/lib/services/notification"
 import type { MomoCallbackPayload } from "./momo/types"
@@ -65,16 +65,14 @@ export async function handleMomoCallback(
     const donor = updatedDonation.donor_name ?? "Someone"
     const amount = updatedDonation.amount.toLocaleString()
 
-    // Gifts of UGX 5,000+ get an email (never SMS); every gift shows in-app.
-    if (updatedDonation.amount >= LARGE_GIFT_UGX) {
-      await emailGiftReceived({
-        userId: updatedDonation.user_id,
-        amount: updatedDonation.amount,
-        creatorAmount: updatedDonation.creator_amount,
-        donorName: updatedDonation.donor_name,
-        note: updatedDonation.note,
-      })
-    }
+    // Every gift is emailed (never SMS) and shows in-app.
+    await emailGiftReceived({
+      userId: updatedDonation.user_id,
+      amount: updatedDonation.amount,
+      creatorAmount: updatedDonation.creator_amount,
+      donorName: updatedDonation.donor_name,
+      note: updatedDonation.note,
+    })
 
     await createNotification({
       userId: updatedDonation.user_id,

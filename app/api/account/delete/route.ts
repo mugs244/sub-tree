@@ -31,7 +31,7 @@ export async function POST(): Promise<NextResponse> {
   // Destroy the session so the user is signed out
   await destroySession()
 
-  await notifyAccountDeleted(user.email, user.phone)
+  await notifyAccountDeleted(user.email)
 
   return NextResponse.json({ data: null })
 }

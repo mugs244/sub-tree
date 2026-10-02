@@ -50,14 +50,14 @@ export const EMAIL_GROUPS: { group: string; emails: { key: string; label: string
       { key: "number_changed", label: "Number changed", send: (me) => emailNumberChanged(me.email, "momo_number", "+256700000000") },
       { key: "bank_code", label: "Confirm bank details (code)", send: (me) => sendBankDetailsOtp(me.id) },
       { key: "bank_changed", label: "Bank details changed", send: (me) => notifyBankDetailsChanged(me.id, "Stanbic Bank", "4321") },
-      { key: "account_deleted", label: "Account deleted", send: (me) => notifyAccountDeleted(me.email, null) },
+      { key: "account_deleted", label: "Account deleted", send: (me) => notifyAccountDeleted(me.email) },
     ],
   },
   {
     group: "Gifts",
     emails: [
       {
-        key: "gift_received", label: "Gift received (UGX 5,000 or more)",
+        key: "gift_received", label: "Gift received",
         send: (me) => emailGiftReceived({ userId: me.id, amount: 20_000, creatorAmount: 19_000, donorName: "Aisha N.", note: "Loved your last video, keep going" }),
       },
     ],

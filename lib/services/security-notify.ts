@@ -31,11 +31,7 @@ export async function notifyPasswordChanged(userId: number): Promise<void> {
   }
 }
 
-export async function notifyAccountDeleted(email: string | null, phone: string | null): Promise<void> {
-  if (phone) {
-    await sendSms(phone, "Sub-tree: Your account has been deleted. If this wasn't you, contact support immediately.")
-  }
-
+export async function notifyAccountDeleted(email: string | null): Promise<void> {
   if (email) {
     try {
       await sendEmail({
