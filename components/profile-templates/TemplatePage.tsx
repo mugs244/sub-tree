@@ -9,6 +9,7 @@ import { detectPlatform } from "@/lib/utils/platform"
 import type { SmartCardMeta } from "@/lib/services/smart-links"
 import type { ProfileTemplate, TemplateFont } from "@/lib/profile-templates"
 import { VerifiedBadge, type BadgeStyle } from "@/components/VerifiedBadge"
+import { DefaultAvatar } from "@/components/DefaultAvatar"
 
 const inter = Inter({ subsets: ["latin"], weight: ["400", "500", "600", "700"] })
 const FONT_CLASS: Record<TemplateFont, string> = { geist: "", inter: inter.className }
@@ -77,10 +78,6 @@ function radiusFor(buttonStyle: string, rounded: string): string {
   return rounded
 }
 
-function initialOf(name: string): string {
-  return name.charAt(0).toUpperCase()
-}
-
 function Branding({ show, color }: { show: boolean; color: string }) {
   if (!show) return null
   return (
@@ -108,11 +105,10 @@ function PopLayout({ template, username, profile, links, donationsEnabled, showB
             />
           ) : (
             <span
-              style={{ backgroundColor: c.accent, color: c.accentText, borderColor: c.border }}
-              className="flex h-24 w-24 items-center justify-center rounded-full border-[3px] text-4xl font-bold"
-              aria-hidden="true"
+              style={{ backgroundColor: c.accent, borderColor: c.border }}
+              className="flex h-24 w-24 items-end overflow-hidden rounded-full border-[3px]"
             >
-              {initialOf(profile.display_name)}
+              <DefaultAvatar color={c.accentText} />
             </span>
           )}
         </div>
@@ -211,8 +207,8 @@ function RowsLayout({ template, username, profile, links, donationsEnabled, show
         {profile.avatar_url ? (
           <img src={profile.avatar_url} alt={profile.display_name} className="h-full w-full rounded-full object-cover" />
         ) : (
-          <span style={{ color: c.accent }} className="text-5xl font-bold" aria-hidden="true">
-            {initialOf(profile.display_name)}
+          <span style={{ backgroundColor: c.accent }} className="flex h-full w-full items-end overflow-hidden rounded-full">
+            <DefaultAvatar color="#ffffff" />
           </span>
         )}
       </div>

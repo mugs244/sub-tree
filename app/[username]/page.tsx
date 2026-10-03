@@ -14,6 +14,7 @@ import { getDonationLaunchStatusForViewer } from "@/lib/services/donation-launch
 import { getProfileTemplate } from "@/lib/profile-templates"
 import { TemplatePage } from "@/components/profile-templates/TemplatePage"
 import { VerifiedBadge, isBadgeStyle } from "@/components/VerifiedBadge"
+import { DefaultAvatar } from "@/components/DefaultAvatar"
 import { isBadgeLive } from "@/lib/services/billing"
 import type { SmartCardMeta } from "@/lib/services/smart-links"
 
@@ -205,15 +206,19 @@ export default async function PublicProfilePage({ params }: Props) {
       <PageViewTracker username={username} />
       <Suspense><ReferrerTracker /></Suspense>
       <div className="w-full max-w-sm space-y-6">
-        {profile.avatar_url && (
-          <div className="flex justify-center">
+        <div className="flex justify-center">
+          {profile.avatar_url ? (
             <img
               src={profile.avatar_url}
               alt={profile.display_name}
               className="h-20 w-20 rounded-full object-cover border border-border"
             />
-          </div>
-        )}
+          ) : (
+            <span className="flex h-20 w-20 items-end overflow-hidden rounded-full bg-[#DFE5E7]">
+              <DefaultAvatar />
+            </span>
+          )}
+        </div>
 
         <div className="text-center space-y-2">
           <h1 className="inline-flex items-center justify-center gap-1.5 text-xl font-semibold tracking-tight">

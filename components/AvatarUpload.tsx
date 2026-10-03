@@ -3,6 +3,7 @@
 import { useRef, useState } from "react"
 import { upload } from "@vercel/blob/client"
 import { Pencil, Loader2 } from "lucide-react"
+import { DefaultAvatar } from "@/components/DefaultAvatar"
 
 const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp"]
 const MAX_BYTES = 5 * 1024 * 1024
@@ -81,7 +82,7 @@ export function AvatarUpload({ value, onChange }: AvatarUploadProps) {
         />
         <span
           aria-hidden="true"
-          className="pointer-events-none absolute bottom-1 right-1 h-9 w-9 rounded-full bg-[#ff8a3d] text-[#111827] border-[3px] border-background shadow flex items-center justify-center"
+          className="pointer-events-none absolute bottom-1 right-1 h-9 w-9 rounded-full bg-[#111827] text-white border-[3px] border-background dark:bg-white dark:text-[#111827] shadow flex items-center justify-center"
         >
           {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Pencil className="h-4 w-4" strokeWidth={2.25} />}
         </span>
@@ -100,12 +101,3 @@ export function AvatarUpload({ value, onChange }: AvatarUploadProps) {
   )
 }
 
-// The grey head-and-shoulders placeholder, like WhatsApp's default photo.
-function DefaultAvatar() {
-  return (
-    <svg viewBox="0 0 100 100" className="h-full w-full" aria-hidden="true">
-      <circle cx="50" cy="38" r="18" fill="#ffffff" />
-      <path d="M14 100c2-20 17-33 36-33s34 13 36 33z" fill="#ffffff" />
-    </svg>
-  )
-}
