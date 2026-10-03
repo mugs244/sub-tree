@@ -44,8 +44,12 @@ export function AvatarUpload({ value, onChange }: AvatarUploadProps) {
         handleUploadUrl: "/api/upload/avatar",
       })
       onChange(blob.url)
-    } catch {
-      setError("Upload failed — please try again")
+    } catch (err) {
+      // Show Blob's own reason (e.g. a private store or missing token) so a
+      // setup problem is visible instead of a generic failure.
+      const reason = err instanceof Error ? err.message.replace(/^Vercel Blob:s*/i, "") : ""
+      console.error("Avatar upload failed", err)
+      setError(reason ? `Upload failed: ${reason}` : "Upload failed — please try again")
     } finally {
       setUploading(false)
     }

@@ -1,3 +1,4 @@
+import { put, del } from "@vercel/blob"
 import { prisma } from "@/lib/db"
 import { fetchSmartCardMeta } from "@/lib/services/smart-links"
 import { checkAirtelHealth } from "@/lib/services/momo/airtel"
@@ -127,6 +128,18 @@ function configCheck(name: string, envs: string[], okMessage: string, missingMes
 // valid without signing anyone in: Twitch issues an app token for good
 // keys; Google answers a dummy code with "invalid_grant" when the client
 // is real and "invalid_client" when it isn't.
+// Profile photo storage: writes and deletes a tiny public file, which is
+// exactly what an avatar upload needs (a private store fails here).
+function checkBlob(): Promise<HealthCheckResult> {
+  if (!process.env.BLOB_READ_WRITE_TOKEN) {
+    return Promise.resolve({ name: "Photo storage (Blob)", status: "unconfigured", latencyMs: null, message: "Missing: BLOB_READ_WRITE_TOKEN — profile photo uploads won't work." })
+  }
+  return timed("Photo storage (Blob)", async () => {
+    const blob = await put(`health/check-${Date.now()}.txt`, "ok", { access: "public", addRandomSuffix: true })
+    await del(blob.url)
+  })
+}
+
 function checkTwitchConnect(): Promise<HealthCheckResult> {
   const id = process.env.TWITCH_CLIENT_ID
   const secret = process.env.TWITCH_CLIENT_SECRET
@@ -180,6 +193,7 @@ export async function runHealthChecks(): Promise<HealthCheckResult[]> {
       "Configured — make sure the account has balance", "No SMS codes or alerts are sent."),
     configCheck("Daily billing cron", ["CRON_SECRET"],
       "Secret set", "The billing cron endpoint isn't protected."),
+    checkBlob(),
     checkTwitchConnect(),
     checkYouTubeConnect(),
     checkOgScraper(),
