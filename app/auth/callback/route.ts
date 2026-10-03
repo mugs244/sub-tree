@@ -47,13 +47,25 @@ export async function GET(req: Request) {
     await supabase.auth.signOut({ scope: "local" })
 
     const { token, expires_at } = await createSession(userId)
-    const dest = next ?? (isAdmin(userId) ? "/admin" : "/dashboard")
+    // Brand-new Google accounts start on the profile step (photo + name),
+    // prefilled from their Google account.
+    const dest = next ?? (created ? profileStepUrl(data.user.user_metadata) : isAdmin(userId) ? "/admin" : "/dashboard")
     const res = NextResponse.redirect(new URL(dest, url.origin))
     return applySessionCookie(res, token, expires_at)
   } catch (err) {
     console.error("OAuth callback error:", err)
     return fail("oauth_failed")
   }
+}
+
+function profileStepUrl(meta: Record<string, unknown> | undefined): string {
+  const q = new URLSearchParams()
+  const name = typeof meta?.full_name === "string" ? meta.full_name : typeof meta?.name === "string" ? meta.name : ""
+  const photo = typeof meta?.avatar_url === "string" ? meta.avatar_url : typeof meta?.picture === "string" ? meta.picture : ""
+  if (name) q.set("name", name.slice(0, 80))
+  if (photo) q.set("photo", photo)
+  const qs = q.toString()
+  return `/onboarding/profile${qs ? `?${qs}` : ""}`
 }
 
 // Only same-site paths — never let ?next= bounce a fresh session off-site.

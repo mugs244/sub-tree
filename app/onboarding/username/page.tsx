@@ -29,8 +29,9 @@ export default async function UsernameOnboardingPage() {
     : "This will be your public Sub-tree handle and URL. You can change it later in settings."
 
   return (
-    <FlowShell title="Pick your username" subtitle={subtitle} step={isFan ? undefined : { current: 1, total: 3 }}>
-      <UsernameForm nextPath={isFan ? "/onboarding/fan" : "/onboarding/profile"} />
+    <FlowShell title="Pick your username" subtitle={subtitle} step={isFan ? undefined : { current: user?.profile ? 2 : 1, total: 3 }}>
+      {/* Google sign-ups already set up their profile first. */}
+      <UsernameForm nextPath={isFan ? "/onboarding/fan" : user?.profile ? "/onboarding/links" : "/onboarding/profile"} />
     </FlowShell>
   )
 }

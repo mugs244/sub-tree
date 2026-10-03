@@ -12,11 +12,20 @@ import { MomoNumberVerify } from "@/components/MomoNumberVerify"
 
 type FieldErrors = Partial<Record<"display_name" | "bio" | "avatar_url", string>>
 
-export function ProfileForm() {
+export function ProfileForm({
+  initialName = "",
+  initialAvatar = "",
+  nextPath = "/onboarding/links",
+}: {
+  /** Prefilled from Google on a Google sign-up. */
+  initialName?: string
+  initialAvatar?: string
+  nextPath?: string
+} = {}) {
   const router = useRouter()
-  const [displayName, setDisplayName] = useState("")
+  const [displayName, setDisplayName] = useState(initialName)
   const [bio, setBio] = useState("")
-  const [avatarUrl, setAvatarUrl] = useState("")
+  const [avatarUrl, setAvatarUrl] = useState(initialAvatar)
   const [errors, setErrors] = useState<FieldErrors>({})
   const [submitting, setSubmitting] = useState(false)
   const [serverError, setServerError] = useState<string | null>(null)
@@ -51,7 +60,7 @@ export function ProfileForm() {
         return
       }
 
-      router.push("/onboarding/links")
+      router.push(nextPath)
     } catch {
       setServerError("Could not save profile — please try again")
     } finally {
