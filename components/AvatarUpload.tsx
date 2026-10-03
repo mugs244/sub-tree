@@ -2,7 +2,7 @@
 
 import { useRef, useState } from "react"
 import { upload } from "@vercel/blob/client"
-import { Camera, Loader2, User as UserIcon } from "lucide-react"
+import { Pencil, Loader2 } from "lucide-react"
 
 const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp"]
 const MAX_BYTES = 5 * 1024 * 1024
@@ -12,8 +12,9 @@ interface AvatarUploadProps {
   onChange: (url: string) => void
 }
 
-// Big centered circle with a camera badge overlapping the bottom-right edge —
-// the Facebook/Instagram profile-photo pattern, not a side-by-side row.
+// WhatsApp/Instagram-style profile picture: a big round photo (grey
+// silhouette when empty) with a pen badge on the bottom-right edge. Tapping
+// the photo, the pen or the caption all open the photo picker.
 export function AvatarUpload({ value, onChange }: AvatarUploadProps) {
   const inputRef = useRef<HTMLInputElement>(null)
   const [uploading, setUploading] = useState(false)
@@ -49,17 +50,28 @@ export function AvatarUpload({ value, onChange }: AvatarUploadProps) {
     }
   }
 
+  const pick = () => inputRef.current?.click()
+
   return (
     <div className="flex flex-col items-center gap-2">
-      <div className="relative h-24 w-24">
-        <div className="h-24 w-24 rounded-full border border-border bg-muted overflow-hidden flex items-center justify-center">
+      <div className="relative h-28 w-28">
+        <button
+          type="button"
+          onClick={pick}
+          disabled={uploading}
+          aria-label={value ? "Change profile photo" : "Add profile photo"}
+          className={[
+            "h-28 w-28 rounded-full overflow-hidden flex items-end justify-center transition-opacity hover:opacity-90 disabled:opacity-60",
+            value ? "bg-muted" : "bg-[#DFE5E7] dark:bg-white/15",
+          ].join(" ")}
+        >
           {value ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img src={value} alt="Profile photo" className="h-full w-full object-cover" />
           ) : (
-            <UserIcon className="h-9 w-9 text-muted-foreground" />
+            <DefaultAvatar />
           )}
-        </div>
+        </button>
         <input
           ref={inputRef}
           type="file"
@@ -67,17 +79,33 @@ export function AvatarUpload({ value, onChange }: AvatarUploadProps) {
           className="hidden"
           onChange={handleFile}
         />
-        <button
-          type="button"
-          aria-label="Upload photo"
-          disabled={uploading}
-          onClick={() => inputRef.current?.click()}
-          className="absolute bottom-0 right-0 h-8 w-8 rounded-full bg-primary text-primary-foreground border-2 border-background shadow flex items-center justify-center disabled:opacity-60"
+        <span
+          aria-hidden="true"
+          className="pointer-events-none absolute bottom-1 right-1 h-9 w-9 rounded-full bg-[#ff8a3d] text-[#111827] border-[3px] border-background shadow flex items-center justify-center"
         >
-          {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Camera className="h-4 w-4" />}
-        </button>
+          {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Pencil className="h-4 w-4" strokeWidth={2.25} />}
+        </span>
       </div>
+      <button
+        type="button"
+        onClick={pick}
+        disabled={uploading}
+        className="text-sm font-semibold text-foreground underline-offset-4 hover:underline disabled:opacity-60"
+      >
+        {uploading ? "Uploading…" : value ? "Edit photo" : "Add profile photo"}
+      </button>
+      {!value && !error && <p className="text-xs text-muted-foreground">JPG, PNG or WEBP, up to 5MB</p>}
       {error && <p className="text-xs text-destructive">{error}</p>}
     </div>
+  )
+}
+
+// The grey head-and-shoulders placeholder, like WhatsApp's default photo.
+function DefaultAvatar() {
+  return (
+    <svg viewBox="0 0 100 100" className="h-full w-full" aria-hidden="true">
+      <circle cx="50" cy="38" r="18" fill="#ffffff" />
+      <path d="M14 100c2-20 17-33 36-33s34 13 36 33z" fill="#ffffff" />
+    </svg>
   )
 }
