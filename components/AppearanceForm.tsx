@@ -3,28 +3,11 @@
 import { useState, useEffect, useRef, useCallback } from "react"
 import { Check, Loader2, ExternalLink } from "lucide-react"
 import { Label } from "@/components/ui/label"
-import { PROFILE_TEMPLATES, getProfileTemplate, type ProfileTemplate } from "@/lib/profile-templates"
-
-const FREE_PRESETS = [
-  { value: "default", label: "Default",  vars: { bg: "#ffffff", surface: "#f9fafb", text: "#111827", muted: "#6b7280", border: "#e5e7eb", accent: "#111827", accentFg: "#ffffff" } },
-  { value: "warm",    label: "Warm",     vars: { bg: "#fffbf5", surface: "#f5ede0", text: "#1c1917", muted: "#78716c", border: "#e7e5e4", accent: "#92400e", accentFg: "#ffffff" } },
-  { value: "cool",    label: "Cool",     vars: { bg: "#f0f9ff", surface: "#e0f2fe", text: "#0c4a6e", muted: "#0369a1", border: "#bae6fd", accent: "#0369a1", accentFg: "#ffffff" } },
-  { value: "forest",  label: "Forest",   vars: { bg: "#f0fdf4", surface: "#dcfce7", text: "#14532d", muted: "#166534", border: "#bbf7d0", accent: "#15803d", accentFg: "#ffffff" } },
-  { value: "midnight",label: "Midnight", vars: { bg: "#0f172a", surface: "#1e293b", text: "#e2e8f0", muted: "#94a3b8", border: "#334155", accent: "#e2e8f0", accentFg: "#0f172a" } },
-]
-
-const PRO_PRESETS = [
-  { value: "rose",    label: "Rose",    vars: { bg: "#fff1f2", surface: "#ffe4e6", text: "#881337", muted: "#9f1239", border: "#fecdd3", accent: "#e11d48", accentFg: "#ffffff" } },
-  { value: "violet",  label: "Violet",  vars: { bg: "#f5f3ff", surface: "#ede9fe", text: "#2e1065", muted: "#6d28d9", border: "#ddd6fe", accent: "#7c3aed", accentFg: "#ffffff" } },
-  { value: "amber",   label: "Amber",   vars: { bg: "#fffbeb", surface: "#fef3c7", text: "#78350f", muted: "#92400e", border: "#fde68a", accent: "#d97706", accentFg: "#ffffff" } },
-  { value: "teal",    label: "Teal",    vars: { bg: "#f0fdfa", surface: "#ccfbf1", text: "#134e4a", muted: "#0f766e", border: "#99f6e4", accent: "#0d9488", accentFg: "#ffffff" } },
-  { value: "slate",   label: "Slate",   vars: { bg: "#f8fafc", surface: "#f1f5f9", text: "#0f172a", muted: "#475569", border: "#cbd5e1", accent: "#475569", accentFg: "#ffffff" } },
-  { value: "crimson", label: "Crimson", vars: { bg: "#1a0a0a", surface: "#2d1515", text: "#fde8e8", muted: "#f87171", border: "#7f1d1d", accent: "#ef4444", accentFg: "#1a0a0a" } },
-  { value: "sage",    label: "Sage",    vars: { bg: "#f7f8f4", surface: "#eef0e8", text: "#1f2d1a", muted: "#4a5e3d", border: "#cdd4c3", accent: "#4d7c3f", accentFg: "#ffffff" } },
-  { value: "dusk",    label: "Dusk",    vars: { bg: "#1c1b2e", surface: "#2a2845", text: "#e8e6f8", muted: "#a09cc4", border: "#3d3a5e", accent: "#8b5cf6", accentFg: "#ffffff" } },
-]
-
-const ALL_PRESETS = [...FREE_PRESETS, ...PRO_PRESETS]
+import { DefaultAvatar } from "@/components/DefaultAvatar"
+import {
+  PAGE_TEMPLATES, PAGE_THEMES, resolveDesign, templateFor, themeFor,
+  type PageTemplate, type PageTheme, type ProfileTemplate,
+} from "@/lib/profile-templates"
 
 const BUTTON_STYLES = [
   { value: "rounded", label: "Rounded", radius: "8px",    previewRadius: "rounded-lg" },
@@ -32,105 +15,46 @@ const BUTTON_STYLES = [
   { value: "sharp",   label: "Sharp",   radius: "0px",    previewRadius: "rounded-none" },
 ]
 
-const FONTS = [
-  { value: "geist",         label: "Geist Sans",       style: { fontFamily: "var(--font-geist-sans)" } },
-  { value: "inter",         label: "Inter",            style: { fontFamily: "'Inter', sans-serif" } },
-  { value: "playfair",      label: "Playfair Display", style: { fontFamily: "'Playfair Display', serif" } },
-  { value: "space-grotesk", label: "Space Grotesk",    style: { fontFamily: "'Space Grotesk', sans-serif" } },
-]
-
-const COLOR_ROLES = [
-  { key: "theme_bg_color",     label: "Page background" },
-  { key: "theme_accent_color", label: "Accent" },
-  { key: "theme_button_color", label: "Button background" },
-  { key: "theme_button_text",  label: "Button text" },
-  { key: "theme_card_bg",      label: "Card background" },
-  { key: "theme_card_text",    label: "Card text" },
-] as const
-
-type ColorKey = (typeof COLOR_ROLES)[number]["key"]
 type SaveState = "idle" | "saving" | "saved" | "error"
 
-interface ProTheme {
-  theme_bg_color:     string | null
-  theme_accent_color: string | null
-  theme_button_color: string | null
-  theme_button_text:  string | null
-  theme_card_bg:      string | null
-  theme_card_text:    string | null
-  theme_font:         string | null
-  hide_branding:      boolean
-}
-
 interface AppearanceFormProps {
+  initialTemplate: string | null
   initialTheme: string
   initialButtonStyle: string
-  isPro: boolean
-  proTheme: ProTheme
   displayName?: string
   username?: string
   avatarUrl?: string
   bio?: string
 }
 
+// Dashboard → Appearance: pick a template (the layout) and a theme (the
+// colours) separately; any combination works. Saves automatically.
 export function AppearanceForm({
+  initialTemplate,
   initialTheme,
   initialButtonStyle,
-  isPro,
-  proTheme: initialProTheme,
   displayName = "Your Name",
   username = "username",
   avatarUrl,
   bio,
 }: AppearanceFormProps) {
-  const [theme, setTheme] = useState(initialTheme)
+  const [template, setTemplate] = useState(templateFor(initialTemplate, initialTheme).value)
+  const [theme, setTheme] = useState(themeFor(initialTheme).value)
   const [buttonStyle, setButtonStyle] = useState(initialButtonStyle)
-  const [proTheme, setProTheme] = useState<ProTheme>(initialProTheme)
   const [saveState, setSaveState] = useState<SaveState>("idle")
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const isFirstRender = useRef(true)
 
-  const activePreset = ALL_PRESETS.find((p) => p.value === theme) ?? ALL_PRESETS[0]!
   const activeButton = BUTTON_STYLES.find((s) => s.value === buttonStyle) ?? BUTTON_STYLES[0]!
-  const activeTemplate = getProfileTemplate(theme)
+  const design = resolveDesign(template, theme)
 
-  // Resolved preview vars: custom overrides win over preset
-  const previewVars = {
-    bg:       proTheme.theme_bg_color     ?? activePreset.vars.bg,
-    surface:  activePreset.vars.surface,
-    text:     activePreset.vars.text,
-    muted:    activePreset.vars.muted,
-    border:   activePreset.vars.border,
-    accent:   proTheme.theme_accent_color ?? activePreset.vars.accent,
-    accentFg: activePreset.vars.accentFg,
-    btnBg:    proTheme.theme_button_color ?? activePreset.vars.bg,
-    btnText:  proTheme.theme_button_text  ?? activePreset.vars.text,
-  }
-
-  const save = useCallback(async (
-    t: string,
-    b: string,
-    pt: ProTheme,
-  ) => {
+  const save = useCallback(async (tpl: string, th: string, b: string) => {
     setSaveState("saving")
     try {
-      const payload: Record<string, unknown> = { theme_preset: t, button_style: b }
-      if (isPro) {
-        Object.assign(payload, {
-          theme_bg_color:     pt.theme_bg_color     ?? null,
-          theme_accent_color: pt.theme_accent_color ?? null,
-          theme_button_color: pt.theme_button_color ?? null,
-          theme_button_text:  pt.theme_button_text  ?? null,
-          theme_card_bg:      pt.theme_card_bg      ?? null,
-          theme_card_text:    pt.theme_card_text    ?? null,
-          theme_font:         pt.theme_font         ?? null,
-          hide_branding:      pt.hide_branding,
-        })
-      }
       const res = await fetch("/api/profile/appearance", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
+        body: JSON.stringify({ page_template: tpl, theme_preset: th, button_style: b }),
       })
       setSaveState(res.ok ? "saved" : "error")
       setTimeout(() => setSaveState("idle"), 2000)
@@ -138,84 +62,52 @@ export function AppearanceForm({
       setSaveState("error")
       setTimeout(() => setSaveState("idle"), 3000)
     }
-  }, [isPro])
+  }, [])
 
   useEffect(() => {
     if (isFirstRender.current) { isFirstRender.current = false; return }
     if (debounceRef.current) clearTimeout(debounceRef.current)
-    debounceRef.current = setTimeout(() => save(theme, buttonStyle, proTheme), 800)
+    debounceRef.current = setTimeout(() => save(template, theme, buttonStyle), 800)
     return () => { if (debounceRef.current) clearTimeout(debounceRef.current) }
-  }, [theme, buttonStyle, proTheme, save])
-
-  function setColor(key: ColorKey, value: string) {
-    setProTheme((prev) => ({ ...prev, [key]: value }))
-  }
-
-  function resetProColors() {
-    setProTheme((prev) => ({
-      ...prev,
-      theme_bg_color: null, theme_accent_color: null,
-      theme_button_color: null, theme_button_text: null,
-      theme_card_bg: null, theme_card_text: null,
-    }))
-  }
+  }, [template, theme, buttonStyle, save])
 
   return (
     <div className="flex flex-col xl:flex-row gap-8 xl:gap-14">
       {/* ── Controls ──────────────────────────────────────── */}
       <div className="flex-1 space-y-8 min-w-0">
 
-        {/* Templates — whole-page designs (lib/profile-templates.ts) */}
         <div className="space-y-3">
           <div className="flex items-center justify-between">
-            <Label className="text-sm font-medium">Templates</Label>
+            <Label className="text-sm font-medium">Template</Label>
             <SaveIndicator state={saveState} />
           </div>
           <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-            {PROFILE_TEMPLATES.map((tpl) => (
+            {PAGE_TEMPLATES.map((tpl) => (
               <TemplateCard
                 key={tpl.value}
                 template={tpl}
-                active={theme === tpl.value}
-                onClick={() => { navigator?.vibrate?.(20); setTheme(tpl.value) }}
+                design={resolveDesign(tpl.value, theme)}
+                active={template === tpl.value}
+                onClick={() => { navigator?.vibrate?.(20); setTemplate(tpl.value) }}
               />
             ))}
           </div>
         </div>
 
-        {/* Free presets */}
         <div className="space-y-3">
           <Label className="text-sm font-medium">Theme</Label>
-          <div className="grid grid-cols-5 gap-2">
-            {FREE_PRESETS.map((preset) => (
-              <PresetSwatch
-                key={preset.value}
-                preset={preset}
-                active={theme === preset.value}
-                onClick={() => { navigator?.vibrate?.(20); setTheme(preset.value) }}
+          <div className="grid grid-cols-4 gap-2 sm:grid-cols-7">
+            {PAGE_THEMES.map((th) => (
+              <ThemeSwatch
+                key={th.value}
+                theme={th}
+                active={theme === th.value}
+                onClick={() => { navigator?.vibrate?.(20); setTheme(th.value) }}
               />
             ))}
           </div>
         </div>
 
-        {/* Pro presets — only shown to Pro+ users */}
-        {isPro && (
-          <div className="space-y-3">
-            <Label className="text-sm font-medium">Pro themes</Label>
-            <div className="grid grid-cols-4 gap-2">
-              {PRO_PRESETS.map((preset) => (
-                <PresetSwatch
-                  key={preset.value}
-                  preset={preset}
-                  active={theme === preset.value}
-                  onClick={() => { navigator?.vibrate?.(20); setTheme(preset.value) }}
-                />
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Button style */}
         <div className="space-y-3">
           <Label className="text-sm font-medium">Button style</Label>
           <div className="grid grid-cols-3 gap-2">
@@ -240,101 +132,6 @@ export function AppearanceForm({
           </div>
         </div>
 
-        {/* ── Pro custom colors section — only shown to Pro+ users ── */}
-        {isPro && (
-          <div className="space-y-6 rounded-xl border border-[color:var(--border-default)] p-5">
-            <div className="flex items-center justify-between">
-              <Label className="text-sm font-semibold">Custom colors</Label>
-              <button
-                type="button"
-                onClick={resetProColors}
-                className="text-[12px] text-[color:var(--text-muted)] hover:text-[color:var(--text-primary)] transition-colors"
-              >
-                Reset to preset
-              </button>
-            </div>
-
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-              {COLOR_ROLES.map(({ key, label }) => (
-                <div key={key} className="space-y-1.5">
-                  <label className="text-[12px] text-[color:var(--text-secondary)]">{label}</label>
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="color"
-                      value={proTheme[key] ?? activePreset.vars.bg}
-                      onChange={(e) => setColor(key, e.target.value)}
-                      className="h-8 w-8 rounded cursor-pointer border border-[color:var(--border-default)] p-0.5 bg-transparent"
-                    />
-                    <input
-                      type="text"
-                      value={proTheme[key] ?? ""}
-                      placeholder={activePreset.vars.bg}
-                      onChange={(e) => {
-                        const v = e.target.value
-                        if (/^#[0-9a-fA-F]{0,6}$/.test(v)) {
-                          setProTheme((prev) => ({ ...prev, [key]: v.length === 7 ? v : null }))
-                        }
-                      }}
-                      className="flex-1 min-w-0 text-[12px] font-mono rounded border border-[color:var(--border-default)] bg-[color:var(--bg-surface)] px-2 py-1.5 placeholder:text-[color:var(--text-muted)] focus:outline-none focus:ring-1 focus:ring-[color:var(--accent-primary)]"
-                      maxLength={7}
-                    />
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            {/* Font selector */}
-            <div className="space-y-2">
-              <Label className="text-[12px] text-[color:var(--text-secondary)]">Font</Label>
-              <div className="grid grid-cols-2 gap-2">
-                {FONTS.map((f) => {
-                  const active = (proTheme.theme_font ?? "geist") === f.value
-                  return (
-                    <button
-                      key={f.value}
-                      type="button"
-                      onClick={() => setProTheme((prev) => ({ ...prev, theme_font: f.value }))}
-                      className={[
-                        "flex items-center gap-2 px-3 py-2.5 rounded-lg border text-left transition-all",
-                        active ? "border-[color:var(--accent-primary)] bg-[color:var(--accent-primary)]/5" : "border-[color:var(--border-default)] hover:border-[color:var(--border-strong)]",
-                      ].join(" ")}
-                    >
-                      <span className="text-base leading-none" style={f.style}>Aa</span>
-                      <span className="text-[12px] font-medium">{f.label}</span>
-                    </button>
-                  )
-                })}
-              </div>
-            </div>
-
-            {/* Hide branding */}
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-[13px] font-medium">Remove Sub-tree branding</p>
-                <p className="text-[12px] text-[color:var(--text-muted)]">Hides &ldquo;Powered by Sub-tree&rdquo; on your public page</p>
-              </div>
-              <button
-                type="button"
-                role="switch"
-                aria-checked={proTheme.hide_branding}
-                onClick={() => setProTheme((prev) => ({ ...prev, hide_branding: !prev.hide_branding }))}
-                className={[
-                  "relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2",
-                  proTheme.hide_branding ? "bg-[color:var(--accent-primary)]" : "bg-[color:var(--border-default)]",
-                ].join(" ")}
-              >
-                <span
-                  className={[
-                    "inline-block h-3.5 w-3.5 rounded-full bg-white shadow transition-transform",
-                    proTheme.hide_branding ? "translate-x-4" : "translate-x-0.5",
-                  ].join(" ")}
-                />
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* View live */}
         <a
           href={`/${username}`}
           target="_blank"
@@ -351,9 +148,7 @@ export function AppearanceForm({
         <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-3">
           Live preview
         </p>
-
         <div className="rounded-2xl border border-border overflow-hidden shadow-sm">
-          {/* URL bar */}
           <div className="flex items-center gap-2 px-3 py-2.5 bg-surface border-b border-border">
             <div className="flex gap-1">
               <span className="h-2.5 w-2.5 rounded-full bg-border" />
@@ -364,97 +159,43 @@ export function AppearanceForm({
               sub-tree.com/{username}
             </span>
           </div>
-
-          {activeTemplate ? (
-            <TemplatePreview
-              template={activeTemplate}
-              radius={buttonStyle === "rounded" ? "14px" : activeButton.radius}
-              displayName={displayName}
-              username={username}
-              avatarUrl={avatarUrl}
-              bio={bio}
-              showBranding={!proTheme.hide_branding}
-            />
-          ) : (
-          /* Profile content */
-          <div className="px-5 py-7 flex flex-col items-center gap-4" style={{ background: previewVars.bg }}>
-            {avatarUrl ? (
-              <img src={avatarUrl} alt="" className="h-14 w-14 rounded-full object-cover border" style={{ borderColor: previewVars.border }} />
-            ) : (
-              <div
-                className="h-14 w-14 rounded-full border-2 flex items-center justify-center text-lg font-semibold"
-                style={{ background: previewVars.surface, borderColor: previewVars.border, color: previewVars.text }}
-              >
-                {displayName.charAt(0).toUpperCase()}
-              </div>
-            )}
-
-            <div className="text-center space-y-1">
-              <p className="text-sm font-semibold" style={{ color: previewVars.text }}>{displayName}</p>
-              <p className="text-[10px] font-mono" style={{ color: previewVars.muted }}>@{username}</p>
-              {bio && (
-                <p className="text-[10px] leading-relaxed max-w-[180px] mx-auto pt-0.5" style={{ color: previewVars.muted }}>
-                  {bio.length > 80 ? bio.slice(0, 80) + "…" : bio}
-                </p>
-              )}
-            </div>
-
-            <div className="w-full space-y-2">
-              {["My Website", "YouTube", "Instagram"].map((label) => (
-                <div
-                  key={label}
-                  className="w-full py-2 text-[10px] font-medium text-center border"
-                  style={{ borderRadius: activeButton.radius, borderColor: previewVars.border, background: previewVars.btnBg, color: previewVars.btnText }}
-                >
-                  {label}
-                </div>
-              ))}
-              <div
-                className="w-full py-2 text-[10px] font-medium text-center mt-1"
-                style={{ borderRadius: activeButton.radius, background: previewVars.accent, color: previewVars.accentFg }}
-              >
-                Gift {displayName.split(" ")[0]}
-              </div>
-            </div>
-
-            {!proTheme.hide_branding && (
-              <p className="text-[9px] pt-1" style={{ color: previewVars.muted }}>Powered by Sub-tree</p>
-            )}
-          </div>
-          )}
+          <TemplatePreview
+            design={design}
+            radius={buttonStyle === "rounded" ? "14px" : activeButton.radius}
+            displayName={displayName}
+            username={username}
+            avatarUrl={avatarUrl}
+            bio={bio}
+          />
         </div>
-
         <p className="text-[10px] text-muted-foreground text-center mt-2">Changes save automatically</p>
       </div>
     </div>
   )
 }
 
-function PresetSwatch({
-  preset, active, onClick,
-}: {
-  preset: { value: string; label: string; vars: { bg: string; surface: string; accent: string; muted: string } }
-  active: boolean
-  onClick: () => void
-}) {
+function ThemeSwatch({ theme, active, onClick }: { theme: PageTheme; active: boolean; onClick: () => void }) {
+  const p = theme.palette
   return (
     <button
       type="button"
       onClick={onClick}
-      aria-label={`${preset.label} theme`}
+      aria-label={`${theme.label} theme`}
       aria-pressed={active}
       className={[
-        "group relative flex flex-col rounded-xl border-2 overflow-hidden transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground",
+        "group relative flex flex-col overflow-hidden rounded-xl border-2 transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground",
         active ? "border-foreground shadow-sm" : "border-border hover:border-foreground/30",
       ].join(" ")}
     >
-      <span className="block h-10 w-full" style={{ background: preset.vars.bg }} />
-      <span className="block h-3 w-full" style={{ background: preset.vars.accent }} />
-      <span className="block px-1 py-1.5 text-[10px] font-medium text-center leading-none" style={{ background: preset.vars.surface, color: preset.vars.muted }}>
-        {preset.label}
+      <span className="flex h-12 w-full items-center justify-center gap-1" style={{ background: p.canvas }}>
+        <span className="h-5 w-5 rounded-full" style={{ background: p.accent, boxShadow: `0 0 0 2px ${p.panel}` }} />
+        <span className="h-5 w-5 rounded-full" style={{ background: p.surface, boxShadow: `0 0 0 2px ${p.outline}` }} />
+      </span>
+      <span className="block px-1 py-1.5 text-center text-[10px] font-medium leading-none" style={{ background: p.panel, color: p.text }}>
+        {theme.label}
       </span>
       {active && (
-        <span className="absolute top-1.5 right-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-white shadow-sm ring-1 ring-black/10">
+        <span className="absolute top-1 right-1 flex h-4 w-4 items-center justify-center rounded-full bg-white shadow-sm ring-1 ring-black/10">
           <Check className="h-2.5 w-2.5 text-gray-900" strokeWidth={3} />
         </span>
       )}
@@ -463,13 +204,14 @@ function PresetSwatch({
 }
 
 function TemplateCard({
-  template, active, onClick,
+  template, design, active, onClick,
 }: {
-  template: ProfileTemplate
+  template: PageTemplate
+  design: ProfileTemplate
   active: boolean
   onClick: () => void
 }) {
-  const c = template.colors
+  const c = design.colors
   return (
     <button
       type="button"
@@ -481,8 +223,8 @@ function TemplateCard({
         active ? "border-foreground shadow-sm" : "border-border hover:border-foreground/30",
       ].join(" ")}
     >
-      {/* Miniature of the template */}
-      {template.layout === "rows" ? (
+      {/* Miniature of the template in the current theme */}
+      {template.value === "rows" ? (
         <span className="flex h-20 w-16 shrink-0 flex-col items-center gap-1 rounded-lg px-1.5 pt-2" style={{ background: c.canvas }} aria-hidden="true">
           <span className="h-4 w-4 rounded-full bg-white shadow" />
           <span className="h-1 w-6 rounded-full" style={{ background: c.text }} />
@@ -516,29 +258,31 @@ function TemplateCard({
   )
 }
 
-// Live preview for a template — a scaled-down copy of the layouts in
+// Live preview — a scaled-down copy of the layouts in
 // components/profile-templates/TemplatePage.tsx.
 function TemplatePreview({
-  template, radius, displayName, username, avatarUrl, bio, showBranding,
+  design, radius, displayName, username, avatarUrl, bio,
 }: {
-  template: ProfileTemplate
+  design: ProfileTemplate
   radius: string
   displayName: string
   username: string
   avatarUrl?: string
   bio?: string
-  showBranding: boolean
 }) {
-  const c = template.colors
-  if (template.layout === "rows") {
+  const c = design.colors
+  if (design.layout === "rows") {
     const rowRadius = radius === "14px" ? "10px" : radius
     return (
       <div className="flex flex-col items-center px-4 py-6" style={{ background: c.canvas, color: c.text }}>
         <div className="flex h-16 w-16 items-center justify-center rounded-full bg-white p-1 shadow-md">
           {avatarUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
             <img src={avatarUrl} alt="" className="h-full w-full rounded-full object-cover" />
           ) : (
-            <span className="text-2xl font-bold" style={{ color: c.accent }}>{displayName.charAt(0).toUpperCase()}</span>
+            <span className="flex h-full w-full items-end overflow-hidden rounded-full" style={{ background: c.accent }}>
+              <DefaultAvatar />
+            </span>
           )}
         </div>
         <p className="mt-3 text-base font-semibold tracking-tight">{displayName}</p>
@@ -560,7 +304,7 @@ function TemplatePreview({
             </div>
           ))}
         </div>
-        {showBranding && <p className="mt-4 text-[9px]" style={{ color: c.muted }}>Powered by Sub-tree</p>}
+        <p className="mt-4 text-[9px]" style={{ color: c.muted }}>Powered by Sub-tree</p>
       </div>
     )
   }
@@ -568,11 +312,12 @@ function TemplatePreview({
     <div className="p-3" style={{ background: c.canvas }}>
       <div className="flex flex-col items-center gap-3.5 rounded-2xl px-4 py-6" style={{ background: c.panel, color: c.text }}>
         {avatarUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element
           <img src={avatarUrl} alt="" className="h-14 w-14 rounded-full object-cover border-2" style={{ borderColor: c.border }} />
         ) : (
-          <div className="flex h-14 w-14 items-center justify-center rounded-full border-2 text-xl font-bold" style={{ background: c.accent, color: c.accentText, borderColor: c.border }}>
-            {displayName.charAt(0).toUpperCase()}
-          </div>
+          <span className="flex h-14 w-14 items-end overflow-hidden rounded-full border-2" style={{ background: c.accent, borderColor: c.border }}>
+            <DefaultAvatar color={c.accentText} />
+          </span>
         )}
         <div className="text-center space-y-0.5">
           <p className="text-base font-bold tracking-tighter">{displayName}</p>
@@ -600,7 +345,7 @@ function TemplatePreview({
             Gift {displayName.split(" ")[0]}
           </div>
         </div>
-        {showBranding && <p className="text-[9px]" style={{ color: c.muted }}>Powered by Sub-tree</p>}
+        <p className="text-[9px]" style={{ color: c.muted }}>Powered by Sub-tree</p>
       </div>
     </div>
   )

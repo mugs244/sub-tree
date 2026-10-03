@@ -1,85 +1,15 @@
-import Link from "next/link"
 import { Suspense } from "react"
 import { notFound } from "next/navigation"
-import { Inter, Playfair_Display, Space_Grotesk } from "next/font/google"
 import { prisma } from "@/lib/db"
-import { TrackedLink } from "@/components/TrackedLink"
 import { PageViewTracker } from "@/components/PageViewTracker"
-import { PlatformIcon } from "@/components/PlatformIcon"
 import { ReferrerTracker } from "@/components/ReferrerTracker"
-import { SmartLinkCard } from "@/components/SmartLinkCard"
-import { GiftMeSection } from "@/components/GiftMeSection"
-import { detectPlatform } from "@/lib/utils/platform"
 import { getDonationLaunchStatusForViewer } from "@/lib/services/donation-launch"
-import { getProfileTemplate } from "@/lib/profile-templates"
+import { resolveDesign } from "@/lib/profile-templates"
 import { TemplatePage } from "@/components/profile-templates/TemplatePage"
-import { VerifiedBadge, isBadgeStyle } from "@/components/VerifiedBadge"
-import { DefaultAvatar } from "@/components/DefaultAvatar"
+import { isBadgeStyle } from "@/components/VerifiedBadge"
 import { isBadgeLive } from "@/lib/services/billing"
-import type { SmartCardMeta } from "@/lib/services/smart-links"
 
 type Props = { params: Promise<{ username: string }> }
-
-const inter = Inter({ subsets: ["latin"], weight: ["400", "500", "600"] })
-const playfair = Playfair_Display({ subsets: ["latin"], weight: ["400", "500", "600"] })
-const spaceGrotesk = Space_Grotesk({ subsets: ["latin"], weight: ["400", "500", "600"] })
-
-// Geist Sans is already the site default (loaded once in the root layout) — no class needed for it.
-const FONT_CLASS: Record<string, string> = {
-  geist: "",
-  inter: inter.className,
-  playfair: playfair.className,
-  "space-grotesk": spaceGrotesk.className,
-}
-
-const THEME_VARS: Record<string, React.CSSProperties> = {
-  default: {
-    "--bg-base": "#ffffff",
-    "--bg-surface": "#f9fafb",
-    "--text-primary": "#111827",
-    "--text-muted": "#6b7280",
-    "--border-default": "#e5e7eb",
-    "--accent-primary": "#111827",
-    "--accent-hover": "#1f2937",
-  } as React.CSSProperties,
-  warm: {
-    "--bg-base": "#fffbf5",
-    "--bg-surface": "#f5ede0",
-    "--text-primary": "#1c1917",
-    "--text-muted": "#78716c",
-    "--border-default": "#e7e5e4",
-    "--accent-primary": "#92400e",
-    "--accent-hover": "#78350f",
-  } as React.CSSProperties,
-  cool: {
-    "--bg-base": "#f0f9ff",
-    "--bg-surface": "#e0f2fe",
-    "--text-primary": "#0c4a6e",
-    "--text-muted": "#0369a1",
-    "--border-default": "#bae6fd",
-    "--accent-primary": "#0369a1",
-    "--accent-hover": "#075985",
-  } as React.CSSProperties,
-  forest: {
-    "--bg-base": "#f0fdf4",
-    "--bg-surface": "#dcfce7",
-    "--text-primary": "#14532d",
-    "--text-muted": "#166534",
-    "--border-default": "#bbf7d0",
-    "--accent-primary": "#15803d",
-    "--accent-hover": "#166534",
-  } as React.CSSProperties,
-  midnight: {
-    "--bg-base": "#0f172a",
-    "--bg-surface": "#1e293b",
-    "--text-primary": "#e2e8f0",
-    "--text-muted": "#94a3b8",
-    "--border-default": "#334155",
-    "--accent-primary": "#e2e8f0",
-    "--accent-hover": "#f1f5f9",
-    "--primary-foreground": "#0f172a",
-  } as React.CSSProperties,
-}
 
 // Reads the admin-toggleable donations_enabled flag (in addition to links,
 // which already need to stay fresh) — must not be cached after first render.
@@ -120,6 +50,7 @@ export default async function PublicProfilePage({ params }: Props) {
           bio: true,
           avatar_url: true,
           theme_preset: true,
+          page_template: true,
           button_style: true,
           theme_bg_color: true,
           theme_accent_color: true,
@@ -151,163 +82,19 @@ export default async function PublicProfilePage({ params }: Props) {
   const isPro = (["PRO", "BUSINESS", "CONTENT_HOUSE"] as string[]).includes(user.tier)
   const showBranding = !isPro || !profile.hide_branding
 
-  // Templates (lib/profile-templates.ts) are whole-page designs with their
-  // own layouts; the classic colour-theme page below only renders without one.
-  const template = getProfileTemplate(profile.theme_preset)
-  if (template) {
-    return (
-      <TemplatePage
-        template={template}
-        username={username}
-        profile={profile}
-        links={links}
-        donationsEnabled={donationsEnabled}
-        showBranding={showBranding}
-        verified={badgeLive}
-        badgeStyle={badgeStyle}
-        trackers={<><PageViewTracker username={username} /><Suspense><ReferrerTracker /></Suspense></>}
-      />
-    )
-  }
-
-  const buttonClass = profile.button_style === "sharp"
-    ? "rounded-none"
-    : profile.button_style === "pill"
-      ? "rounded-full"
-      : "rounded-lg"
-
-  const presetStyle = THEME_VARS[profile.theme_preset] ?? {}
-
-  // CSS custom properties need a plain object with string index — cast once here
-  const customOverrides: Record<string, string> = {}
-  if (profile.theme_bg_color)     customOverrides["--bg-base"]        = profile.theme_bg_color
-  if (profile.theme_accent_color) customOverrides["--accent-primary"] = profile.theme_accent_color
-  if (profile.theme_card_bg)      customOverrides["--bg-raised"]      = profile.theme_card_bg
-
-  const themeStyle = { ...presetStyle, ...customOverrides } as React.CSSProperties
-
-  // Derive button/card colors directly from the resolved preset + custom overrides
-  // so they are never affected by Tailwind's @theme inline variable chain.
-  const presetVars = presetStyle as Record<string, string>
-  const donateBg   = profile.theme_accent_color ?? presetVars["--accent-primary"] ?? "#111827"
-  const donateText = presetVars["--primary-foreground"] ?? "#ffffff"
-  const buttonBg   = profile.theme_button_color ?? presetVars["--bg-base"] ?? "#ffffff"
-  const buttonText = profile.theme_button_text  ?? presetVars["--text-primary"] ?? "#111827"
-  const cardBg     = profile.theme_card_bg      ?? presetVars["--bg-base"] ?? "#ffffff"
-  const cardText   = profile.theme_card_text    ?? presetVars["--text-primary"] ?? "#111827"
-
-  const fontClass = FONT_CLASS[profile.theme_font ?? "geist"] ?? ""
-
+  // Template (layout) + theme (colours), chosen separately — see
+  // lib/profile-templates.ts. Unchosen pages get Bold + Orange.
   return (
-    <main
-      style={themeStyle}
-      className={["min-h-screen bg-background flex flex-col items-center justify-center px-4 py-12", fontClass].join(" ")}
-    >
-      <PageViewTracker username={username} />
-      <Suspense><ReferrerTracker /></Suspense>
-      <div className="w-full max-w-sm space-y-6">
-        <div className="flex justify-center">
-          {profile.avatar_url ? (
-            <img
-              src={profile.avatar_url}
-              alt={profile.display_name}
-              className="h-20 w-20 rounded-full object-cover border border-border"
-            />
-          ) : (
-            <span className="flex h-20 w-20 items-end overflow-hidden rounded-full bg-[#DFE5E7]">
-              <DefaultAvatar />
-            </span>
-          )}
-        </div>
-
-        <div className="text-center space-y-2">
-          <h1 className="inline-flex items-center justify-center gap-1.5 text-xl font-semibold tracking-tight">
-            {profile.display_name}
-            {badgeLive && <VerifiedBadge size={20} variant={badgeStyle} />}
-          </h1>
-          <p className="text-xs text-muted-foreground font-mono">@{username}</p>
-          {profile.bio && (
-            <p className="text-sm text-muted-foreground leading-relaxed pt-1">{profile.bio}</p>
-          )}
-        </div>
-
-        {/* Links section */}
-        <div className="space-y-4">
-          {links.length > 0 ? (
-            <div className="space-y-3">
-              {links.map((link) => {
-                const showRich = link.link_type === "SMART_CARD" && !link.render_as_plain && link.smart_card_meta
-                if (showRich) {
-                  return (
-                    <SmartLinkCard
-                      key={link.id}
-                      href={link.url}
-                      linkId={link.id}
-                      meta={link.smart_card_meta as unknown as SmartCardMeta}
-                      cardBg={cardBg}
-                      cardText={cardText}
-                    />
-                  )
-                }
-                return (
-                  <TrackedLink
-                    key={link.id}
-                    href={link.url}
-                    linkId={link.id}
-                    style={{ backgroundColor: buttonBg, color: buttonText }}
-                    className={[
-                      "flex items-center justify-center gap-2.5 w-full px-4 py-3 text-sm font-medium border border-border transition-colors duration-150",
-                      buttonClass,
-                    ].join(" ")}
-                  >
-                    <PlatformIcon platform={detectPlatform(link.url)} className="h-4 w-4 shrink-0" />
-                    {link.label}
-                  </TrackedLink>
-                )
-              })}
-            </div>
-          ) : (
-            <p className="text-center text-sm text-muted-foreground">No links yet.</p>
-          )}
-        </div>
-
-        <div className="pt-2">
-          {donationsEnabled ? (
-            <a
-              href={`/${username}/donate`}
-              style={{ backgroundColor: donateBg, color: donateText }}
-              className={[
-                "flex items-center justify-center w-full px-4 py-3 text-sm font-medium transition-colors duration-150",
-                buttonClass,
-              ].join(" ")}
-            >
-              Gift {profile.display_name} 💛
-            </a>
-          ) : (
-            <>
-              <div
-                aria-disabled="true"
-                className={[
-                  "flex items-center justify-center w-full px-4 py-3 text-sm font-medium bg-muted text-muted-foreground cursor-not-allowed select-none",
-                  buttonClass,
-                ].join(" ")}
-              >
-                Gift {profile.display_name}
-              </div>
-            </>
-          )}
-        </div>
-
-        {profile.gift_me_enabled && (
-          <GiftMeSection displayName={profile.display_name} />
-        )}
-
-        {showBranding && (
-          <p className="text-center text-xs text-muted-foreground pt-4">
-            <Link href="/" className="hover:underline">Powered by Sub-tree</Link>
-          </p>
-        )}
-      </div>
-    </main>
+    <TemplatePage
+      template={resolveDesign(profile.page_template, profile.theme_preset)}
+      username={username}
+      profile={profile}
+      links={links}
+      donationsEnabled={donationsEnabled}
+      showBranding={showBranding}
+      verified={badgeLive}
+      badgeStyle={badgeStyle}
+      trackers={<><PageViewTracker username={username} /><Suspense><ReferrerTracker /></Suspense></>}
+    />
   )
 }

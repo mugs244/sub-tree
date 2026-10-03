@@ -2,15 +2,15 @@ import { NextResponse } from "next/server"
 import { getSession } from "@/lib/auth/session"
 import { z } from "zod"
 import { prisma } from "@/lib/db"
+import { PAGE_THEME_VALUES, PAGE_TEMPLATE_VALUES } from "@/lib/profile-templates"
 
 const hexColor = z.string().regex(/^#[0-9a-fA-F]{6}$/).nullable().optional()
 const fontKey = z.enum(["geist", "inter", "playfair", "space-grotesk"]).nullable().optional()
 
 const baseSchema = z.object({
-  theme_preset: z.enum(["default", "warm", "cool", "forest", "midnight",
-    "rose", "violet", "amber", "teal", "slate", "crimson", "sage", "dusk",
-    // Whole-page templates — see lib/profile-templates.ts
-    "orange", "orange-night", "citrus"]).optional(),
+  // Colour theme and page template, chosen separately — lib/profile-templates.ts
+  theme_preset: z.string().refine((v) => PAGE_THEME_VALUES.includes(v), "Unknown theme").optional(),
+  page_template: z.string().refine((v) => (PAGE_TEMPLATE_VALUES as string[]).includes(v), "Unknown template").optional(),
   button_style: z.enum(["rounded", "pill", "sharp"]).optional(),
 })
 
@@ -98,6 +98,7 @@ export async function GET(): Promise<NextResponse> {
       profile: {
         select: {
           theme_preset: true,
+          page_template: true,
           button_style: true,
           theme_bg_color: true,
           theme_accent_color: true,

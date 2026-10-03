@@ -235,6 +235,9 @@ model Profile {
   avatar_url    String?
   country_code  String?
   theme_preset  String  @default("default")
+  // Page layout ("pop" = Bold, "rows" = Rows) — chosen separately from the
+  // colour theme in theme_preset. Null = not chosen yet (see lib/profile-templates.ts).
+  page_template String?
   button_style  String  @default("rounded")
   view_count    Int     @default(0)
 
