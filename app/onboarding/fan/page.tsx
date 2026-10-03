@@ -25,7 +25,7 @@ export default function FanOnboardingPage() {
 
   if (status === "error") {
     return (
-      <main className="min-h-screen flex items-center justify-center px-6">
+      <main className="min-h-screen flex items-center justify-center bg-[color:var(--landing-bg)] px-6">
         <div className="text-center space-y-3">
           <p className="text-sm text-muted-foreground">Something went wrong setting up your profile.</p>
           <button
@@ -40,7 +40,7 @@ export default function FanOnboardingPage() {
   }
 
   return (
-    <main className="min-h-screen flex items-center justify-center px-6">
+    <main className="min-h-screen flex items-center justify-center bg-[color:var(--landing-bg)] px-6">
       <div className="text-center space-y-3">
         <Loader2 className="h-6 w-6 animate-spin text-muted-foreground mx-auto" />
         <p className="text-sm text-muted-foreground">

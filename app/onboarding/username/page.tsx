@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation"
+import { FlowShell } from "@/components/auth/FlowShell"
 import { cookies } from "next/headers"
 import { getSession } from "@/lib/auth/session"
 import { prisma } from "@/lib/db"
@@ -28,21 +29,8 @@ export default async function UsernameOnboardingPage() {
     : "This will be your public Sub-tree handle and URL. You can change it later in settings."
 
   return (
-    <main className="min-h-screen flex items-center justify-center px-6 py-12 md:py-16">
-      <div className="w-full max-w-md space-y-8">
-        <div className="text-center space-y-2">
-          <h1 className="text-3xl md:text-4xl font-semibold tracking-tight">
-            Pick your username
-          </h1>
-          <p className="text-[15px] leading-relaxed text-[color:var(--text-secondary)]">
-            {subtitle}
-          </p>
-        </div>
-
-        <div className="bg-[color:var(--bg-raised)] border border-[color:var(--border-default)] rounded-xl p-6">
-          <UsernameForm nextPath={isFan ? "/onboarding/fan" : "/onboarding/profile"} />
-        </div>
-      </div>
-    </main>
+    <FlowShell title="Pick your username" subtitle={subtitle} step={isFan ? undefined : { current: 1, total: 3 }}>
+      <UsernameForm nextPath={isFan ? "/onboarding/fan" : "/onboarding/profile"} />
+    </FlowShell>
   )
 }

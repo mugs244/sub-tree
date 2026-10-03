@@ -155,6 +155,48 @@
   box-shadow: 0 0 0 0 #111827;
 }
 
+/* Sign-up flow pages after sign-in/sign-up (verify email, onboarding,
+   forgot password): the same chunky inputs and orange pressable button as
+   the auth forms, applied to whatever form sits inside FlowShell. */
+.flow-shell input:not([type="file"]):not([type="checkbox"]):not([type="radio"]),
+.flow-shell textarea {
+  border-width: 2px;
+  border-radius: 0.75rem;
+  background: #ffffff;
+}
+.flow-shell input:not([type="file"]):not([type="checkbox"]):not([type="radio"]) { height: 2.75rem; }
+.flow-shell input:focus-visible,
+.flow-shell textarea:focus-visible {
+  border-color: var(--foreground);
+  box-shadow: none;
+  outline: none;
+}
+.flow-shell button[type="submit"] {
+  height: 3rem;
+  border-radius: 9999px;
+  border: 2px solid #111827;
+  background: var(--landing-orange);
+  color: #111827;
+  font-size: 15px;
+  font-weight: 600;
+  box-shadow: 0 5px 0 0 #111827;
+  transition: transform 120ms ease, box-shadow 120ms ease;
+}
+.flow-shell button[type="submit"]:hover:not(:disabled) {
+  background: var(--landing-orange);
+  transform: translateY(2px);
+  box-shadow: 0 3px 0 0 #111827;
+}
+.flow-shell button[type="submit"]:active:not(:disabled) {
+  transform: translateY(5px);
+  box-shadow: 0 0 0 0 #111827;
+}
+.flow-shell button[type="submit"]:disabled { opacity: 0.6; }
+@media (prefers-reduced-motion: reduce) {
+  .flow-shell button[type="submit"] { transition: none; }
+  .flow-shell button[type="submit"]:hover, .flow-shell button[type="submit"]:active { transform: none; }
+}
+
 /* ── Creator dashboard palette ──────────────────────────
    Scoped to .dash-root (components/layouts/DashboardLayout.tsx). White and
    orange in light mode, near-black and orange in dark. The mode comes from

@@ -1,7 +1,9 @@
 import { redirect } from "next/navigation"
 import { getSession } from "@/lib/auth/session"
 import { prisma } from "@/lib/db"
-import { FirstLinkForm } from "@/components/FirstLinkForm"
+import { FlowShell } from "@/components/auth/FlowShell"
+import { OnboardingLinks } from "@/components/OnboardingLinks"
+import { availableConnectProviders } from "@/lib/services/connect"
 
 export default async function LinksOnboardingPage() {
   const session = await getSession()
@@ -20,21 +22,8 @@ export default async function LinksOnboardingPage() {
   if (!user.profile) redirect("/onboarding/profile")
 
   return (
-    <main className="min-h-screen flex items-center justify-center px-6 py-12 md:py-16">
-      <div className="w-full max-w-md space-y-8">
-        <div className="text-center space-y-2">
-          <h1 className="text-3xl md:text-4xl font-semibold tracking-tight">
-            Add your first link
-          </h1>
-          <p className="text-[15px] leading-relaxed text-[color:var(--text-secondary)]">
-            Give visitors somewhere to go. You can add more links from your dashboard.
-          </p>
-        </div>
-
-        <div className="bg-[color:var(--bg-raised)] border border-[color:var(--border-default)] rounded-xl p-6">
-          <FirstLinkForm />
-        </div>
-      </div>
-    </main>
+    <FlowShell title="Add your links" subtitle="Tap a platform and type your username — or connect it. You can add more any time from your dashboard." step={{ current: 3, total: 3 }}>
+      <OnboardingLinks connectProviders={availableConnectProviders()} />
+    </FlowShell>
   )
 }

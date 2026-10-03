@@ -18,7 +18,8 @@ export function AddLinkPanel({
 }: {
   connectProviders: ConnectProvider[]
   onAdd: (url: string, label: string) => Promise<string | null>
-  onCancel: () => void
+  /** Shows a Cancel link when given. */
+  onCancel?: () => void
 }) {
   const [picked, setPicked] = useState<CatalogEntry | "other" | null>(null)
   const [value, setValue] = useState("")
@@ -52,6 +53,7 @@ export function AddLinkPanel({
     const err = await onAdd(url, label.trim() || (picked === "other" ? url : picked.name))
     setBusy(false)
     if (err) setError(err)
+    else setPicked(null)
   }
 
   // ── Platform grid ────────────────────────────────────────────────────────
@@ -60,7 +62,7 @@ export function AddLinkPanel({
       <div className="space-y-3 rounded-xl border border-border bg-surface p-4">
         <div className="flex items-center justify-between">
           <p className="text-sm font-semibold">Add a link</p>
-          <button type="button" onClick={onCancel} className="text-xs text-muted-foreground hover:text-foreground">Cancel</button>
+          {onCancel && <button type="button" onClick={onCancel} className="text-xs text-muted-foreground hover:text-foreground">Cancel</button>}
         </div>
         <div className="grid grid-cols-4 gap-2 sm:grid-cols-5">
           {CATALOG.map((p) => (

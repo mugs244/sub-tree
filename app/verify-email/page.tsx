@@ -2,7 +2,7 @@
 
 import { useState, useRef, Suspense } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
-import { Logo } from "@/components/brand/Logo"
+import { FlowShell } from "@/components/auth/FlowShell"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 
@@ -52,15 +52,10 @@ function VerifyEmailForm() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-6 py-12 bg-[color:var(--bg-base)]">
-      <div className="w-full max-w-sm space-y-8">
-        <div className="flex flex-col items-center gap-3">
-          <Logo variant="icon" />
-          <h1 className="text-2xl font-semibold tracking-tight">Check your email</h1>
-          <p className="text-sm text-[color:var(--text-secondary)] text-center">
-            We sent a 6-digit code to <strong>{email}</strong>. It expires in 15 minutes.
-          </p>
-        </div>
+    <FlowShell
+      title="Check your email"
+      subtitle={<>We sent a 6-digit code to <strong className="text-foreground">{email}</strong>. It expires in 15 minutes.</>}
+    >
 
         <form onSubmit={(e) => void handleSubmit(e)} className="space-y-4">
           <Input
@@ -81,18 +76,17 @@ function VerifyEmailForm() {
           </Button>
         </form>
 
-        <p className="text-center text-sm text-[color:var(--text-secondary)]">
+        <p className="text-center text-sm text-muted-foreground">
           Didn&apos;t get it?{" "}
           <button
             onClick={() => void handleResend()}
             disabled={resending}
-            className="font-medium text-[color:var(--accent-primary)] hover:underline disabled:opacity-50 disabled:no-underline"
+            className="font-semibold text-foreground underline-offset-4 hover:underline disabled:opacity-50 disabled:no-underline"
           >
             {resending ? "Sending…" : resent ? "Sent!" : "Resend code"}
           </button>
         </p>
-      </div>
-    </div>
+    </FlowShell>
   )
 }
 

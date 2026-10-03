@@ -3,7 +3,7 @@
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
-import { Logo } from "@/components/brand/Logo"
+import { FlowShell } from "@/components/auth/FlowShell"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { PasswordInput } from "@/components/ui/password-input"
@@ -67,18 +67,11 @@ export default function ForgotPasswordPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-6 py-12 bg-[color:var(--bg-base)]">
-      <div className="w-full max-w-sm space-y-8">
-        <div className="flex flex-col items-center gap-3">
-          <Logo variant="icon" />
-          <h1 className="text-2xl font-semibold tracking-tight">
-            {mode === "request" ? "Reset your password" : "Set a new password"}
-          </h1>
-        </div>
+    <FlowShell title={mode === "request" ? "Reset your password" : "Set a new password"}>
 
         {mode === "request" && (
           <form onSubmit={handleRequestCode} className="space-y-4">
-            <p className="text-sm text-[color:var(--text-secondary)] text-center">
+            <p className="text-sm text-muted-foreground text-center">
               We&apos;ll email you a 6-digit code to reset your password.
             </p>
             <div className="space-y-1.5">
@@ -94,7 +87,7 @@ export default function ForgotPasswordPage() {
 
         {mode === "reset" && (
           <form onSubmit={(e) => void handleResetPassword(e)} className="space-y-4">
-            <p className="text-sm text-[color:var(--text-secondary)] text-center">
+            <p className="text-sm text-muted-foreground text-center">
               We sent a 6-digit code to <strong>{email}</strong>.
             </p>
             <div className="space-y-1.5">
@@ -129,18 +122,17 @@ export default function ForgotPasswordPage() {
               type="button"
               onClick={() => { setError(""); setCode(""); void requestCode() }}
               disabled={loading}
-              className="w-full text-sm text-center text-[color:var(--text-secondary)] hover:text-[color:var(--text-primary)] transition-colors disabled:opacity-50"
+              className="w-full text-sm text-center text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
             >
               {loading ? "Sending…" : "Resend code"}
             </button>
           </form>
         )}
 
-        <p className="text-center text-sm text-[color:var(--text-secondary)]">
+        <p className="text-center text-sm text-muted-foreground">
           Remembered your password?{" "}
-          <Link href="/sign-in" className="font-medium text-[color:var(--accent-primary)] hover:underline">Sign in</Link>
+          <Link href="/sign-in" className="font-semibold text-foreground underline-offset-4 hover:underline">Sign in</Link>
         </p>
-      </div>
-    </div>
+    </FlowShell>
   )
 }
