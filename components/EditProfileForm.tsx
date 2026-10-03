@@ -67,7 +67,7 @@ export function EditProfileForm({
 
   return (
     <form onSubmit={handleSave} className="space-y-3">
-      <AvatarUpload value={avatarUrl} onChange={setAvatarUrl} />
+      <AvatarUpload value={avatarUrl} onChange={setAvatarUrl} autoSave />
 
       <div className="space-y-1.5">
         <Label htmlFor="edit-display-name" className="text-sm font-medium">

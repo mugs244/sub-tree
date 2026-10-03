@@ -1,6 +1,7 @@
 "use client"
 
 import { useRef, useState } from "react"
+import { useRouter } from "next/navigation"
 import { upload } from "@vercel/blob/client"
 import { Pencil, Loader2 } from "lucide-react"
 import { DefaultAvatar } from "@/components/DefaultAvatar"
@@ -50,15 +51,19 @@ async function toJpeg(file: File): Promise<Blob> {
 interface AvatarUploadProps {
   value: string
   onChange: (url: string) => void
+  /** Save the photo to the profile as soon as it's uploaded (Settings). */
+  autoSave?: boolean
 }
 
 // WhatsApp/Instagram-style profile picture: a big round photo (grey
 // silhouette when empty) with a pen badge on the bottom-right edge. Tapping
 // the photo, the pen or the caption all open the photo picker.
-export function AvatarUpload({ value, onChange }: AvatarUploadProps) {
+export function AvatarUpload({ value, onChange, autoSave = false }: AvatarUploadProps) {
+  const router = useRouter()
   const inputRef = useRef<HTMLInputElement>(null)
   const [uploading, setUploading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [savedNote, setSavedNote] = useState(false)
 
   async function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
@@ -66,6 +71,7 @@ export function AvatarUpload({ value, onChange }: AvatarUploadProps) {
     if (!file) return
 
     setError(null)
+    setSavedNote(false)
 
     if (file.type && !file.type.startsWith("image/")) {
       setError("Please choose a photo")
@@ -92,6 +98,16 @@ export function AvatarUpload({ value, onChange }: AvatarUploadProps) {
         handleUploadUrl: "/api/upload/avatar",
       })
       onChange(blob.url)
+      if (autoSave) {
+        const res = await fetch("/api/profile/avatar", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ avatar_url: blob.url }),
+        })
+        if (!res.ok) throw new Error("Your photo uploaded but couldn't be saved — please try again")
+        setSavedNote(true)
+        router.refresh() // header and page previews pick up the new photo
+      }
     } catch (err) {
       // Show Blob's own reason (e.g. a private store or missing token) so a
       // setup problem is visible instead of a generic failure.
@@ -147,6 +163,7 @@ export function AvatarUpload({ value, onChange }: AvatarUploadProps) {
       >
         {uploading ? "Uploading…" : value ? "Edit photo" : "Add profile photo"}
       </button>
+      {savedNote && !error && <p className="text-xs font-medium text-success">Photo saved</p>}
       {!value && !error && <p className="text-xs text-muted-foreground">Any photo from your library or camera</p>}
       {error && <p className="text-xs text-destructive">{error}</p>}
     </div>
