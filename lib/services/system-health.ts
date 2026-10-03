@@ -135,8 +135,10 @@ function checkBlob(): Promise<HealthCheckResult> {
     return Promise.resolve({ name: "Photo storage (Blob)", status: "unconfigured", latencyMs: null, message: "Missing: BLOB_READ_WRITE_TOKEN — profile photo uploads won't work." })
   }
   return timed("Photo storage (Blob)", async () => {
-    const blob = await put(`health/check-${Date.now()}.txt`, "ok", { access: "public", addRandomSuffix: true })
-    await del(blob.url)
+    // Same explicit token as uploads (see app/api/upload/avatar/route.ts).
+    const token = process.env.BLOB_READ_WRITE_TOKEN
+    const blob = await put(`health/check-${Date.now()}.txt`, "ok", { access: "public", addRandomSuffix: true, token })
+    await del(blob.url, { token })
   })
 }
 

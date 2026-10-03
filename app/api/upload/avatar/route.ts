@@ -6,6 +6,10 @@ import { getSession } from "@/lib/auth/session"
 // can't be changed after). A blob's access mode is a store-level property,
 // not a per-upload option — the original store was created Private and had
 // to be replaced, since avatar photos need to load with no auth.
+//
+// The token is passed explicitly: on Vercel the SDK otherwise prefers OIDC +
+// BLOB_STORE_ID, which points at the old private store (sub-tree-blob) and
+// makes every public upload fail.
 export async function POST(req: Request): Promise<NextResponse> {
   const session = await getSession()
   if (!session) return new NextResponse("Unauthorized", { status: 401 })
@@ -21,6 +25,7 @@ export async function POST(req: Request): Promise<NextResponse> {
 
   try {
     const jsonResponse = await handleUpload({
+      token: process.env.BLOB_READ_WRITE_TOKEN,
       body,
       request: req,
       onBeforeGenerateToken: async () => ({
