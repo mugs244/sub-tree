@@ -1,11 +1,15 @@
 import { prisma } from "@/lib/db"
 
-function getAdminIds(): number[] {
-  return (process.env.ADMIN_USER_IDS ?? "")
+function idsFrom(value: string | undefined): number[] {
+  return (value ?? "")
     .split(",")
     .map((s) => s.trim())
     .filter(Boolean)
     .map(Number)
+}
+
+function getAdminIds(): number[] {
+  return idsFrom(process.env.ADMIN_USER_IDS)
 }
 
 export function isAdmin(userId: number): boolean {
@@ -14,6 +18,24 @@ export function isAdmin(userId: number): boolean {
 
 export function getAllAdminIds(): number[] {
   return getAdminIds()
+}
+
+// Super admins (SUPER_ADMIN_USER_IDS, a subset of the admins) can always
+// switch to the Sub-shop admin portal and decide which other admins may.
+export function isSuperAdmin(userId: number): boolean {
+  return isAdmin(userId) && idsFrom(process.env.SUPER_ADMIN_USER_IDS).includes(userId)
+}
+
+export async function canAccessSubShopAdmin(userId: number): Promise<boolean> {
+  if (!isAdmin(userId)) return false
+  if (isSuperAdmin(userId)) return true
+  const perm = await prisma.adminPermission.findUnique({ where: { user_id: userId }, select: { can_access_subshop: true } })
+  return Boolean(perm?.can_access_subshop)
+}
+
+// Where "Switch to Sub-shop admin" goes.
+export function subShopAdminUrl(): string {
+  return process.env.SUBSHOP_ADMIN_URL || "https://shop.sub-tree.com/dashboard"
 }
 
 export async function listClaims(status?: "PENDING" | "APPROVED" | "REJECTED") {

@@ -990,3 +990,15 @@ model Invoice {
   @@index([user_id])
   @@index([status])
 }
+
+// Extra admin abilities, granted by a super admin (SUPER_ADMIN_USER_IDS) on
+// Admin → Team. Who is an admin at all still comes from ADMIN_USER_IDS.
+model AdminPermission {
+  id                Int      @id @default(autoincrement())
+  user_id           Int      @unique
+  // May switch to the Sub-shop admin portal (and has a Sub-shop admin login).
+  can_access_subshop Boolean @default(false)
+  granted_by        Int?
+  created_at        DateTime @default(now())
+  updated_at        DateTime @updatedAt
+}
