@@ -4,7 +4,7 @@
     "buildCommand": "NODE_ENV=development bun install --frozen-lockfile && bunx turbo run build --filter=@acme/api..."
   },
   "deploy": {
-    "startCommand": "cd packages/api/.medusa/server && bun install --production && bunx medusa db:migrate && bunx medusa start",
+    "startCommand": "cd packages/api/.medusa/server && bunx medusa db:migrate && bunx medusa start",
     "healthcheckPath": "/health",
     "healthcheckTimeout": 300,
     "restartPolicyType": "ON_FAILURE"
