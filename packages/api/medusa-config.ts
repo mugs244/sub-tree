@@ -19,6 +19,10 @@ const dashboardAppDir = (name: string) => {
 module.exports = withMercur({
   projectConfig: {
     databaseUrl: process.env.DATABASE_URL,
+    // Hosted (Railway): sessions/events on Redis; staging runs API + jobs in
+    // one "shared" instance, production can split server/worker.
+    redisUrl: process.env.REDIS_URL,
+    workerMode: (process.env.MEDUSA_WORKER_MODE as 'shared' | 'worker' | 'server') || 'shared',
     http: {
       storeCors: process.env.STORE_CORS!,
       adminCors: process.env.ADMIN_CORS!,
