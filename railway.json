@@ -4,7 +4,7 @@
     "buildCommand": "NODE_ENV=development bun install --frozen-lockfile && bunx turbo run build --filter=@acme/api..."
   },
   "deploy": {
-    "startCommand": "cd packages/api/.medusa/server && bunx medusa db:migrate && bunx medusa start",
+    "startCommand": "cd packages/api/.medusa/server && bunx medusa db:migrate && if [ \"$SUBSHOP_BOOTSTRAP\" = \"true\" ]; then bunx medusa exec ./src/scripts/seed-subshop.js; bunx medusa exec ./src/scripts/create-test-seller.js; bunx medusa user -e \"$SUBSHOP_ADMIN_EMAIL\" -p \"$SUBSHOP_ADMIN_PASSWORD\" || true; fi && bunx medusa start",
     "healthcheckPath": "/health",
     "healthcheckTimeout": 300,
     "restartPolicyType": "ON_FAILURE"
